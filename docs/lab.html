@@ -1077,9 +1077,10 @@ const fmt=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 const R={
  rate:t=>.3+.004*t+.00001*t*t,                   // aliens por segundo
  group:t=>Math.min(cols(),1+Math.floor(t/40)),   // aliens por fila
- hp:t=>1+t/120+Math.pow(t/300,2),                // vida base
- speed:t=>12+t*.04,                              // px por segundo que bajan
- step:t=>Math.max(.25,.7-t*.0012),               // tiempo entre pasos
+ hp:t=>1.4+t/70+Math.pow(t/240,2),              // vida base: algo más alta al empezar y crece más rápido
+ bhp:t=>1+t/120+Math.pow(t/300,2),              // vida de referencia de los jefes (no cambia con la curva de la horda)
+ speed:t=>7+t*.016,                              // px por segundo que bajan (despacio: dan tiempo a los disparos flojos)
+ step:t=>Math.max(.28,.7-t*.001),                // tiempo entre pasos
  shoot:t=>Math.max(.6,5.5-t*.009),               // segundos entre disparos enemigos
  shotV:t=>100+t*.2,
  p1:t=>Math.max(0,Math.min(.45,(t-50)/200)),
@@ -1160,7 +1161,7 @@ const SECTORS=[
 ];
 // progreso guardado: mejor dificultad completada en cada sector (0 = ninguna)
 // disparos y artefactos con los que se empieza; el resto se desbloquea con logros
-const START_SHOTS=['laser','fire','ice','bounce','pierce','boom'];
+const START_SHOTS=['laser','fire','poison','bleed','pierce','boom'];
 const START_ARTS=['barrera','escudo','venganza','cadencia','doble','rafaga','critico','calibre','techo','dron','satelites','lastre','orbital','estudioso','tirar'];
 let prof={sec:[0,0,0,0,0,0],endless:false,mas:[],shots:START_SHOTS.slice(),arts:START_ARTS.slice(),ships:['explorador'],ship:'explorador',ach:[],ss:{},
  st:{kills:0,runs:0,k:{},bosses:0,fus:0,maxLv:0,blocks:0,charmK:0,perfect:0,fp:0}};
@@ -1217,7 +1218,7 @@ function rockTick(dt){
 const K=(s,id)=>s.k[id]||0;
 const ACH=[
  {id:'a1',n:'Primeros pasos',d:'Juega una partida',g:s=>[s.runs,1],r:{shots:['tri'],arts:['racha']}},
- {id:'a2',n:'Exterminador I',d:'Destruye 500 aliens en total',g:s=>[s.kills,500],r:{shots:['poison'],arts:['metralla']}},
+ {id:'a2',n:'Exterminador I',d:'Destruye 500 aliens en total',g:s=>[s.kills,500],r:{shots:['ice'],arts:['metralla']}},
  {id:'a3',n:'Exterminador II',d:'Destruye 2000 aliens en total',g:s=>[s.kills,2000],r:{shots:['split'],arts:['sobrante']}},
  {id:'a4',n:'Exterminador III',d:'Destruye 6000 aliens en total',g:s=>[s.kills,6000],r:{shots:['echo'],arts:['acorralado']}},
  {id:'a5',n:'Láser afilado',d:'Destruye 300 aliens con Láser',g:s=>[K(s,'laser'),300],r:{shots:['zap'],arts:['retroceso']}},
@@ -1227,13 +1228,13 @@ const ACH=[
  {id:'a9',n:'Atravesador',d:'Destruye 400 aliens con Perforante',g:s=>[K(s,'pierce'),400],r:{shots:['exec']}},
  {id:'a10',n:'Demoledor',d:'Destruye 400 aliens con Explosión',g:s=>[K(s,'boom'),400],r:{shots:['meteor'],arts:['detonador']}},
  {id:'a11',n:'Tormenta',d:'Destruye 400 aliens con Rayo',g:s=>[K(s,'zap'),400],r:{shots:['sweep'],arts:['conductor']}},
- {id:'a12',n:'Veneno lento',d:'Destruye 400 aliens con Veneno',g:s=>[K(s,'poison'),400],r:{shots:['bleed'],arts:['epidemia']}},
+ {id:'a12',n:'Veneno lento',d:'Destruye 400 aliens con Veneno',g:s=>[K(s,'poison'),400],r:{shots:['dis'],arts:['epidemia']}},
  {id:'a13',n:'Química',d:'Lleva Fuego y Veneno en la misma partida',g:s=>[s.fp,1],r:{arts:['combustion']}},
  {id:'a14',n:'Sangría',d:'Destruye 400 aliens con Sangrado',g:s=>[K(s,'bleed'),400],r:{shots:['vamp'],arts:['hemorragia']}},
  {id:'a15',n:'Primera fusión',d:'Fusiona dos disparos con el alien arcoíris',g:s=>[s.fus,1],r:{arts:['iman']}},
  {id:'a16',n:'Alquimista',d:'Descubre 10 fusiones distintas',g:()=>[disc.size,10],r:{shots:['hole'],arts:['fusionista']}},
- {id:'a17',n:'Gran coleccionista',d:'Descubre 25 fusiones distintas',g:()=>[disc.size,25],r:{shots:['dis'],ships:['coleccionista']}},
- {id:'a18',n:'Cazajefes',d:'Derrota a un jefe',g:s=>[s.bosses,1],r:{shots:['boomer'],arts:['carga']}},
+ {id:'a17',n:'Gran coleccionista',d:'Descubre 25 fusiones distintas',g:()=>[disc.size,25],r:{shots:['boomer'],ships:['coleccionista']}},
+ {id:'a18',n:'Cazajefes',d:'Derrota a un jefe',g:s=>[s.bosses,1],r:{shots:['bounce'],arts:['carga']}},
  {id:'a19',n:'Cazajefes veterano',d:'Derrota a 6 jefes',g:s=>[s.bosses,6],r:{shots:['snake'],arts:['bolsillo','gemelo']}},
  {id:'a20',n:'Órbita limpia',d:'Completa el Sector 1',g:()=>[prof.sec[0]>0?1:0,1],r:{ships:['piromante'],arts:['escolta']}},
  {id:'a21',n:'Órbita veterana',d:'Completa el Sector 1 en dificultad 2',g:()=>[prof.sec[0]>=2?1:0,1],r:{ships:['tanque'],arts:['pulso']}},
@@ -1333,7 +1334,7 @@ const BOSS_SPR={
  seg:['..XXXX..','.XXXXXX.','XXX..XXX','XXXXXXXX','.XXXXXX.','..X..X..'],
 };
 function mkBoss(kind,x,y,hp,hw,hh,extra){
- const e=Object.assign({boss:1,kind,cx:x,x,y,col:-1,type:2,hp,hpMax:hp,max:R.hp(et)*6*diffHp(),fz:0,bt:0,bdps:0,ps:0,pdps:0,pt:0,psp:0,flash:0,hw,hh},extra||{});
+ const e=Object.assign({boss:1,kind,cx:x,x,y,col:-1,type:2,hp,hpMax:hp,max:R.bhp(et)*6*diffHp(),fz:0,bt:0,bdps:0,ps:0,pdps:0,pt:0,psp:0,flash:0,hw,hh},extra||{});
  en.push(e);return e;
 }
 // disparo enemigo de jefe, con dirección
@@ -1341,14 +1342,14 @@ function bossShot(x,y,ang,v){ebs.push({x,y,vx:Math.sin(ang)*v,vy:Math.cos(ang)*v
 function aimAng(x,y){return Math.atan2(px-x,py-y)}
 const BOSSES={
  capitan:{n:'El Capitán',
-  spawn(B){const hp=R.hp(et)*30*diffHp();B.ents=[mkBoss('capitan',W/2,topY()-P*20,hp,EP*12,EP*10,{ty:topY()+P*26})];B.fireT=2},
+  spawn(B){const hp=R.bhp(et)*30*diffHp();B.ents=[mkBoss('capitan',W/2,topY()-P*20,hp,EP*12,EP*10,{ty:topY()+P*26})];B.fireT=2},
   tick(B,dt){const e=B.ents[0];if(e.dead)return;
    e.y+=(e.ty-e.y)*Math.min(1,dt*2);e.x=e.cx=W/2+Math.sin(B.t*.8)*(W/2-P*24);
    B.fireT-=dt*(e.fz>0?.4:1);if(B.fireT<=0){B.fireT=e.hp<e.hpMax*.5?1.1:1.6;e.tele=.35}
    if(e.tele>0){e.tele-=dt;if(e.tele<=0){const a=aimAng(e.x,e.y);const n=e.hp<e.hpMax*.5?3:1;for(let i=0;i<n;i++)bossShot(e.x,e.y+e.hh,a+(i-(n-1)/2)*.22,R.shotV(et)*1.4);sfx('eshot')}}}},
  espejo:{n:'El Espejo',
   // alterna dos fases: ESPEJO (refleja tus balas y apenas recibe daño) y VULNERABLE (recibe más daño y dispara)
-  spawn(B){const hp=R.hp(et)*62*diffHp();B.ents=[mkBoss('espejo',W/2,topY()-P*30,hp,EP*13,EP*13,{ty:topY()+P*32})];B.ph='vuln';B.pt=3;B.fireT=1.5},
+  spawn(B){const hp=R.bhp(et)*62*diffHp();B.ents=[mkBoss('espejo',W/2,topY()-P*30,hp,EP*13,EP*13,{ty:topY()+P*32})];B.ph='vuln';B.pt=3;B.fireT=1.5},
   tick(B,dt){const e=B.ents[0];if(e.dead)return;const f=e.hp/e.hpMax,sl=e.fz>0?.4:1;
    e.y+=(e.ty-e.y)*Math.min(1,dt*1.5);e.x=e.cx=W/2+Math.sin(B.t*.6)*(W/2-P*22);
    B.pt-=dt;
@@ -1361,7 +1362,7 @@ const BOSSES={
    if(B.fireT<=0){B.fireT=e.vuln?1.2:(f<.5?1.5:99);e.tele=.4}
    if(e.tele>0){e.tele-=dt;if(e.tele<=0){if(e.vuln){for(let i=0;i<3;i++)bossShot(e.x,e.y+e.hh,(i-1)*.3,R.shotV(et)*1.2)}else bossShot(e.x,e.y+e.hh,aimAng(e.x,e.y),R.shotV(et)*1.5);sfx('eshot')}}}},
  nodriza:{n:'La Nodriza',
-  spawn(B){const hp=R.hp(et)*70*diffHp();B.ents=[mkBoss('nodriza',W/2,topY()-P*30,hp,EP*22,EP*8,{ty:topY()+P*22})];B.fireT=2.5;B.spawnT=3},
+  spawn(B){const hp=R.bhp(et)*70*diffHp();B.ents=[mkBoss('nodriza',W/2,topY()-P*30,hp,EP*22,EP*8,{ty:topY()+P*22})];B.fireT=2.5;B.spawnT=3},
   tick(B,dt){const e=B.ents[0];if(e.dead)return;const f=e.hp/e.hpMax,sl=e.fz>0?.4:1;
    e.y+=(e.ty-e.y)*Math.min(1,dt*1.5);e.x=e.cx=W/2+Math.sin(B.t*.45)*(W/2-P*26);
    // suelta naves pequeñas desde la panza
@@ -1371,7 +1372,7 @@ const BOSSES={
    if(e.tele>0){e.tele-=dt;if(e.tele<=0){if(f<.2){bossShot(e.x,e.y+e.hh,aimAng(e.x,e.y),R.shotV(et)*1.6)}else{const n=f<.5?5:3;for(let i=0;i<n;i++)bossShot(e.x,e.y+e.hh,(i-(n-1)/2)*.28,R.shotV(et)*1.2)}sfx('eshot')}}}},
  gusano:{n:'El Gusano',
   spawn(B){const N=12;B.hist=[];B.s=0;B.ents=[];
-   for(let i=0;i<N;i++){const head=i===0,hp=R.hp(et)*(head?12:7)*diffHp();B.ents.push(mkBoss(head?'head':'seg',W/2,topY()-P*30,hp,EP*7,EP*6,{seg:i}))}
+   for(let i=0;i<N;i++){const head=i===0,hp=R.bhp(et)*(head?12:7)*diffHp();B.ents.push(mkBoss(head?'head':'seg',W/2,topY()-P*30,hp,EP*7,EP*6,{seg:i}))}
    B.fireT=2;},
   tick(B,dt){const alive=B.ents.filter(e=>!e.dead).length,head=B.ents[0];
    // va más rápido cuantos menos segmentos le quedan
@@ -1501,7 +1502,8 @@ function kill(e){
  if(vb>0)addVamp(KT&&KT.vamp?KT.vamp(e,curB):1,vb);
  if(KT&&KT.kill)KT.kill(e,curB);
  if(e.rainbow){fuseReady=true;xp+=3;for(let i=0;i<6;i++)sparks(e.x,e.y,'hsl('+(i*60)+',100%,60%)',8,300,10);flash(e.x,e.y,'#ffffff',P*30,.3);addShake(6)}
- let g=XPV[e.type]*(1+.2*alv('estudioso'))*(1+.3*alv('avaricia'));
+ // ×1,15: los aliens aguantan más y se matan menos por minuto; así se sube de nivel al mismo ritmo
+ let g=XPV[e.type]*1.15*(1+.2*alv('estudioso'))*(1+.3*alv('avaricia'));
  if(e.type>0)g*=1+.5*alv('cazador');
  xp+=g;barGlow=1;if(e.type===2)addShake(2);
  // Metralla: los aliens que matas de un disparo sueltan esquirlas
