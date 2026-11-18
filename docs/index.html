@@ -175,21 +175,21 @@ const T={
  bounce:{n:'Rebote',c:'#3d7bff',c2:'#c4d6ff',d:'Rebota de enemigo en enemigo',lv:'Un rebote más',v:'rebota'},
  pierce:{n:'Perforante',c:'#ff4dd2',c2:'#ffd6f5',d:'Atraviesa enemigos',lv:'Atraviesa uno más',v:'atraviesa'},
  split:{n:'Dividido',c:'#a970ff',c2:'#e4d6ff',d:'Se parte en trozos al impactar',lv:'Un trozo más',v:'se divide'},
- homing:{n:'Teledirigido',c:'#00c8ff',c2:'#d0f6ff',d:'Se curva hacia el alien más cercano',lv:'Gira más rápido',v:'persigue'},
+ homing:{n:'Teledirigido',c:'#00c8ff',c2:'#d0f6ff',d:'Se curva hacia el alien más cercano y, si lo mata, va a por otro',lv:'Gira más rápido',v:'persigue'},
  boomer:{n:'Bumerán',c:'#c08040',c2:'#ffe2b0',d:'Sube, golpea y vuelve dañando a la vuelta',lv:'Más daño',lv3:'Si lo recoges, recargas al momento',v:'vuelve'},
- wind:{n:'Viento',c:'#e6f3ff',c2:'#9fb8ff',d:'Empuja a los aliens hacia arriba',lv:'Empuja más',v:'empuja hacia arriba'},
- bleed:{n:'Sangrado',c:'#c8102e',c2:'#ff8a9a',d:'Deja heridas: cada golpe después hace más daño',lv:'Heridas más profundas',v:'desangra'},
+ wind:{n:'Viento',c:'#e6f3ff',c2:'#9fb8ff',d:'Empuja hacia arriba al alien y a los dos de al lado',lv:'Empuja más',v:'empuja hacia arriba'},
+ bleed:{n:'Sangrado',c:'#c8102e',c2:'#ff8a9a',d:'Deja heridas: todo el daño después es mayor y la sangre salpica al morir',lv:'Heridas más profundas',v:'desangra'},
  hole:{n:'Agujero negro',c:'#7a4dff',c2:'#1a0033',d:'Crea un remolino que atrae y daña',lv:'Remolino mayor',v:'atrae'},
  sweep:{n:'Barrido',c:'#c6ff00',c2:'#f0ffb0',d:'Al impactar daña a toda la fila',lv:'Llega más lejos',v:'barre la fila'},
  puddle:{n:'Charco',c:'#2fb39a',c2:'#b0fff0',d:'Deja una mancha que daña a los que pasan',lv:'Dura más y daña más',v:'deja charco'},
  charm:{n:'Encanto',c:'#ff8fd0',c2:'#ffffff',d:'A veces el alien se pasa a tu bando',lv:'Más probable',v:'encanta'},
- guard:{n:'Antibalas',c:'#d4af37',c2:'#fff4c0',d:'Destruye las balas enemigas que cruza',lv:'Para una bala más',v:'para balas'},
+ guard:{n:'Antibalas',c:'#d4af37',c2:'#fff4c0',d:'Destruye las balas enemigas que cruza y las devuelve partidas en dos',lv:'Para una bala más',v:'para balas'},
  vamp:{n:'Vampiro',c:'#9b1458',c2:'#ff9ad0',d:'Matar aliens con él te devuelve vidas',lv:'Necesitas menos muertes',v:'te cura'},
- snake:{n:'Serpiente',c:'#7ccf3a',c2:'#e0ffb0',d:'Sube haciendo eses amplias',lv:'Eses más amplias',v:'serpentea'},
+ snake:{n:'Serpiente',c:'#7ccf3a',c2:'#e0ffb0',d:'Sube haciendo eses y, si mata al que muerde, sigue',lv:'Eses más amplias',v:'serpentea'},
  tri:{n:'Triple',c:'#ff6f61',c2:'#ffd0c8',d:'Sale en tres balas abiertas',lv:'Más daño por bala',v:'sale triple'},
- echo:{n:'Eco',c:'#b0b0ff',c2:'#ffffff',d:'El golpe se repite medio segundo después',lv:'Eco más fuerte',v:'repite el golpe'},
- exec:{n:'Ejecución',c:'#e0d8c0',c2:'#ff3b3b',d:'Remata a los aliens con poca vida',lv:'Remata antes',v:'remata'},
- dis:{n:'Desintegrador',c:'#00ffd5',c2:'#ffffff',d:'Quita parte de la vida total del alien',lv:'Quita más',v:'desintegra'},
+ echo:{n:'Eco',c:'#b0b0ff',c2:'#ffffff',d:'El golpe se repite medio segundo después; si el alien ya murió, salta al de al lado',lv:'Eco más fuerte',v:'repite el golpe'},
+ exec:{n:'Ejecución',c:'#e0d8c0',c2:'#ff3b3b',d:'Remata a los aliens con poca vida y salta al siguiente que pueda rematar',lv:'Remata antes',v:'remata'},
+ dis:{n:'Desintegrador',c:'#00ffd5',c2:'#ffffff',d:'Quita parte de la vida total del alien; al morir, su polvo daña a los de al lado',lv:'Quita más',v:'desintegra'},
  meteor:{n:'Meteoro',c:'#ff5a00',c2:'#ffe0a0',d:'Cae un meteorito sobre el alien más alto de la columna',lv:'Meteorito más fuerte',v:'llama meteoritos'},
 };
 const FN={
@@ -233,7 +233,7 @@ function nameOf(id){return isF(id)?FN[id.slice(2)]:T[id].n}
 function colorOf(id){return isF(id)?T[parts2(id)[0]].c:T[id].c}
 
 const KEYS=['dmg','spd','pierce','bnc','ex','exm','ch','chr','fz','burn','bt','ign','pdps','pt','psp','fr','beam',
- 'hom','ret','push','bl','hole','sweep','sweepR','pud','pudT','charm','charmT','guard','vamp','snake','tri','echo','exec','dis','met'];
+ 'hom','ret','push','bl','hole','sweep','sweepR','pud','pudT','charm','charmT','guard','vamp','snake','tri','echo','exec','dis','met','sbite','hunt','vch'];
 function blank(){const b={};for(const k of KEYS)b[k]=0;b.dmg=1;b.spd=620;return b}
 function S(id,l,l2,fl,m){
  if(isF(id))return FS(id,l,l2,fl);
@@ -249,7 +249,7 @@ function S(id,l,l2,fl,m){
   case'bounce':b.dmg=.9;b.bnc=1+l;break;
   case'pierce':b.dmg=1;b.pierce=1+l;b.spd=820;break;
   case'split':b.dmg=1;b.fr=1+l;break;
-  case'homing':b.dmg=.9;b.hom=3+2*l;break;
+  case'homing':b.dmg=.9;b.hom=3+2*l;b.hunt=l;break;
   case'boomer':b.dmg=.8+.15*l;b.ret=l;b.spd=560;break;
   case'wind':b.dmg=.8;b.push=P*(4+3*l);break;
   case'bleed':b.dmg=.7;b.bl=.1+.05*l;break;
@@ -259,10 +259,10 @@ function S(id,l,l2,fl,m){
   case'charm':b.dmg=.8;b.charm=.08+.06*l;b.charmT=3+l;break;
   case'guard':b.dmg=.9;b.guard=1+l;break;
   case'vamp':b.dmg=.9;b.vamp=1+.4*(l-1);break;
-  case'snake':b.dmg=1;b.snake=P*(7+3*l);break;
+  case'snake':b.dmg=1;b.snake=P*(7+3*l);b.sbite=l;break;
   case'tri':b.dmg=1;b.tri=.55+.15*l;break;
   case'echo':b.dmg=.9;b.echo=.4+.2*l;break;
-  case'exec':b.dmg=.9;b.exec=.1+.06*l;break;
+  case'exec':b.dmg=.9;b.exec=.1+.06*l;b.vch=l;break;
   case'dis':b.dmg=.7;b.dis=.05+.03*l;break;
   case'meteor':b.dmg=.8;b.met=.6+.25*l;break;
  }
@@ -276,7 +276,7 @@ function FS(id,la,lb,fl){
  for(const k of KEYS)o[k]=Math.max(A[k],B[k]);
  o.dmg=Math.max(A.dmg,B.dmg)*FLV.dmg[fl];
  // refuerzo general de la fusión
- for(const k of ['pierce','bnc','ch','fr','ign','psp','guard'])if(o[k])o[k]+=FLV.cnt[fl];
+ for(const k of ['pierce','bnc','ch','fr','ign','psp','guard','sbite','hunt','vch'])if(o[k])o[k]+=FLV.cnt[fl];
  for(const k of ['ex','fz','burn','pdps','chr','hom','push','bl','hole','pud','pudT','charmT','vamp','dis','met'])o[k]*=FLV.mag[fl];
  o.sweep=Math.min(.95,o.sweep*1.2);o.charm=Math.min(.5,o.charm*1.25);o.exec=Math.min(.4,o.exec*1.25);o.echo=Math.min(1,o.echo*1.2);if(o.tri)o.tri=Math.min(1,o.tri*1.1);
  if(o.ex)o.exm=Math.max(o.exm,.65);
@@ -1449,7 +1449,8 @@ function foe(e){return !e.dead&&!(e.charm>0)}
 function dmgE(e,d,silent){
  if(e.dead)return;
  if(e.fz>0&&alv('anicos'))d*=[1,1.3,1.6,2][alv('anicos')];
- if(!silent&&e.bls>0)d+=e.bls*e.blk; // sangrado: cada golpe hace más daño
+ // sangrado: cada golpe hace más daño, y el daño continuo (fuego, veneno...) un % por herida
+ if(e.bls>0){if(!silent)d+=e.bls*e.blk;else d*=1+e.bls*e.blk*.32}
  if(e.mirror)d*=.1;else if(e.vuln)d*=1.5;
  if(e.arm>0&&!silent){d*=.3;e.arm--;sparks(e.x,e.y,'#aab4c0',4,90,5);if(!e.arm)sparks(e.x,e.y,'#ffffff',10,160,6)}
  if(!silent&&!cageBusy&&e.cage&&e.cageT>0){cageBusy=1;for(const o of en)if(o!==e&&o.cage===e.cage&&o.cageT>0&&foe(o))dmgE(o,d*.5,true);cageBusy=0}
@@ -1470,6 +1471,8 @@ function addVamp(n,v){
  while(vampN>=need){vampN-=need;if(hasM('vamp','A')){if(bloodSh<3){bloodSh++;sparks(px,py,'#c8102e',14,180,7);showBanner('ESCUDO DE SANGRE','','#ff4d6d',.7)}continue}const cap=(alv('cristal')?1:5)-(hasM('vamp','B')?1:0);if(lives<cap){lives++;flash(px,py,'#ff9ad0',P*24,.3);sparks(px,py,'#ff9ad0',16,200,8);showBanner('+1 VIDA','','#ff9ad0',.7)}}
 }
 function kill(e){
+ // Sangrado: al morir, la mitad de sus heridas salpican a los 2 aliens más cercanos
+ if(e.bls>=2&&!e.rock){const n=Math.floor(e.bls/2);for(const o of byDist(e).slice(0,2)){if(Math.hypot(o.x-e.x,o.y-e.y)>TWO()*2.5)break;addP(e.x,e.y,(o.x-e.x)/.25,(o.y-e.y)/.25,.25,'#c8102e',6,0,1);o.bls=Math.min(10,(o.bls||0)+n);o.blk=Math.max(o.blk||0,e.blk||.15)}}
  if(e.rock){e.dead=1;sparks(e.x,e.y,'#8a7a6a',14,160,8);flash(e.x,e.y,'#c08040',P*14,.2);sfx('ex');return}
  // Glaciación: el bloque de hielo estalla en esquirlas
  if(e.block){const ps=curSrc;curSrc='ice';sparks(e.x,e.y,'#bff8ff',18,220,8);for(const o of foesNear(e.x,e.y,TWO()*1.8,e)){frz(o,1.5);dmgE(o,R.hp(et)*.4)}curSrc=ps}
@@ -1645,7 +1648,13 @@ function hit(b,e){
  if(b.charm&&!e.dead&&Math.random()<b.charm)charmE(e,b.charmT);
  // ejecución (algunas fusiones suben el umbral)
  let thr=b.exec||0;if(H&&H.thr)thr=Math.max(thr,H.thr(b,e));
- if(thr&&!e.dead&&!(e.charm>0)&&e.hp<e.max*thr){execE(e);if(H&&H.execd)H.execd(b,e)}
+ if(thr&&!e.dead&&!(e.charm>0)&&e.hp<e.max*thr){execE(e);if(H&&H.execd)H.execd(b,e);
+  // Verdugo: tras rematar salta al siguiente alien que pueda rematar
+  let from=e;for(let i=0;i<(b.vch||0);i++){const o=nearest(from.x,from.y,o=>!o.boss&&!o.rock&&o.hp<o.max*thr,TWO()*4);if(!o)break;arcs.push({x1:from.x,y1:from.y,x2:o.x,y2:o.y,t:.2,T:.2,c:'#e0d8c0'});execE(o);from=o}}
+ // Polvo: el alien desintegrado quita a los de al lado la mitad del % de vida
+ if(b.dis&&e.dead&&!b.frag){sparks(x,y,'#00ffd5',12,160,7);for(const o of foesNear(x,y,TWO()*1.8,e))dmgE(o,o.max*b.dis*.5,1)}
+ // Ráfaga: el viento empuja también a los dos de al lado en la fila, con la mitad de fuerza
+ if(b.push&&!b.frag)rowOf(e,o=>Math.abs(o.x-x)<TWO()*2.2).sort((p,q)=>Math.abs(p.x-x)-Math.abs(q.x-x)).slice(0,2).forEach(o=>pushUp(o,b.push*.5))
  if(b.ign)ignite(e,b);
  if(b.ex&&!b.holeBoom&&!b.noEx)explode(x,y,b.ex,b.dmg*(b.exm||.5),b,e);
  lastChain=[];
@@ -1784,6 +1793,8 @@ function describe(b){
  if(b.pierce)L.push('Atraviesa '+b.pierce+' aliens');
  if(b.bnc)L.push('Rebota '+b.bnc+' veces');
  if(b.hom)L.push('Persigue al más cercano');
+ if(b.hunt)L.push('Al matar va a por otro, '+b.hunt+(b.hunt>1?' veces':' vez'));
+ if(b.sbite)L.push('Si mata al que muerde sigue, '+b.sbite+(b.sbite>1?' veces':' vez'));
  if(b.ret)L.push('Vuelve a ti golpeando'+(b.ret>=3?'; recogerlo recarga':''));
  if(b.snake)L.push('Eses de '+AL(b.snake*2)+' aliens');
  if(b.ex)L.push('Explosión radio '+AL(b.ex)+' al '+pc(b.exm||.5));
@@ -1794,17 +1805,18 @@ function describe(b){
  if(b.fz)L.push('Congela '+fN(b.fz)+' s');
  if(b.pdps)L.push('Veneno '+fN(b.pdps)+'/s por carga, 4 s');
  if(b.psp)L.push('Al morir contagia a '+b.psp);
- if(b.bl)L.push('Herida: +'+fN(b.bl)+' a cada golpe');
- if(b.push)L.push('Empuja '+fN1(b.push/ESP())+' filas arriba');
+ if(b.bl)L.push('Herida: +'+fN(b.bl)+' a cada golpe y +'+pc(b.bl*.32)+' al resto del daño');
+ if(b.push)L.push('Empuja '+fN1(b.push/ESP())+' filas arriba; a los de al lado, la mitad');
  if(b.hole)L.push('Remolino '+fN(1+b.hole*.5)+' s, '+fN(b.hole*Math.max(1,b.dmg*.7))+'/s');
  if(b.sweep)L.push('Daña la fila al '+pc(b.sweep)+(b.sweepR>=1e8?', entera':', '+AL(b.sweepR)+' aliens por lado'));
  if(b.pud)L.push('Charco '+fN(b.pudT*(b.pud2?2:1))+' s, '+fN(b.pud*Math.max(1,b.dmg*.7))+'/s');
  if(b.charm)L.push(pc(b.charm)+' de encantar '+fN(b.charmT)+' s');
- if(b.guard)L.push('Para '+b.guard+' balas enemigas');
+ if(b.guard)L.push('Para '+b.guard+' balas enemigas y las devuelve en dos');
  if(b.vamp)L.push('+1 vida cada '+Math.round(30/b.vamp)+' muertes');
  if(b.echo)L.push('Repite el golpe al '+pc(b.echo));
  if(b.exec)L.push('Remata bajo el '+pc(b.exec)+' de vida');
- if(b.dis)L.push('Quita +'+pc(b.dis)+' de vida máx.');
+ if(b.vch)L.push('Tras rematar salta a '+b.vch+' más');
+ if(b.dis)L.push('Quita +'+pc(b.dis)+' de vida máx.; su polvo, la mitad');
  if(b.met)L.push('Meteorito al '+pc(b.met));
  return L;
 }
@@ -2354,7 +2366,7 @@ function update(rdt){
  }
  puddles=puddles.filter(p=>p.t>0);
  // ecos (algunos son acciones con retraso: fn)
- for(const ec of echoes){ec.t-=dt;if(ec.t<=0){ec.done=1;if(ec.fn)ec.fn();else if(foe(ec.e)){rings.push({x:ec.e.x,y:ec.e.y,r:P*9,t:.25,T:.25,c:'#b0b0ff'});hit(ec.b,ec.e)}}}
+ for(const ec of echoes){ec.t-=dt;if(ec.t<=0){ec.done=1;if(ec.fn)ec.fn();else{let t=ec.e;if(!foe(t)&&ec.b){t=nearest(t.x,t.y,()=>true,TWO()*3);if(t)arcs.push({x1:ec.e.x,y1:ec.e.y,x2:t.x,y2:t.y,t:.15,T:.15,c:'#b0b0ff'})}if(t&&foe(t)){rings.push({x:t.x,y:t.y,r:P*9,t:.25,T:.25,c:'#b0b0ff'});hit(ec.b,t)}}}}
  echoes=echoes.filter(e=>!e.done);
  // meteoritos
  for(const m of meteors){
@@ -2411,6 +2423,8 @@ function update(rdt){
       if(t){const a=Math.atan2(t.y-b.y,t.x-b.x),sv=Math.max(Math.hypot(b.vx,b.vy),560);b.vx=Math.cos(a)*sv;b.vy=Math.sin(a)*sv;b.hit=new Set(b.rec);b.snakeOff=1;b.cx=b.x;b.tg=t;sparks(b.x,b.y,b.c,5,130,6)}
       else spent(b);
      }
+     else if(b.sbite>0&&e.dead){b.sbite--;sparks(b.x,b.y,b.c,6,120,6)}
+     else if(b.hunt>0&&e.dead){b.hunt--;b.tg=null;sparks(b.x,b.y,b.c,6,120,6)}
      else if(b.pierce>0)b.pierce--;
      else spent(b);
      break;
@@ -2443,7 +2457,7 @@ function update(rdt){
   if(domeT>0&&q.vy>0&&Math.hypot(q.x-px,q.y-(py-P*4))<P*24){q.dead=1;sparks(q.x,q.y,'#d4af37',6,110,6);reflect(q);continue}
   for(const r of en)if(r.army&&!r.dead&&Math.abs(q.x-r.x)<EH()+P&&Math.abs(q.y-r.y)<EH()+P){q.dead=1;dmgE(r,R.hp(et)*.5,1);sparks(q.x,q.y,'#ff8fd0',5,90,5);if(r.hp<=0)r.dead=1;break}
   if(q.dead)continue;
-  for(const b of gb){const gr=b.gR||P*4.5;if(b.guard>0&&Math.abs(b.x-q.x)<gr&&Math.abs(b.y-q.y)<gr+P){q.dead=1;b.guard--;sparks(q.x,q.y,'#d4af37',8,140,6);reflect(q);const G=TW[b.tw];if(G&&G.guard)G.guard(b,q);break}}
+  for(const b of gb){const gr=b.gR||P*4.5;if(b.guard>0&&Math.abs(b.x-q.x)<gr&&Math.abs(b.y-q.y)<gr+P){q.dead=1;b.guard--;sparks(q.x,q.y,'#d4af37',8,140,6);reflect(q);for(const a of[-.55,.55])bullets.push(child(b,{x:q.x,y:q.y,vx:Math.sin(a)*600,vy:-Math.cos(a)*600,dmg:b.dmg*.6,tw:null,c:'#d4af37',c2:'#fff4c0',src:b.src||b.id}));const G=TW[b.tw];if(G&&G.guard)G.guard(b,q);break}}
   if(q.dead)continue;
   // remolinos que tragan balas (Aspiradora), zonas que las paran (barreras, Foso) y encantados escudo (Amuleto)
   for(const v of vortexes)if(v.eat&&Math.hypot(q.x-v.x,q.y-v.y)<v.r){q.dead=1;sparks(q.x,q.y,v.c,5,90,5);break}
