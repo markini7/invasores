@@ -1121,7 +1121,7 @@ function spawnAlien(c,y,type){
 function spawnRow(gg){
  const n=cols(),g=gg||R.group(et),cs=shuffle([...Array(n).keys()]).slice(0,g),S=mode==='sector'?SECTORS[sect]:null;
  for(const c of cs){const r=Math.random(),p2=R.p2(et),p1=R.p1(et);spawnAlien(c,topY(),r<p2?2:r<p2+p1?1:0);
-  if(S){const e=en[en.length-1];e.hp*=diffHp();e.max*=diffHp();if(S.armor&&!e.rainbow&&Math.random()<S.armor)e.arm=3}}
+  if(S){const e=en[en.length-1];e.hp*=diffHp();e.max*=diffHp();if(S.armor&&!e.rainbow&&Math.random()<S.armor)e.arm=3;if(S.tele&&!e.rainbow&&Math.random()<S.tele)e.tp=rnd(2,4)}}
 }
 // ================= SECTORES Y OLEADAS =================
 // Una partida = un sector de 10 oleadas seguidas (12 en los sectores 4-6). Todo baja a la vez. Jefe menor en la 5 y jefe del sector en la última.
@@ -1130,7 +1130,7 @@ const nW=()=>SECTORS[sect].waves||10;
 const SECTORS=[
  {n:'Órbita baja',c:'#5cff4a',base:0,step:28,rule:'Sin reglas especiales: aquí se aprende.',boss:'nodriza'},
  {n:'Cinturón de asteroides',c:'#c08040',base:40,step:30,rule:'Caen rocas que paran tus disparos y los enemigos. Se pueden romper.',boss:'gusano',rocks:1,armor:.12},
- {n:'Nebulosa',c:'#b06bff',soon:1},
+ {n:'Nebulosa',c:'#b06bff',base:90,step:30,rule:'Una niebla tapa la mitad de arriba: los aliens no se ven bien hasta que la cruzan. Hay aliens que se teletransportan.',boss:'espejo',fog:1,tele:.18},
  {n:'Mundo helado',c:'#8ff0ff',soon:1,waves:12},
  {n:'La Colmena',c:'#ffd23f',soon:1,waves:12},
  {n:'El Núcleo',c:'#ff4d6d',soon:1,waves:12},
@@ -1246,10 +1246,30 @@ function endRun(won){
 }
 function achBox(got){if(!got.length)return'';return '<div class="eq"><div class="tag" style="color:#ffd23f">LOGROS CONSEGUIDOS</div>'+got.map(a=>`<div class="row" style="border-color:#ffd23f;flex-direction:column;align-items:flex-start"><div class="nm" style="color:#ffd23f">${a.n}</div><div class="ds">${a.d}</div>${rewardNames(a.r).map(t=>'<div class="ds" style="color:#5cff4a">+ '+t+'</div>').join('')}</div>`).join('')+'</div>'}
 
+function mirrorBounce(b,e){
+ sparks(b.x,b.y,'#e8fbff',5,120,6);
+ if((e.rfT||0)>tm)return;e.rfT=tm+.25;
+ ebs.push({x:b.x,y:b.y+P*2,vx:Math.sin(aimAng(b.x,b.y))*R.shotV(et)*1.4,vy:Math.cos(aimAng(b.x,b.y))*R.shotV(et)*1.4,big:1});
+}
+// Nebulosa: altura hasta la que llega la niebla
+function fogY(){return topY()+(lineY()-topY())*.45}
+// alien que se teletransporta: parpadea 0,45 s y aparece en otra columna libre, a la misma altura
+function alienSpecial(e,dt){
+ if(!(e.tp>0)||e.fz>0||e.charm>0||e.coil>0||e.terror>0)return;
+ e.tp-=dt;
+ if(e.tp<=.45&&!e.tpW){e.tpW=1}
+ if(e.tp<=0){
+  const n=cols(),free=[];for(let c=0;c<n;c++){if(c===e.col)continue;if(!en.some(o=>o!==e&&!o.dead&&o.col===c&&Math.abs(o.y-e.y)<ESP()*1.1))free.push(c)}
+  if(free.length){const c=free[Math.floor(Math.random()*free.length)],ox=e.x;sparks(ox,e.y,'#00e0c0',10,140,6);e.col=c;e.cx=colX(c);e.dx=0;e.x=e.cx+(e.xo==null?xoff:e.xo);flash(e.x,e.y,'#00e0c0',P*12,.2);sparks(e.x,e.y,'#00e0c0',10,140,6)}
+  e.tp=rnd(3,5);e.tpW=0;
+ }
+}
+
 // ================= JEFES =================
 // Los jefes son aliens grandes (boss:1) dentro de "en", así todos los efectos les afectan.
 // e.max es solo la referencia para los efectos de % (vale 6 aliens normales); su vida real va en hpMax.
 const BOSS_SPR={
+ espejo:['.....XX.....','....XXXX....','...XX..XX...','..XX.XX.XX..','.XX.XXXX.XX.','XX.XX..XX.XX','XX.XX..XX.XX','.XX.XXXX.XX.','..XX.XX.XX..','...XX..XX...','....XXXX....','.....XX.....'],
  capitan:['..XXXXXX..','.XXXXXXXX.','XX.XXXX.XX','XXXXXXXXXX','XXX.XX.XXX','.XXXXXXXX.','..X.XX.X..','.X..XX..X.'],
  nodriza:['......XXXXXXXXXX......','...XXXXXXXXXXXXXXXX...','.XXXXXX..XXXX..XXXXXX.','XXXXXXXXXXXXXXXXXXXXXX','XX.XXX.XXX..XXX.XXX.XX','XXXXXXXXXXXXXXXXXXXXXX','..XXX..XX....XX..XXX..','...X....X....X....X...'],
  head:['.XXXXXX.','XX.XX.XX','XXXXXXXX','XXXXXXXX','X.XXXX.X','.XXXXXX.','.X.XX.X.'],
@@ -1269,6 +1289,20 @@ const BOSSES={
    e.y+=(e.ty-e.y)*Math.min(1,dt*2);e.x=e.cx=W/2+Math.sin(B.t*.8)*(W/2-P*24);
    B.fireT-=dt*(e.fz>0?.4:1);if(B.fireT<=0){B.fireT=e.hp<e.hpMax*.5?1.1:1.6;e.tele=.35}
    if(e.tele>0){e.tele-=dt;if(e.tele<=0){const a=aimAng(e.x,e.y);const n=e.hp<e.hpMax*.5?3:1;for(let i=0;i<n;i++)bossShot(e.x,e.y+e.hh,a+(i-(n-1)/2)*.22,R.shotV(et)*1.4);sfx('eshot')}}}},
+ espejo:{n:'El Espejo',
+  // alterna dos fases: ESPEJO (refleja tus balas y apenas recibe daño) y VULNERABLE (recibe más daño y dispara)
+  spawn(B){const hp=R.hp(et)*62*diffHp();B.ents=[mkBoss('espejo',W/2,topY()-P*30,hp,EP*13,EP*13,{ty:topY()+P*32})];B.ph='vuln';B.pt=3;B.fireT=1.5},
+  tick(B,dt){const e=B.ents[0];if(e.dead)return;const f=e.hp/e.hpMax,sl=e.fz>0?.4:1;
+   e.y+=(e.ty-e.y)*Math.min(1,dt*1.5);e.x=e.cx=W/2+Math.sin(B.t*.6)*(W/2-P*22);
+   B.pt-=dt;
+   if(B.pt<=0){
+    if(B.ph==='vuln'){B.ph='mirror';B.pt=f<.5?3.6:3;sfx('block');rings.push({x:e.x,y:e.y,r:P*30,t:.4,T:.4,c:'#e8fbff'})}
+    else{B.ph='vuln';B.pt=f<.5?2.6:3.4;sparks(e.x,e.y,'#7a4dff',20,200,8)}
+   }
+   e.mirror=B.ph==='mirror';e.vuln=B.ph==='vuln';
+   B.fireT-=dt*sl;
+   if(B.fireT<=0){B.fireT=e.vuln?1.2:(f<.5?1.5:99);e.tele=.4}
+   if(e.tele>0){e.tele-=dt;if(e.tele<=0){if(e.vuln){for(let i=0;i<3;i++)bossShot(e.x,e.y+e.hh,(i-1)*.3,R.shotV(et)*1.2)}else bossShot(e.x,e.y+e.hh,aimAng(e.x,e.y),R.shotV(et)*1.5);sfx('eshot')}}}},
  nodriza:{n:'La Nodriza',
   spawn(B){const hp=R.hp(et)*70*diffHp();B.ents=[mkBoss('nodriza',W/2,topY()-P*30,hp,EP*22,EP*8,{ty:topY()+P*22})];B.fireT=2.5;B.spawnT=3},
   tick(B,dt){const e=B.ents[0];if(e.dead)return;const f=e.hp/e.hpMax,sl=e.fz>0?.4:1;
@@ -1370,6 +1404,7 @@ function dmgE(e,d,silent){
  if(e.dead)return;
  if(e.fz>0&&alv('anicos'))d*=[1,1.3,1.6,2][alv('anicos')];
  if(!silent&&e.bls>0)d+=e.bls*e.blk; // sangrado: cada golpe hace más daño
+ if(e.mirror)d*=.1;else if(e.vuln)d*=1.5;
  if(e.arm>0&&!silent){d*=.3;e.arm--;sparks(e.x,e.y,'#aab4c0',4,90,5);if(!e.arm)sparks(e.x,e.y,'#ffffff',10,160,6)}
  if(!silent&&!cageBusy&&e.cage&&e.cageT>0){cageBusy=1;for(const o of en)if(o!==e&&o.cage===e.cage&&o.cageT>0&&foe(o))dmgE(o,d*.5,true);cageBusy=0}
  const src=curSrc||e.lsrc||'otros',real=Math.max(0,Math.min(d,e.hp));run.dmg[src]=(run.dmg[src]||0)+real;run.total+=real;
@@ -1550,6 +1585,7 @@ function sweepRow(b,e){
  for(const o of en){if(!foe(o)||o===e||Math.abs(o.y-e.y)>EH()*1.3||o.x<x1-EH()||o.x>x2+EH())continue;dmgE(o,b.dmg*b.sweep);applyStatus(o,b)}
 }
 function hit(b,e){
+ if(e.mirror&&!b.ally){mirrorBounce(b,e);return}
  const x=e.x,y=e.y,H=TW[b.tw],pB=curB,pV=curVamp;
  const pSrc=curSrc;curB=b;curVamp=b.vamp||0;curSrc=b.src||b.id;e.lsrc=curSrc;sfx('hit');
  e.ltw=b.tw;e.lvamp=b.vamp||0;e.nh=(e.nh||0)+1;
@@ -2215,7 +2251,7 @@ function update(rdt){
   if(e.bt>0){e.bt-=dt;dmgE(e,(e.bdps*(e.hb?1+.15*(e.bls||0):1)+(e.inc?e.max*.02:0))*dt,1);if(Math.random()<dt*16)addP(e.x+rnd(-EH(),EH()),e.y,rnd(-10,10),rnd(-60,-30),rnd(.3,.5),Math.random()<.5?'#ff8a1f':'#ffe14d',rnd(5,9),0,.97)}
   if(e.pt>0&&!e.dead){if(!(e.efr&&e.fz>0))e.pt-=dt;if(!hasM('poison','B'))dmgE(e,e.ps*e.pdps*(e.gang?1+.1*(e.bls||0):1)*dt,1);if(e.pt<=0)e.ps=0;if(Math.random()<dt*(3+e.ps*2))addP(e.x+rnd(-EH(),EH()),e.y+rnd(-EH(),EH()),rnd(-6,6),rnd(-30,-15),rnd(.5,.8),'#5cff4a',rnd(4,7),0,.98)}
   if(e.fz>0&&Math.random()<dt*3)addP(e.x+rnd(-EH(),EH()),e.y+rnd(-EH(),EH()),0,0,.35,'#ffffff',6,0,1);
-  masteryAlien(e,dt);if(e.dead)continue;
+  masteryAlien(e,dt);alienSpecial(e,dt);if(e.dead)continue;
   // Hielo fino: un congelado que llega abajo se rompe sin quitarte vida
   if(!e.dead&&!e.boss&&!e.rock&&e.fz>0&&e.y+EH()>=lineY()&&hasM('ice','B')){e.dead=1;sparks(e.x,e.y,'#bff8ff',16,200,8);sfx('frz');continue}
   if(!e.dead&&!e.boss&&!e.rock&&e.y+EH()>=lineY()){
@@ -2415,9 +2451,10 @@ function drawRock(e){
 // cada parte de jefe con su dibujo; parpadea en blanco antes de atacar
 function drawBossPart(e,col){
  const spr=BOSS_SPR[e.kind],rows=spr.length,w=spr[0].length,s=Math.max(2,Math.round(Math.min(e.hw*2/w,e.hh*2/rows)));
- let c=e.kind==='nodriza'?'#b06bff':e.kind==='capitan'?'#ff5c9a':e.kind==='head'?'#c8ff3d':'#7ccf3a';
+ let c=e.kind==='espejo'?(e.mirror?'#e8fbff':'#7a4dff'):e.kind==='nodriza'?'#b06bff':e.kind==='capitan'?'#ff5c9a':e.kind==='head'?'#c8ff3d':'#7ccf3a';
  if(e.fz>0)c='#bff8ff';if(e.flash>0)c='#ffffff';if(e.tele>0&&Math.floor(tm*20)%2)c='#ffffff';
  drawSpr(ctx,spr,e.x,e.y,s,{X:c});
+ if(e.kind==='espejo'&&e.mirror){ctx.globalAlpha=.35+.15*Math.sin(tm*10);ctx.drawImage(glowTex('#e8fbff'),e.x-e.hw*1.6,e.y-e.hh*1.6,e.hw*3.2,e.hh*3.2);ctx.globalAlpha=1}
  if(e.tele>0){ctx.globalAlpha=.35;ctx.drawImage(glowTex('#ff4d6d'),e.x-e.hw,e.y-e.hh,e.hw*2,e.hh*2);ctx.globalAlpha=1}
 }
 function drawRainbow(e){
@@ -2453,12 +2490,18 @@ function draw(){
   if(e.rock){drawRock(e);continue}
   if(e.boss){drawBossPart(e,col);continue}
   if(e.block){drawSpr(ctx,ESPR[e.type][0],e.x,e.y,EP,{X:e.flash>0?'#ffffff':'#e8fbff'});ctx.globalAlpha=.35;ctx.fillStyle='#8ff0ff';ctx.fillRect(e.x-EH()-EP,e.y-EH()-EP,EH()*2+EP*2,EH()*2+EP*2);ctx.globalAlpha=1;continue}
-  let ec=e.army&&!(e.flash>0)?'#ffd0ec':e.charm>0&&!(e.flash>0)?'#ff8fd0':e.arm>0&&!(e.flash>0)&&!(e.fz>0)?'#aab4c0':col;
+  const fogged=mode==='sector'&&SECTORS[sect].fog&&e.y<fogY()&&!e.boss;if(fogged)ctx.globalAlpha=.13;
+  if(e.tp>0&&e.tpW&&Math.floor(tm*20)%2){ctx.globalAlpha=fogged?.05:.3}
+  let ec=e.army&&!(e.flash>0)?'#ffd0ec':e.tp>0&&!(e.flash>0)&&!(e.fz>0)?'#00e0c0':e.charm>0&&!(e.flash>0)?'#ff8fd0':e.arm>0&&!(e.flash>0)&&!(e.fz>0)?'#aab4c0':col;
   if(e.aim>0&&!(e.flash>0))ec=Math.floor(tm*16)%2?'#ffffff':'#ff4d6d';
   drawSpr(ctx,ESPR[e.type][e.anim||0],e.x,e.y-(e.hop>0?EP:0),EP,{X:ec});
   if(e.charm>0)drawSpr(ctx,SPR.charm,e.x,e.y-EH()-EP*4,EP,{'1':'#ff8fd0','2':'#ffffff'});
-  if(e.hp<e.max){const w=EP*8,x0=Math.round(e.x-w/2),y0=Math.round(e.y+EH()+EP);ctx.fillStyle='#222';ctx.fillRect(x0,y0,w,Math.max(2,P-1));ctx.fillStyle=ECOL[e.type];ctx.fillRect(x0,y0,Math.round(w*Math.max(0,e.hp/e.max)),Math.max(2,P-1))}
+  if(e.hp<e.max&&!fogged){const w=EP*8,x0=Math.round(e.x-w/2),y0=Math.round(e.y+EH()+EP);ctx.fillStyle='#222';ctx.fillRect(x0,y0,w,Math.max(2,P-1));ctx.fillStyle=ECOL[e.type];ctx.fillRect(x0,y0,Math.round(w*Math.max(0,e.hp/e.max)),Math.max(2,P-1))}
+  ctx.globalAlpha=1;
  }
+ // niebla de la Nebulosa: franja morada que se mueve despacio
+ if(mode==='sector'&&SECTORS[sect].fog&&state!=='title'){const fy=fogY(),g=ctx.createLinearGradient(0,topY()-P*20,0,fy+P*10);g.addColorStop(0,'rgba(60,20,90,.55)');g.addColorStop(.85,'rgba(70,30,110,.35)');g.addColorStop(1,'rgba(70,30,110,0)');ctx.fillStyle=g;ctx.fillRect(0,topY()-P*20,W,fy-topY()+P*30);
+  ctx.globalAlpha=.18;for(let i=0;i<6;i++){const x=((tm*12*(i%2?1:-1)+i*W/3)%(W+P*60)+W+P*60)%(W+P*60)-P*30,y=topY()+(fy-topY())*(i/6);ctx.drawImage(glowTex('#b06bff'),x-P*30,y-P*14,P*60,P*28)}ctx.globalAlpha=1}
  // balas (pixeladas)
  const bs=P+(alv('calibre')>=2?1:0);
  for(const b of bullets){
