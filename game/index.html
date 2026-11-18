@@ -1251,34 +1251,25 @@ function endRun(won){
  saveProf();return got;
 }
 // lo que se gana con los logros nuevos, como iconos; al tocar uno se abre su ficha
-// extra: lo que abre completar un sector ({k:'sector',i} o {k:'diff',i,d})
 let achRw=[];
-const PLANET=['....111....','..1111111..','.111111111.','22222222222','.111111111.','..1111111..','....111....'];
-const STAR=['...1...','...1...','1111111','.11111.','..111..','.11.11.','11...11'];
-function achBox(got,extra){
- achRw=(extra||[]).slice();
+function achBox(got){
+ achRw=[];
  for(const a of got){for(const id of a.r.shots||[])achRw.push({k:'shot',id,a});for(const id of a.r.arts||[])achRw.push({k:'art',id,a});for(const id of a.r.ships||[])achRw.push({k:'ship',id,a})}
  if(!achRw.length)return'';
  return '<div class="eq"><div class="tag" style="color:#ffd23f">DESBLOQUEADO · TOCA PARA VER</div><div class="unl">'+achRw.map((o,i)=>`<div class="ucell" data-u="${i}" style="border-color:${rwColor(o)};animation-delay:${.08*i}s"><canvas width="40" height="40"></canvas></div>`).join('')+'</div></div>';
 }
-function rwColor(o){return o.k==='sector'||o.k==='diff'?SECTORS[o.i].c:o.k==='shot'?T[o.id].c:o.k==='art'?ART[o.id].c:SHIPS[o.id].c}
+function rwColor(o){return o.k==='shot'?T[o.id].c:o.k==='art'?ART[o.id].c:SHIPS[o.id].c}
 function rwDraw(g,o,box){const c=box/2;
- if(o.k==='sector')drawSpr(g,PLANET,c,c,Math.floor(box*.95/11),{'1':SECTORS[o.i].c,'2':'#ffffff'});
- else if(o.k==='diff')drawSpr(g,STAR,c,c,Math.floor(box*.7/7),{'1':'#ffd23f'});
- else if(o.k==='art')artIcon(g,o.id,c,c,box*.75);
+ if(o.k==='art')artIcon(g,o.id,c,c,box*.75);
  else if(o.k==='ship')drawSpr(g,SHIP,c,c,Math.floor(box*.8/9),{'1':SHIPS[o.id].c,'2':'#ffffff'});
  else{const L=look(o.id);drawSpr(g,L.rows,c,c,Math.floor(box*.8/Math.max(L.rows.length,L.rows[0].length)),L.map)}}
 function rwPop(o){
  if(performance.now()-cpopClosed<400)return;
  let tag,nm,ds,foot;
- if(o.k==='sector'||o.k==='diff'){const S=SECTORS[o.i],from=SECTORS[o.k==='sector'?o.i-1:o.i];foot=`Por completar ${from.n}`;
-  if(o.k==='sector'){tag='SECTOR '+(o.i+1)+(S.soon?' · PRÓXIMAMENTE':' NUEVO');nm=S.n;ds=S.soon?'Todavía no se puede jugar: llegará en una próxima versión.':`${S.rule} ${S.waves||10} oleadas. Jefe: ${BOSSES[S.boss].n}.`}
-  else{tag='DIFICULTAD NUEVA';nm='Dificultad '+o.d+' · '+S.n;ds=`Los aliens tienen un ${30*(o.d-1)}% más de vida que en dificultad 1 y llegan más rápido y en más cantidad desde la primera oleada.`;foot+=' en dificultad '+(o.d-1)}}
- else{
  tag=o.k==='shot'?'DISPARO NUEVO':o.k==='art'?'ARTEFACTO NUEVO':'NAVE NUEVA';
  nm=o.k==='shot'?T[o.id].n:o.k==='art'?ART[o.id].n:SHIPS[o.id].n;
  ds=o.k==='shot'?`<div class="tw">${T[o.id].d}</div>`+dsLines(describe(S(o.id,1))):o.k==='art'?ARTT[o.id][0]:SHIPS[o.id].d;
- foot=`Logro «${o.a.n}»: ${o.a.d.toLowerCase()}`}
+ foot=`Logro «${o.a.n}»: ${o.a.d.toLowerCase()}`;
  cpop.innerHTML=`<div class="box"><canvas width="56" height="56"></canvas><div class="tag">${tag}</div><div class="nm" style="color:${rwColor(o)}">${nm}</div><div class="ds">${ds}</div><div class="ds" style="color:#ffd23f">${foot}</div><div class="t">TOCA PARA CERRAR</div></div>`;
  rwDraw(cpop.querySelector('canvas').getContext('2d'),o,56);
  cpop.classList.add('show');sfx('pick');
@@ -2100,11 +2091,14 @@ function sectorWon(){
  if(sect===SECTORS.length-1)prof.endless=true;
  saveProf();
  const got=endRun(true);
- const S=SECTORS[sect],nx=SECTORS[sect+1],news=[];
- if(first&&nx)news.push({k:'sector',i:sect+1});
- if(diffL>prev&&diffL<DIFFS)news.push({k:'diff',i:sect,d:diffL+1});
+ const S=SECTORS[sect],nx=SECTORS[sect+1];
+ // progreso de la campaña: bloque propio, separado de los iconos de los logros
+ let prog='';
+ if(first&&nx)prog+=`<div class="row" style="border-color:${nx.c};flex-direction:column;align-items:flex-start"><div class="tag" style="margin:0">${nx.soon?'SECTOR '+(sect+2)+' · PRÓXIMAMENTE':'NUEVO SECTOR · SECTOR '+(sect+2)}</div><div class="nm" style="color:${nx.c};margin-top:6px">${nx.n}</div>${nx.soon?'':`<div class="ds">${nx.rule} Jefe: ${BOSSES[nx.boss].n}.</div>`}</div>`;
+ if(diffL>prev&&diffL<DIFFS)prog+=`<div class="row" style="border-color:#ffd23f;flex-direction:column;align-items:flex-start"><div class="tag" style="margin:0">NUEVA DIFICULTAD · ${S.n.toUpperCase()}</div><div class="nm" style="color:#ffd23f;margin-top:6px">Dificultad ${diffL+1} ${Array.from({length:DIFFS},(_,k)=>`<span style="color:${k<=diffL?'#ffd23f':'#333'}">*</span>`).join('')}</div><div class="ds">Aliens con un ${30*diffL}% más de vida, más rápidos y en más cantidad.</div></div>`;
  ov.innerHTML=`<div class="t">SECTOR ${sect+1} COMPLETADO</div><div class="big" style="color:${S.c}">${S.n.toUpperCase()}</div><div class="t">DIFICULTAD ${diffL} · NIVEL ${lv}</div>
-  ${achBox(got,news)}<div class="btn" id="sec">ELEGIR SECTOR</div>${summaryHTML()}${smallBtn('cat','CATÁLOGO · '+disc.size+'/300','margin-top:4px')}`;
+  ${prog?'<div class="eq">'+prog+'</div>':''}
+  ${achBox(got)}<div class="btn" id="sec">ELEGIR SECTOR</div>${summaryHTML()}${smallBtn('cat','CATÁLOGO · '+disc.size+'/300','margin-top:4px')}`;
  summaryIcons();
  ov.classList.add('show');ov.style.pointerEvents='auto';ov.scrollTop=0;
  document.getElementById('sec').onclick=showSectors;
