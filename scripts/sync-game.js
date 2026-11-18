@@ -17,6 +17,20 @@ function build() {
     fs.writeFileSync(out, js);
     console.log('[juego] actualizado ' + new Date().toLocaleTimeString());
   }
+  buildWeb(html);
+}
+
+// Versión web (docs/index.html) para GitHub Pages: el mismo juego con el icono
+// y los datos para instalarlo en la pantalla de inicio desde Safari.
+function buildWeb(html) {
+  const web = path.join(__dirname, '..', 'docs', 'index.html');
+  const head = '<link rel="apple-touch-icon" href="icon.png">\n<link rel="icon" href="icon.png">\n' +
+    '<meta name="apple-mobile-web-app-title" content="Invasores">\n' +
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n' +
+    '<meta name="theme-color" content="#000000">\n';
+  const out2 = html.replace('<title>Invasores</title>', '<title>Invasores</title>\n' + head);
+  const prev2 = fs.existsSync(web) ? fs.readFileSync(web, 'utf8') : '';
+  if (prev2 !== out2) fs.writeFileSync(web, out2);
 }
 
 build();
