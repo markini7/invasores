@@ -28,6 +28,12 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none
 .eq canvas{width:28px;height:28px;image-rendering:pixelated;flex:none}
 .eq .nm{font-size:9px}
 .eq .ds{margin-top:4px}
+/* desbloqueos al acabar: solo iconos, se tocan para ver qué hacen */
+.unl{display:flex;flex-wrap:wrap;gap:8px}
+.ucell{border:2px solid #333;padding:5px;line-height:0;cursor:pointer;background:#050505;animation:upop .35s ease-out backwards}
+.eq .ucell canvas{width:40px;height:40px}
+.ucell:active{transform:translate(1px,1px)}
+@keyframes upop{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
 #ov{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:flex-start;gap:12px;background:rgba(0,0,0,.88);padding:calc(16px + env(safe-area-inset-top)) 14px calc(16px + env(safe-area-inset-bottom));box-sizing:border-box;text-align:center;overflow-y:auto;overflow-x:hidden;touch-action:pan-y;-webkit-overflow-scrolling:touch}
 /* centrado vertical que no corta el contenido si no cabe (se puede desplazar) */
 #ov>:first-child{margin-top:auto}#ov>:last-child{margin-bottom:auto}
@@ -1250,7 +1256,29 @@ function endRun(won){
   for(const x of a.r.ships||[])if(!prof.ships.includes(x))prof.ships.push(x)}}
  saveProf();return got;
 }
-function achBox(got){if(!got.length)return'';return '<div class="eq"><div class="tag" style="color:#ffd23f">LOGROS CONSEGUIDOS</div>'+got.map(a=>`<div class="row" style="border-color:#ffd23f;flex-direction:column;align-items:flex-start"><div class="nm" style="color:#ffd23f">${a.n}</div><div class="ds">${a.d}</div>${rewardNames(a.r).map(t=>'<div class="ds" style="color:#5cff4a">+ '+t+'</div>').join('')}</div>`).join('')+'</div>'}
+// lo que se gana con los logros nuevos, como iconos; al tocar uno se abre su ficha
+let achRw=[];
+function achBox(got){
+ achRw=[];
+ for(const a of got){for(const id of a.r.shots||[])achRw.push({k:'shot',id,a});for(const id of a.r.arts||[])achRw.push({k:'art',id,a});for(const id of a.r.ships||[])achRw.push({k:'ship',id,a})}
+ if(!achRw.length)return'';
+ return '<div class="eq"><div class="tag" style="color:#ffd23f">DESBLOQUEADO · TOCA PARA VER</div><div class="unl">'+achRw.map((o,i)=>`<div class="ucell" data-u="${i}" style="border-color:${rwColor(o)};animation-delay:${.08*i}s"><canvas width="40" height="40"></canvas></div>`).join('')+'</div></div>';
+}
+function rwColor(o){return o.k==='shot'?T[o.id].c:o.k==='art'?ART[o.id].c:SHIPS[o.id].c}
+function rwDraw(g,o,box){const c=box/2;
+ if(o.k==='art')artIcon(g,o.id,c,c,box*.75);
+ else if(o.k==='ship')drawSpr(g,SHIP,c,c,Math.floor(box*.8/9),{'1':SHIPS[o.id].c,'2':'#ffffff'});
+ else{const L=look(o.id);drawSpr(g,L.rows,c,c,Math.floor(box*.8/Math.max(L.rows.length,L.rows[0].length)),L.map)}}
+function rwPop(o){
+ if(performance.now()-cpopClosed<400)return;
+ const tag=o.k==='shot'?'DISPARO NUEVO':o.k==='art'?'ARTEFACTO NUEVO':'NAVE NUEVA';
+ const nm=o.k==='shot'?T[o.id].n:o.k==='art'?ART[o.id].n:SHIPS[o.id].n;
+ const ds=o.k==='shot'?`<div class="tw">${T[o.id].d}</div>`+dsLines(describe(S(o.id,1))):o.k==='art'?ARTT[o.id][0]:SHIPS[o.id].d;
+ cpop.innerHTML=`<div class="box"><canvas width="56" height="56"></canvas><div class="tag">${tag}</div><div class="nm" style="color:${rwColor(o)}">${nm}</div><div class="ds">${ds}</div><div class="ds" style="color:#ffd23f">Logro «${o.a.n}»: ${o.a.d.toLowerCase()}</div><div class="t">TOCA PARA CERRAR</div></div>`;
+ rwDraw(cpop.querySelector('canvas').getContext('2d'),o,56);
+ cpop.classList.add('show');sfx('pick');
+}
+function achIcons(){ov.querySelectorAll('.ucell').forEach(el=>{const o=achRw[+el.dataset.u];rwDraw(el.querySelector('canvas').getContext('2d'),o,40);el.onclick=()=>rwPop(o)})}
 
 function mirrorBounce(b,e){
  sparks(b.x,b.y,'#e8fbff',5,120,6);
@@ -2035,6 +2063,7 @@ function summaryHTML(){
   ${rows?'<div class="tag" style="margin-top:8px">QUIÉN HIZO MÁS DAÑO</div>'+rows:''}</div>`;
 }
 function summaryIcons(){
+ achIcons();
  const b=document.getElementById('sumb'),d=document.getElementById('sumd');
  if(b&&d)b.onclick=()=>{const open=d.style.display==='none';d.style.display=open?'flex':'none';b.textContent=open?'OCULTAR RESUMEN -':'VER RESUMEN +';sfx('pick')};ov.querySelectorAll('canvas[data-src]').forEach(c=>{const s=c.dataset.src,g=c.getContext('2d');if(s.startsWith('art:'))artIcon(g,s.slice(4),20,20,30);else if(T[s]||isF(s)){const L=look(s),k=Math.floor(32/Math.max(L.rows.length,L.rows[0].length));drawSpr(g,L.rows,20,20,k,L.map)}})}
 const smallBtn=(id,txt,extra)=>`<div class="btn" id="${id}" style="margin-top:0;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0;${extra||''}">${txt}</div>`;
