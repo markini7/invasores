@@ -1,0 +1,977 @@
+<title>Fusiones de Invasores</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: una columna de lectura con el estilo de la pantalla del juego; la lista de fusiones es una rejilla que pasa a una columna en el móvil */
+:root{
+ --bg:#07080c;--panel:#10131b;--panel2:#161a25;--line:#252b3b;--fg:#e6ecf2;--muted:#8fa0a0;
+ --accent:#5cff4a;--warn:#ffd23f;--bad:#ff4d6d;--cool:#8ff0ff;
+ --display:'Press Start 2P',ui-monospace,monospace;--body:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;
+ color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 60px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1{font-family:var(--display);font-size:clamp(18px,4vw,26px);line-height:1.4;margin:0;text-shadow:3px 3px 0 #1f6b1f;text-wrap:balance}
+h2{font-family:var(--display);font-size:13px;line-height:1.6;margin:0 0 14px;color:var(--accent);letter-spacing:.02em}
+h3{font-size:16px;margin:0;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{color:var(--muted);margin-top:12px}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.stat{border:2px solid var(--line);padding:10px 14px;min-width:120px}
+.stat b{display:block;font-family:var(--display);font-size:16px;margin-bottom:6px}
+.stat span{font-size:12px;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:14px}
+.find{display:grid;gap:10px}
+.find div{border-left:4px solid var(--warn);background:var(--panel);padding:12px 14px}
+.find div b{display:block;margin-bottom:4px}
+.find div.bad{border-color:var(--bad)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13px}
+th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:var(--panel)}
+td ul{margin:0;padding-left:16px}
+td li{margin:2px 0}
+.shot{display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap}
+canvas.spr{image-rendering:pixelated;width:32px;height:32px;flex:none}
+.example{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+.mock{background:#000;border:3px solid var(--fg);padding:12px;display:flex;gap:12px;font-family:var(--display)}
+.mock .tag{font-size:7px;color:var(--muted);line-height:1.6;margin-bottom:6px}
+.mock .nm{font-size:11px;line-height:1.5}
+.mock .ds{font-family:var(--mono);font-size:12px;color:#c8d0d0;margin-top:8px;line-height:1.5}
+.mock .ds div+div{margin-top:3px}
+.mock .new{color:var(--accent)}
+.label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input#q{flex:1;min-width:0;background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:9px 12px;font:inherit}
+input#q:focus,select#st:focus,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select#st{background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:9px;font:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.chip{flex:none;display:flex;align-items:center;gap:6px;background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:5px 9px 5px 6px;font:500 12px var(--body);cursor:pointer}
+.chip canvas{width:18px;height:18px;image-rendering:pixelated}
+.chip[aria-pressed="true"]{border-color:var(--c);background:var(--panel2)}
+.count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card header{display:flex;gap:12px;align-items:center}
+.card header canvas{width:40px;height:40px;image-rendering:pixelated;flex:none}
+.par{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+.par i{font-style:normal;color:var(--c)}
+.badge{align-self:flex-start;font-family:var(--mono);font-size:11px;padding:2px 7px;border:1px solid currentColor}
+.b-esp{color:var(--cool)}.b-floja{color:var(--bad)}.b-suma{color:var(--warn)}
+.tw{border-left:3px solid var(--accent);padding-left:10px}
+.tw .label{color:var(--accent)}
+.inh{font-family:var(--mono);font-size:12px;color:#b9c4c4;margin:0;padding-left:16px}
+.inh li{margin:2px 0}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px}
+.opt{border:2px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px}
+.opt.rec{border-color:var(--accent)}
+.opt .label{color:var(--warn)}
+.opt.rec .label{color:var(--accent)}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:12px}
+.leg{background:var(--panel);padding:14px;border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.leg .recipe{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.leg .recipe b{color:var(--fg);font-weight:500}
+.artgroups{display:flex;flex-direction:column;gap:22px}
+.artfam{display:flex;flex-direction:column;gap:10px}
+.artgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:12px}
+.ah{display:flex;gap:12px;align-items:center}
+.ah canvas{width:36px;height:36px;image-rendering:pixelated;flex:none}
+ol.lv{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px}
+ol.lv li{display:grid;grid-template-columns:52px 1fr;gap:8px}
+.pipn{font-family:var(--mono);font-size:11px;color:var(--muted);padding-top:2px}
+ol.q{margin:0;padding-left:20px;display:grid;gap:8px;max-width:70ch}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+ <header>
+  <h1>FUSIONES DE INVASORES</h1>
+  <p class="lead">Las 300 fusiones y los 46 artefactos de Invasores, tal y como están ahora en el juego: qué hace cada uno, con sus números. Al final, la propuesta de recetas legendarias.</p>
+  <div class="stats">
+   <div class="stat"><b>300</b><span>fusiones, todas con efecto propio</span></div>
+   <div class="stat"><b id="n-art">46</b><span>artefactos</span></div>
+   <div class="stat"><b>3</b><span>niveles por fusión</span></div>
+  </div>
+ </header>
+
+ <section>
+  <h2>QUÉ HA CAMBIADO</h2>
+  <div class="find">
+   <div><b>Las 300 fusiones tienen su efecto especial.</b><p>Antes, 289 solo sumaban los dos disparos. Ahora cada una mantiene los dos efectos y gana uno propio que los hace interactuar. Las 11 que ya eran especiales siguen igual, salvo Goteo, que se ha mejorado.</p></div>
+   <div><b>Las fusiones suben de nivel.</b><p>Hasta nivel 3, con cartas algo más raras que las demás mejoras. Cada nivel da más daño y más fuerza a sus efectos, y sube los disparos de origen si eran de nivel bajo.</p></div>
+   <div><b>Adiós a los búnkeres.</b><p>Tapaban tus propios disparos. Su papel lo hace ahora la Barrera: una línea de energía sobre tu nave que para balas enemigas y que tus disparos atraviesan. También se han ido los 8 artefactos que dependían de los búnkeres.</p></div>
+   <div><b>Artefactos nuevos.</b><p>Barrera, Espejo (ahora sirve con cualquier defensa), Cañón de carga, Metralla, Sobrante, Retroceso, Escolta, Agujero de bolsillo, Imán de arcoíris, Fusionista, Hemorragia, Gravedad, Detonador, Charco eterno y Acorralado.</p></div>
+  </div>
+ </section>
+
+ <section>
+  <h2>DESCRIPCIONES CON NÚMEROS</h2>
+  <p>El juego escribe las descripciones a partir de los números reales del disparo. Así siempre son exactas y, al subir de nivel, la carta enseña lo que cambia. La unidad de tamaño es «aliens»: un radio de 1,5 aliens alcanza al alien golpeado y a los pegados a él. Un alien normal empieza con 1 de vida.</p>
+  <div class="example">
+   <div><div class="label" style="margin-bottom:8px">Carta de subir de nivel (ejemplo)</div>
+    <div class="mock"><canvas class="spr" id="mk1" width="66" height="66"></canvas><div><div class="tag">DISPARO · NIVEL 2</div><div class="nm">Fuego</div><div class="ds"><div>Daño 0,8</div><div>Quema 0,7 → <span class="new">1,05</span>/s durante 2,5 s</div><div>Prende a 0 → <span class="new">1</span> alien cercano</div></div></div></div></div>
+   <div><div class="label" style="margin-bottom:8px">Carta de fusión (ejemplo)</div>
+    <div class="mock"><canvas class="spr" id="mk2" width="66" height="66"></canvas><div><div class="tag">FUSIÓN · FUEGO + HIELO</div><div class="nm">Choque térmico</div><div class="ds"><div class="new">Choque térmico: golpear a un alien congelado le hace el triple de daño.</div><div>Daño 1,2 · Quema 1,75/s durante 2,5 s y prende a 3 · Congela 4,06 s</div></div></div></div></div>
+  </div>
+  <div class="label">Los 25 disparos, nivel por nivel</div>
+  <div class="tablewrap"><table><thead><tr><th>Disparo</th><th>Nivel 1</th><th>Nivel 2</th><th>Nivel 3</th></tr></thead><tbody id="basetb"></tbody></table></div>
+ </section>
+
+ <section id="lista">
+  <h2>LAS 300 FUSIONES</h2>
+  <p>Cada fusión mantiene los dos efectos de sus disparos y gana un efecto propio. «Además lleva» es lo que hereda en nivel de fusión 1, con los dos disparos a nivel 3. La etiqueta dice cómo estaba antes de este cambio.</p>
+  <div class="filters">
+   <div class="row"><input id="q" type="search" placeholder="Buscar por nombre o efecto" aria-label="Buscar fusión"><select id="st" aria-label="Estado actual"><option value="">Todas</option><option value="floja">Antes muy flojas</option><option value="suma">Antes solo sumaban</option><option value="esp">Ya eran especiales</option></select></div>
+   <div class="chips" id="chips" aria-label="Filtrar por disparo"></div>
+   <div class="row"><span class="count" id="cnt"></span></div>
+  </div>
+  <div class="grid" id="grid"></div>
+ </section>
+
+ <section id="artefactos">
+  <h2>LOS ARTEFACTOS</h2>
+  <p>Seis huecos por partida. Los de sinergia solo salen si tienes el disparo que piden (o una fusión que lo lleve).</p>
+  <div id="artlist" class="artgroups"></div>
+ </section>
+
+ <section>
+  <h2>FUSIONES DE FUSIONES</h2>
+  <p>Hay tres formas de plantearlo. Las tres funcionan con el juego actual; la diferencia es cuántas habría y cuánto carácter tendría cada una.</p>
+  <div class="opts">
+   <div class="opt rec"><span class="label">Recomendada</span><h3>Recetas legendarias</h3><p>Una lista cerrada de unas 20–25 recetas: dos fusiones concretas (o una fusión y un disparo a nivel 3) dan un disparo legendario con nombre, aspecto y mecánica únicos, que no se parece a nada anterior. Es como funcionan las evoluciones en juegos como Ball x Pit: descubrirlas es parte del juego.</p><p class="par">Pocas, muy especiales y fáciles de equilibrar una a una.</p></div>
+   <div class="opt"><span class="label">Alternativa</span><h3>Tercer elemento</h3><p>A una fusión le sumas un tercer disparo a nivel 3 y queda una fusión triple. Salen unas 2.300 combinaciones, así que no pueden tener nombre ni efecto propio: serían «tres efectos sumados».</p><p class="par">Muchísima variedad, poco carácter.</p></div>
+   <div class="opt"><span class="label">Alternativa</span><h3>Fusión libre</h3><p>Cualquier par de fusiones se junta en una de cuatro elementos. Son decenas de miles de combinaciones, imposibles de nombrar o equilibrar a mano.</p><p class="par">No la recomiendo.</p></div>
+  </div>
+  <p>Con las recetas legendarias, propongo que aparezca un alien dorado (más raro que el arcoíris) cuando tengas en tus huecos las dos piezas de una receta, las dos a nivel 3. Al matarlo, eliges si las fusionas. Un hueco queda libre, como al fusionar ahora.</p>
+  <div class="label">Ocho recetas de ejemplo</div>
+  <div class="legend">
+   <div class="leg"><h3>Estrella moribunda</h3><div class="recipe"><b>Supernova</b> + <b>Plasma</b></div><p>Cada disparo crea una estrella pequeña que atrae y quema durante 2 s; al apagarse explota y lanza rayos a 6 aliens.</p></div>
+   <div class="leg"><h3>Cero kelvin</h3><div class="recipe"><b>Cañón de riel</b> + <b>Carámbano</b></div><p>Un haz que congela la columna entera. Si el haz da a un congelado, lo rompe en esquirlas que congelan a toda su fila.</p></div>
+   <div class="leg"><h3>Tormenta de fuego</h3><div class="recipe"><b>Napalm</b> + <b>Huracán</b></div><p>Deja torbellinos de fuego que vagan 4 s por la pantalla, suben a los aliens que tocan y los dejan ardiendo.</p></div>
+   <div class="leg"><h3>Colonia</h3><div class="recipe"><b>Enjambre</b> + <b>Colmillo</b></div><p>Cada disparo suelta 6 murciélagos que persiguen aliens distintos. Cada muerte de murciélago cuenta doble para recuperar vida.</p></div>
+   <div class="leg"><h3>Hoja eterna</h3><div class="recipe"><b>Yoyó</b> + <b>Guillotina</b></div><p>Un disco que no vuelve nunca: rebota por la pantalla 5 s atravesando y rematando todo lo que baja del 30%.</p></div>
+   <div class="leg"><h3>Corte real</h3><div class="recipe"><b>Cupido</b> + <b>Égida</b></div><p>Los encantados forman una escolta en fila delante de ti que para balas y dispara a la flota. Máximo 4 a la vez.</p></div>
+   <div class="leg"><h3>Fin del mundo</h3><div class="recipe"><b>Juicio final</b> + <b>Gravedad</b></div><p>Cada 3 disparos cae un meteorito con su propio agujero negro que traga y remata a todo lo que baje del 35%.</p></div>
+   <div class="leg"><h3>Hidra venenosa</h3><div class="recipe"><b>Hidra</b> + <b>Recaída</b></div><p>Serpientes que se parten en dos cada vez que muerden; cada mordida duplica las cargas de veneno del alien.</p></div>
+  </div>
+  <div class="label">Para decidir antes de programarlo</div>
+  <ol class="q">
+   <li>¿Te gustan las recetas legendarias, o prefieres el tercer elemento?</li>
+   <li>¿Se ven las recetas en algún sitio (un libro de recetas que se va rellenando), o se descubren a ciegas?</li>
+   <li>¿Las fusiones suben de nivel con cartas? Lo necesitamos si las legendarias piden fusiones a nivel 3.</li>
+  </ol>
+ </section>
+</div>
+
+<script>
+let P=3;
+// ================= DISPAROS =================
+const BASE=['laser','fire','ice','poison','boom','zap','bounce','pierce','split','homing','boomer','wind','bleed','hole','sweep','puddle','charm','guard','vamp','snake','tri','echo','exec','dis','meteor'];
+const T={
+ laser:{n:'Láser',c:'#dfefff',c2:'#ffffff',d:'Disparo recto',lv:'Más daño',v:'pega fuerte'},
+ fire:{n:'Fuego',c:'#ff8a1f',c2:'#ffe14d',d:'Quema y prende a los de al lado',lv:'Arde más y prende a uno más',v:'quema'},
+ ice:{n:'Hielo',c:'#8ff0ff',c2:'#ffffff',d:'Congela: no disparan y frenan la flota',lv:'Congela más tiempo',v:'congela'},
+ poison:{n:'Veneno',c:'#5cff4a',c2:'#d4ffb8',d:'Se acumula y contagia al morir',lv:'Más veneno',v:'envenena'},
+ boom:{n:'Explosión',c:'#ff3b3b',c2:'#ffd0d0',d:'Explota y daña alrededor',lv:'Explosión más grande',v:'explota'},
+ zap:{n:'Rayo',c:'#fff200',c2:'#ffffff',d:'Salta entre enemigos',lv:'Salta a uno más',v:'electrocuta'},
+ bounce:{n:'Rebote',c:'#3d7bff',c2:'#c4d6ff',d:'Rebota de enemigo en enemigo',lv:'Un rebote más',v:'rebota'},
+ pierce:{n:'Perforante',c:'#ff4dd2',c2:'#ffd6f5',d:'Atraviesa enemigos',lv:'Atraviesa uno más',v:'atraviesa'},
+ split:{n:'Dividido',c:'#a970ff',c2:'#e4d6ff',d:'Se parte en trozos al impactar',lv:'Un trozo más',v:'se divide'},
+ homing:{n:'Teledirigido',c:'#00c8ff',c2:'#d0f6ff',d:'Se curva hacia el alien más cercano',lv:'Gira más rápido',v:'persigue'},
+ boomer:{n:'Bumerán',c:'#c08040',c2:'#ffe2b0',d:'Sube, golpea y vuelve dañando a la vuelta',lv:'Más daño',lv3:'Si lo recoges, recargas al momento',v:'vuelve'},
+ wind:{n:'Viento',c:'#e6f3ff',c2:'#9fb8ff',d:'Empuja a los aliens hacia arriba',lv:'Empuja más',v:'empuja hacia arriba'},
+ bleed:{n:'Sangrado',c:'#c8102e',c2:'#ff8a9a',d:'Deja heridas: cada golpe después hace más daño',lv:'Heridas más profundas',v:'desangra'},
+ hole:{n:'Agujero negro',c:'#7a4dff',c2:'#1a0033',d:'Crea un remolino que atrae y daña',lv:'Remolino mayor',v:'atrae'},
+ sweep:{n:'Barrido',c:'#c6ff00',c2:'#f0ffb0',d:'Al impactar daña a toda la fila',lv:'Llega más lejos',v:'barre la fila'},
+ puddle:{n:'Charco',c:'#2fb39a',c2:'#b0fff0',d:'Deja una mancha que daña a los que pasan',lv:'Dura más y daña más',v:'deja charco'},
+ charm:{n:'Encanto',c:'#ff8fd0',c2:'#ffffff',d:'A veces el alien se pasa a tu bando',lv:'Más probable',v:'encanta'},
+ guard:{n:'Antibalas',c:'#d4af37',c2:'#fff4c0',d:'Destruye las balas enemigas que cruza',lv:'Para una bala más',v:'para balas'},
+ vamp:{n:'Vampiro',c:'#9b1458',c2:'#ff9ad0',d:'Matar aliens con él te devuelve vidas',lv:'Necesitas menos muertes',v:'te cura'},
+ snake:{n:'Serpiente',c:'#7ccf3a',c2:'#e0ffb0',d:'Sube haciendo eses amplias',lv:'Eses más amplias',v:'serpentea'},
+ tri:{n:'Triple',c:'#ff6f61',c2:'#ffd0c8',d:'Sale en tres balas abiertas',lv:'Más daño por bala',v:'sale triple'},
+ echo:{n:'Eco',c:'#b0b0ff',c2:'#ffffff',d:'El golpe se repite medio segundo después',lv:'Eco más fuerte',v:'repite el golpe'},
+ exec:{n:'Ejecución',c:'#e0d8c0',c2:'#ff3b3b',d:'Remata a los aliens con poca vida',lv:'Remata antes',v:'remata'},
+ dis:{n:'Desintegrador',c:'#00ffd5',c2:'#ffffff',d:'Quita parte de la vida total del alien',lv:'Quita más',v:'desintegra'},
+ meteor:{n:'Meteoro',c:'#ff5a00',c2:'#ffe0a0',d:'Cae un meteorito sobre el alien más alto de la columna',lv:'Meteorito más fuerte',v:'llama meteoritos'},
+};
+const FN={
+ 'laser+fire':'Lanza ígnea','laser+ice':'Lanza de hielo','laser+poison':'Aguijón','laser+boom':'Obús','laser+zap':'Cañón de riel','laser+bounce':'Bala loca','laser+pierce':'Taladro','laser+split':'Escopeta',
+ 'laser+homing':'Misil guiado','laser+boomer':'Disco láser','laser+wind':'Ariete','laser+bleed':'Bisturí','laser+hole':'Singularidad','laser+sweep':'Guadaña','laser+puddle':'Plasma líquido','laser+charm':'Hipnosis','laser+guard':'Escudo láser','laser+vamp':'Colmillo','laser+snake':'Látigo láser','laser+tri':'Tridente','laser+echo':'Doble filo','laser+exec':'Verdugo','laser+dis':'Aniquilador','laser+meteor':'Cometa',
+ 'fire+ice':'Choque térmico','fire+poison':'Napalm','fire+boom':'Bola de fuego','fire+zap':'Plasma','fire+bounce':'Brasa saltarina','fire+pierce':'Lanzallamas','fire+split':'Chispas',
+ 'fire+homing':'Fuego fatuo','fire+boomer':'Chakram ígneo','fire+wind':'Torbellino de fuego','fire+bleed':'Herida ardiente','fire+hole':'Sol negro','fire+sweep':'Muro de fuego','fire+puddle':'Lava','fire+charm':'Pasión','fire+guard':'Cortafuegos','fire+vamp':'Sangre ardiente','fire+snake':'Dragón','fire+tri':'Tridente de fuego','fire+echo':'Llamarada','fire+exec':'Hoguera','fire+dis':'Incinerador','fire+meteor':'Lluvia de fuego',
+ 'ice+poison':'Escarcha tóxica','ice+boom':'Bomba helada','ice+zap':'Tormenta','ice+bounce':'Granizo','ice+pierce':'Carámbano','ice+split':'Ventisca',
+ 'ice+homing':'Copo buscador','ice+boomer':'Disco de hielo','ice+wind':'Viento helado','ice+bleed':'Escarcha roja','ice+hole':'Cero absoluto','ice+sweep':'Muro de hielo','ice+puddle':'Pista de hielo','ice+charm':'Corazón helado','ice+guard':'Glaciar','ice+vamp':'Vampiro de hielo','ice+snake':'Serpiente de hielo','ice+tri':'Tridente helado','ice+echo':'Eco glacial','ice+exec':'Congelación','ice+dis':'Criogenia','ice+meteor':'Granizada',
+ 'poison+boom':'Nube tóxica','poison+zap':'Descarga ácida','poison+bounce':'Plaga','poison+pierce':'Aguja venenosa','poison+split':'Esporas',
+ 'poison+homing':'Avispa','poison+boomer':'Bumerán tóxico','poison+wind':'Miasma','poison+bleed':'Gangrena','poison+hole':'Pozo tóxico','poison+sweep':'Gas','poison+puddle':'Ciénaga','poison+charm':'Filtro de amor','poison+guard':'Antídoto','poison+vamp':'Sanguijuela','poison+snake':'Víbora','poison+tri':'Tridente tóxico','poison+echo':'Recaída','poison+exec':'Cicuta','poison+dis':'Ácido','poison+meteor':'Lluvia ácida',
+ 'boom+zap':'Trueno','boom+bounce':'Granada','boom+pierce':'Misil','boom+split':'Racimo',
+ 'boom+homing':'Cohete','boom+boomer':'Bomba bumerán','boom+wind':'Onda expansiva','boom+bleed':'Esquirla','boom+hole':'Supernova','boom+sweep':'Bombardeo','boom+puddle':'Mina','boom+charm':'Petardo','boom+guard':'Contramedida','boom+vamp':'Sangría','boom+snake':'Traca','boom+tri':'Salva','boom+echo':'Doble detonación','boom+exec':'Demolición','boom+dis':'Implosión','boom+meteor':'Impacto',
+ 'zap+bounce':'Rayo saltarín','zap+pierce':'Haz eléctrico','zap+split':'Tesla',
+ 'zap+homing':'Chispa guiada','zap+boomer':'Arco voltaico','zap+wind':'Tempestad','zap+bleed':'Descarga sangrante','zap+hole':'Bobina','zap+sweep':'Red eléctrica','zap+puddle':'Charco eléctrico','zap+charm':'Flechazo','zap+guard':'Pararrayos','zap+vamp':'Dínamo','zap+snake':'Anguila','zap+tri':'Tridente eléctrico','zap+echo':'Réplica','zap+exec':'Silla eléctrica','zap+dis':'Sobrecarga','zap+meteor':'Relámpago',
+ 'bounce+pierce':'Pinball','bounce+split':'Metralla',
+ 'bounce+homing':'Perseguidora','bounce+boomer':'Yoyó','bounce+wind':'Balón','bounce+bleed':'Sierra','bounce+hole':'Órbita','bounce+sweep':'Carambola','bounce+puddle':'Salpicadura','bounce+charm':'Cupido','bounce+guard':'Frontón','bounce+vamp':'Murciélago','bounce+snake':'Saltamontes','bounce+tri':'Malabares','bounce+echo':'Ping pong','bounce+exec':'Rematador','bounce+dis':'Trituradora','bounce+meteor':'Lluvia de estrellas',
+ 'pierce+split':'Astillas',
+ 'pierce+homing':'Flecha','pierce+boomer':'Hoja curva','pierce+wind':'Vendaval','pierce+bleed':'Estoque','pierce+hole':'Agujero de gusano','pierce+sweep':'Cruz','pierce+puddle':'Reguero','pierce+charm':'Flecha de Cupido','pierce+guard':'Pica','pierce+vamp':'Estaca','pierce+snake':'Cobra','pierce+tri':'Abanico','pierce+echo':'Doble estocada','pierce+exec':'Guillotina','pierce+dis':'Taladro atómico','pierce+meteor':'Estrella fugaz',
+ 'split+homing':'Enjambre','split+boomer':'Shuriken','split+wind':'Confeti','split+bleed':'Cristales','split+hole':'Nebulosa','split+sweep':'Cortina','split+puddle':'Aspersor','split+charm':'Pétalos','split+guard':'Granalla','split+vamp':'Mordiscos','split+snake':'Hidra','split+tri':'Escopetazo','split+echo':'Fuegos artificiales','split+exec':'Diezmo','split+dis':'Polvo','split+meteor':'Lluvia de meteoros',
+ 'homing+boomer':'Halcón','homing+wind':'Brisa','homing+bleed':'Tiburón','homing+hole':'Atractor','homing+sweep':'Rastrillo','homing+puddle':'Gotero','homing+charm':'Admirador','homing+guard':'Guardián','homing+vamp':'Mosquito','homing+snake':'Culebra','homing+tri':'Tríada','homing+echo':'Sombra','homing+exec':'Sicario','homing+dis':'Depredador','homing+meteor':'Satélite',
+ 'boomer+wind':'Hélice','boomer+bleed':'Hacha','boomer+hole':'Marea','boomer+sweep':'Guadaña doble','boomer+puddle':'Regadera','boomer+charm':'Querencia','boomer+guard':'Rodela','boomer+vamp':'Sanguinario','boomer+snake':'Látigo','boomer+tri':'Bandada','boomer+echo':'Péndulo','boomer+exec':'Segadora','boomer+dis':'Erosión','boomer+meteor':'Órbita lunar',
+ 'wind+bleed':'Viento cortante','wind+hole':'Huracán','wind+sweep':'Ventolera','wind+puddle':'Niebla','wind+charm':'Brisa dulce','wind+guard':'Muro de viento','wind+vamp':'Céfiro','wind+snake':'Tornado','wind+tri':'Ráfagas','wind+echo':'Galerna','wind+exec':'Ciclón','wind+dis':'Arena','wind+meteor':'Lluvia de rocas',
+ 'bleed+hole':'Hemorragia','bleed+sweep':'Tajo','bleed+puddle':'Charco de sangre','bleed+charm':'Herida de amor','bleed+guard':'Espinas','bleed+vamp':'Conde','bleed+snake':'Látigo de espinas','bleed+tri':'Zarpazo','bleed+echo':'Desgarro','bleed+exec':'Carnicero','bleed+dis':'Necrosis','bleed+meteor':'Lluvia roja',
+ 'hole+sweep':'Horizonte de sucesos','hole+puddle':'Sumidero','hole+charm':'Atracción','hole+guard':'Aspiradora','hole+vamp':'Vacío','hole+snake':'Espiral','hole+tri':'Constelación','hole+echo':'Púlsar','hole+exec':'Espaguetización','hole+dis':'Antimateria','hole+meteor':'Gravedad',
+ 'sweep+puddle':'Riada','sweep+charm':'Ola','sweep+guard':'Barrera','sweep+vamp':'Banquete','sweep+snake':'Oleaje','sweep+tri':'Rastrillada','sweep+echo':'Resaca','sweep+exec':'Siega','sweep+dis':'Borrador','sweep+meteor':'Aguacero',
+ 'puddle+charm':'Perfume','puddle+guard':'Foso','puddle+vamp':'Fuente','puddle+snake':'Río','puddle+tri':'Delta','puddle+echo':'Goteo','puddle+exec':'Arenas movedizas','puddle+dis':'Disolvente','puddle+meteor':'Cráter',
+ 'charm+guard':'Amuleto','charm+vamp':'Súcubo','charm+snake':'Encantador de serpientes','charm+tri':'Trío','charm+echo':'Serenata','charm+exec':'Viuda negra','charm+dis':'Mal de amores','charm+meteor':'Estrella del amor',
+ 'guard+vamp':'Égida','guard+snake':'Barricada','guard+tri':'Falange','guard+echo':'Bastión','guard+exec':'Paladín','guard+dis':'Deflector','guard+meteor':'Paraguas',
+ 'vamp+snake':'Basilisco','vamp+tri':'Tres colmillos','vamp+echo':'Hambre','vamp+exec':'Nosferatu','vamp+dis':'Drenaje','vamp+meteor':'Luna de sangre',
+ 'snake+tri':'Medusa','snake+echo':'Cascabel','snake+exec':'Mamba','snake+dis':'Ciempiés','snake+meteor':'Dragón celeste',
+ 'tri+echo':'Sexteto','tri+exec':'Tribunal','tri+dis':'Trisector','tri+meteor':'Tres estrellas',
+ 'echo+exec':'Sentencia','echo+dis':'Resonancia','echo+meteor':'Tormenta de ecos',
+ 'exec+dis':'Juicio final','exec+meteor':'Apocalipsis',
+ 'dis+meteor':'Asteroide'
+};
+function fid(a,b){return BASE.indexOf(a)<BASE.indexOf(b)?'f:'+a+'+'+b:'f:'+b+'+'+a}
+function parts2(id){return id.slice(2).split('+')}
+function isF(id){return id.startsWith('f:')}
+function nameOf(id){return isF(id)?FN[id.slice(2)]:T[id].n}
+function colorOf(id){return isF(id)?T[parts2(id)[0]].c:T[id].c}
+
+const KEYS=['dmg','spd','pierce','bnc','ex','exm','ch','chr','fz','burn','bt','ign','pdps','pt','psp','fr','beam',
+ 'hom','ret','push','bl','hole','sweep','sweepR','pud','pudT','charm','charmT','guard','vamp','snake','tri','echo','exec','dis','met'];
+function blank(){const b={};for(const k of KEYS)b[k]=0;b.dmg=1;b.spd=620;return b}
+function S(id,l,l2,fl){
+ if(isF(id))return FS(id,l,l2,fl);
+ const b=blank();
+ switch(id){
+  case'laser':b.dmg=1+.5*(l-1);b.spd=700+60*l;break;
+  case'fire':b.dmg=.8;b.burn=.7+.35*(l-1);b.bt=2.5;b.ign=l-1;break;
+  case'ice':b.dmg=.7;b.fz=1+.75*l;break;
+  case'poison':b.dmg=.5;b.pdps=.25*l;b.pt=4;b.psp=l>=3?2:1;break;
+  case'boom':b.dmg=1;b.ex=P*(6+3*l);b.exm=.45+.15*l;break;
+  case'zap':b.dmg=.9;b.ch=1+l;b.chr=P*(20+3*l);break;
+  case'bounce':b.dmg=.9;b.bnc=1+l;break;
+  case'pierce':b.dmg=1;b.pierce=1+l;b.spd=820;break;
+  case'split':b.dmg=1;b.fr=1+l;break;
+  case'homing':b.dmg=.9;b.hom=3+2*l;break;
+  case'boomer':b.dmg=.8+.15*l;b.ret=l;b.spd=560;break;
+  case'wind':b.dmg=.8;b.push=P*(4+3*l);break;
+  case'bleed':b.dmg=.7;b.bl=.1+.05*l;break;
+  case'hole':b.dmg=.6;b.hole=.4+.3*l;break;
+  case'sweep':b.dmg=.9;b.sweep=.45+.15*l;b.sweepR=[0,P*30,P*55,1e9][l];break;
+  case'puddle':b.dmg=.7;b.pud=.4+.3*l;b.pudT=2.5+l;break;
+  case'charm':b.dmg=.8;b.charm=.08+.06*l;b.charmT=3+l;break;
+  case'guard':b.dmg=.9;b.guard=1+l;break;
+  case'vamp':b.dmg=.9;b.vamp=1+.4*(l-1);break;
+  case'snake':b.dmg=1;b.snake=P*(7+3*l);break;
+  case'tri':b.dmg=1;b.tri=.55+.15*l;break;
+  case'echo':b.dmg=.9;b.echo=.4+.2*l;break;
+  case'exec':b.dmg=.9;b.exec=.1+.06*l;break;
+  case'dis':b.dmg=.7;b.dis=.05+.03*l;break;
+  case'meteor':b.dmg=.8;b.met=.6+.25*l;break;
+ }
+ return b;
+}
+// nivel de fusión (1-3): cada nivel refuerza más la fusión
+const FLV={dmg:[0,1.5,1.75,2],mag:[0,1.25,1.4,1.55],cnt:[0,1,1,2]};
+function FS(id,la,lb,fl){
+ fl=fl||1;
+ const [a,bb]=parts2(id),A=S(a,la||3),B=S(bb,lb||3),o=blank();
+ for(const k of KEYS)o[k]=Math.max(A[k],B[k]);
+ o.dmg=Math.max(A.dmg,B.dmg)*FLV.dmg[fl];
+ // refuerzo general de la fusión
+ for(const k of ['pierce','bnc','ch','fr','ign','psp','guard'])if(o[k])o[k]+=FLV.cnt[fl];
+ for(const k of ['ex','fz','burn','pdps','chr','hom','push','bl','hole','pud','pudT','charmT','vamp','dis','met'])o[k]*=FLV.mag[fl];
+ o.sweep=Math.min(.95,o.sweep*1.2);o.charm=Math.min(.5,o.charm*1.25);o.exec=Math.min(.4,o.exec*1.25);o.echo=Math.min(1,o.echo*1.2);if(o.tri)o.tri=Math.min(1,o.tri*1.1);
+ if(o.ex)o.exm=Math.max(o.exm,.65);
+ // efecto especial de la fusión (ver TW)
+ o.tw=a+'+'+bb;const H=TW[o.tw];if(H&&H.mod)H.mod(o,fl);
+ return o;
+}
+
+// ================= EFECTOS DE FUSIÓN =================
+// Cada fusión tiene su efecto propio. d = texto de la carta. Ganchos (todos opcionales):
+//  mod(o)        cambia los números de la fusión
+//  fire(mk,x,y,mul,st)  dispara a su manera (devuelve true si sustituye al disparo normal)
+//  pre(b,e) / dmg(b,e)  antes del golpe / multiplicador de daño
+//  hit(b,e)      después del golpe     thr(b,e) umbral de remate     execd(b,e) al rematar
+//  kill(e,b)     al morir un alien tocado por esta fusión     vamp(e,b) cuánto cuenta para curarte
+//  tick(b,dt)    cada fotograma de la bala     turn(b) el bumerán se da la vuelta     catch(b) lo recoges
+//  bt(b,e)       a quién rebota     guard(b,q) al parar una bala enemiga
+//  frag(f,b)     cambia cada trozo     met(m,b,e) cambia el meteorito     echoMod(nb,ec) cambia el eco
+const TW={
+ // ---------- LÁSER ----------
+ 'laser+fire':{d:'Deja una columna de fuego bajo el alien durante 2 s: los aliens que pasen por ella arden.',
+  hit(b,e){if(b.isEcho||b.frag||b.zc)return;b.zc=1;const h=Math.max(P*8,lineY()-e.y);zone({x:e.x,y:e.y+h/2,w:P*5,h,t:2,c:'#ff8a1f',b:{burn:b.burn,bt:b.bt}})}},
+ 'laser+ice':{d:'Si golpea a un alien ya congelado, lo rompe en esquirlas que congelan 1,5 s y dañan a 4 aliens cercanos.',
+  pre(b,e){b._pf=e.fz>0},hit(b,e){if(!b._pf)return;sparks(e.x,e.y,'#8ff0ff',14,200,7);foesNear(e.x,e.y,TWO()*2.2,e).slice(0,4).forEach(o=>{zapTo(e,o,b.dmg*.4,'#8ff0ff');frz(o,1.5)})}},
+ 'laser+poison':{d:'Inyecta 3 cargas de veneno de golpe en vez de 1.',hit(b,e){charge(e,2,b.pdps)}},
+ 'laser+boom':{d:'Obús: atraviesa al primer alien sin explotar y explota en el segundo con un 50% más de radio.',
+  mod(o){o.noEx=1;o.pierce=Math.max(o.pierce,1)},hit(b,e){b.on=(b.on||0)+1;if(b.on===2||b.frag||b.isEcho)explode(e.x,e.y,b.ex*1.5,b.dmg*b.exm,b,e)}},
+ 'laser+zap':{d:'Haz instantáneo que daña a toda la columna y luego salta en cadena a 4 aliens.',mod(o){o.beam=1;o.ch=3;o.chr=P*30}},
+ 'laser+bounce':{d:'Cada rebote sube su daño un 25% (se acumula).',hit(b,e){if(b.bnc>0)b.dmg*=1.25}},
+ 'laser+pierce':{d:'Atraviesa toda la columna sin límite y gana +20% de daño por cada alien que atraviesa.',mod(o){o.pierce=99},hit(b){b.dmg*=1.2}},
+ 'laser+split':{d:'Escopeta: sale de golpe en 5 perdigones en abanico, cada uno con el 45% del daño. No se parte al impactar.',
+  mod(o){o.fr=0},fire(mk,x,y,mul){volley(mk,x,mul*.45,[-.24,-.12,0,.12,.24]);return true}},
+ 'laser+homing':{d:'Fija como objetivo al alien con más vida de la pantalla y le hace +50% de daño.',
+  tick(b){if(!b.t0){b.t0=pick(o=>o.hp)||1;if(b.t0!==1)b.tg=b.t0}},dmg(b,e){return e===b.t0?1.5:1}},
+ 'laser+boomer':{d:'Al volver no se recoge: atraviesa tu nave y sale otra vez hacia arriba (dos viajes completos).',
+  catch(b){if(b.again)return false;b.again=1;b.rp=0;b.vx=0;b.vy=-Math.max(560,b.spd);b.hit=new Set();b.pierce=b.pierce0||0;b.cx=b.x;return true}},
+ 'laser+wind':{d:'El alien empujado choca con el de encima: los dos reciben el 60% del daño del golpe.',
+  hit(b,e){const up=colOf(e.x,o=>o!==e&&o.y<e.y&&e.y-o.y<ESP()*1.8)[0];if(up){dmgE(up,b.dmg*.6);if(!e.dead)dmgE(e,b.dmg*.6);sparks((e.x+up.x)/2,(e.y+up.y)/2,'#e6f3ff',8,120,6)}}},
+ 'laser+bleed':{d:'Contra aliens con 5 heridas o más hace el doble de daño.',dmg(b,e){return (e.bls||0)>=5?2:1}},
+ 'laser+hole':{d:'Remolino la mitad de grande, pero dura el doble y hace el triple de daño.',mod(o){o.vxo=(b,v)=>({r:v.r*.55,t:v.t*2,dps:v.dps*3})}},
+ 'laser+sweep':{d:'El barrido alcanza siempre la fila entera y hace el 100% del daño.',mod(o){o.sweepR=1e9;o.sweep=1}},
+ 'laser+puddle':{d:'En vez de un charco deja una franja vertical que cubre la columna entera durante 3 s.',
+  mod(o){o.pdo=(b,p)=>({w:P*6,h:lineY()-topY(),y:(lineY()+topY())/2,t:3})}},
+ 'laser+charm':{d:'El encantado dispara láseres 3 veces por segundo y al acabarse el encanto explota.',hit(b,e){if(e.charm>0)e.hyp=1}},
+ 'laser+guard':{d:'Cada bala enemiga que destruye dispara un láser hacia arriba desde ese punto.',guard(b,q){const nb=mkBullet('laser',3,q.x,q.y,.6);nb.vol=null;bullets.push(nb)}},
+ 'laser+vamp':{d:'Los aliens que mata de un solo golpe cuentan doble para recuperar vida.',vamp(e){return e.nh<=1?2:1}},
+ 'laser+snake':{d:'Roza a los aliens que pasan a su lado: les hace el 30% del daño.',tick(b){graze(b,P*6,o=>{dmgE(o,b.dmg*.3);sparks(o.x,o.y,b.c,3,80,5)})}},
+ 'laser+tri':{d:'Las tres balas salen hacia dentro y se cruzan: el alien que reciba las tres sufre un golpe extra del 100%.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[.12,0,-.12],null,[-P*12,0,P*12]);return true},hit(b,e){if(grpHit(b,e)===3){dmgE(e,b.dmg);flash(e.x,e.y,'#ffffff',P*14,.15)}}},
+ 'laser+echo':{d:'En vez de eco, 0,25 s después sale un segundo láser desde tu nave que persigue a ese alien (80% del daño).',
+  mod(o){o.noEcho=1},hit(b,e){if(b.isEcho||b.frag)return;echoes.push({t:.25,fn:()=>{const nb=child(b,{x:px,y:py-P*5,vx:0,vy:-900,dmg:b.dmg*.8,frag:0,isEcho:1,hom:8,r:b.r});nb.tg=e;bullets.push(nb)}})}},
+ 'laser+exec':{d:'Cada vez que remata, tu siguiente disparo es crítico (doble daño).',execd(){forceCrit=1}},
+ 'laser+dis':{d:'Contra aliens amarillos (los más duros) quita el doble de % de vida.',hit(b,e){if(e.type===2&&!e.dead)dmgE(e,e.max*b.dis)}},
+ 'laser+meteor':{d:'Cometa: después del meteorito cae un segundo en la misma columna.',met(m){m.twice=1}},
+ // ---------- FUEGO ----------
+ 'fire+ice':{d:'Choque térmico: golpear a un alien congelado le hace el triple de daño.',dmg(b,e){return e.fz>0?3:1}},
+ 'fire+poison':{d:'Los envenenados arden el doble y, al morir quemados, prenden a 3 aliens cercanos.',
+  hit(b,e){if(e.ps>0)e.bdps*=2},kill(e){if(e.bt>0&&e.ps>0)foesNear(e.x,e.y,TWO()*2,e).slice(0,3).forEach(o=>{burnE(o,Math.max(1,e.bdps*.5),2.5);addP(e.x,e.y,(o.x-e.x)/.3,(o.y-e.y)/.3,.3,'#ff8a1f',8,0,1)})}},
+ 'fire+boom':{d:'La explosión deja el suelo ardiendo 2 s: los aliens que pasen por ahí se queman.',hit(b,e){if(!b.frag)zone({x:e.x,y:e.y,w:b.ex*1.6,h:b.ex,t:2,c:'#ff8a1f',b:{burn:b.burn,bt:b.bt}})}},
+ 'fire+zap':{d:'Si el alien ya estaba ardiendo, el rayo salta a 2 aliens más.',pre(b,e){b._pb=e.bt>0},hit(b,e){if(b._pb)chain(e,Object.assign({},b,{ch:2}))}},
+ 'fire+bounce':{d:'Cada rebote aviva el fuego: la quemadura sube un 30% por rebote.',hit(b){if(b.bnc>0)b.burn*=1.3}},
+ 'fire+pierce':{d:'Lanzallamas: la quemadura dura el doble (5 s).',mod(o){o.bt*=2}},
+ 'fire+split':{d:'Los trozos son chispas que rebotan una vez al siguiente alien.',frag(f){f.bnc=1}},
+ 'fire+homing':{d:'Al impactar, quema también a todos los aliens que estén a 1,5 aliens de distancia.',hit(b,e){foesNear(e.x,e.y,TWO()*1.5,e).forEach(o=>burnE(o,b.burn,b.bt))}},
+ 'fire+boomer':{d:'A la vuelta hace estallar las quemaduras: hace de golpe todo el daño de fuego que le quedaba al alien.',
+  hit(b,e){if(b.rp===2&&e.bt>0&&!e.dead){const d=e.bdps*e.bt;e.bt=0;flash(e.x,e.y,'#ff8a1f',P*12,.2);dmgE(e,d)}}},
+ 'fire+wind':{d:'Los aliens empujados arden con el doble de fuerza.',hit(b,e){if(e.bt>0)e.bdps*=2}},
+ 'fire+bleed':{d:'Cada herida hace que la quemadura de ese alien haga un 15% más de daño.',hit(b,e){e.hb=1}},
+ 'fire+hole':{d:'Sol negro: todo lo atrapado arde y, al cerrarse, el remolino estalla en llamas.',mod(o){o.vxo=(b,v)=>({boom:{ex:v.r,dmg:b.dmg*.8,c:'#ff8a1f',burn:b.burn}})}},
+ 'fire+sweep':{d:'Deja la fila entera ardiendo 3 s: los aliens que pasen por ella se queman.',hit(b,e){zone({x:W/2,y:e.y,w:W,h:EH()*2,t:3,c:'#ff8a1f',b:{burn:b.burn,bt:2}})}},
+ 'fire+puddle':{d:'Lava: el charco quema el triple y los aliens dentro bajan a la mitad de velocidad.',mod(o){o.pdo=(b,p)=>({dps:p.dps*3,slow:1,c:'#ff5a00'})}},
+ 'fire+charm':{d:'El encantado arde y a los 1,2 s se lanza contra el alien más cercano y explota en llamas.',
+  hit(b,e){if(e.charm>0&&!e.kami)e.kami={t:1.2,r:P*12,d:R.hp(gt)*1.5,c:'#ff8a1f',burn:b.burn||1}}},
+ 'fire+guard':{d:'Cada bala enemiga destruida estalla en una pequeña bola de fuego.',guard(b,q){explode(q.x,q.y,P*9,b.dmg*.6,{c:'#ff8a1f',burn:b.burn,bt:2},null)}},
+ 'fire+vamp':{d:'Los aliens que mueren ardiendo cuentan doble para recuperar vida.',vamp(e){return e.bt>0?2:1}},
+ 'fire+snake':{d:'Dragón: quema a los aliens que pasan a menos de 1 alien de su camino.',tick(b){graze(b,TWO(),o=>burnE(o,b.burn,b.bt))}},
+ 'fire+tri':{d:'La bala central quema el doble y cada bala lateral prende a 1 alien extra.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22],(nb,i)=>{if(i===1)nb.burn*=2;else nb.ign+=1});return true}},
+ 'fire+echo':{d:'El eco reaviva el fuego: reinicia la quemadura y la sube un 50%.',hit(b,e){if(b.isEcho&&!e.dead){e.bt=Math.max(e.bt,b.bt);e.bdps*=1.5}}},
+ 'fire+exec':{d:'Remata a los aliens que estén ardiendo con el doble de umbral.',thr(b,e){return e.bt>0?b.exec*2:0}},
+ 'fire+dis':{d:'Mientras arde, el alien pierde además el 2% de su vida máxima por segundo.',hit(b,e){e.inc=1}},
+ 'fire+meteor':{d:'Además caen 2 bolas de fuego en las columnas de al lado (60% del daño).',
+  hit(b,e){if(b.frag||b.isEcho)return;for(const dc of[-1,1])meteorOn(topOfCol(e.col+dc),b.dmg*b.met*.6,{b:{burn:b.burn,bt:b.bt,c:'#ff8a1f'}})}},
+ // ---------- HIELO ----------
+ 'ice+poison':{d:'El veneno no se gasta mientras el alien está congelado.',hit(b,e){e.efr=1}},
+ 'ice+boom':{d:'Los congelados que mueren estallan en esquirlas que congelan 1,5 s a los cercanos.',
+  kill(e){if(e.fz>0){sparks(e.x,e.y,'#8ff0ff',12,200,7);foesNear(e.x,e.y,TWO()*1.8,e).slice(0,4).forEach(o=>{frz(o,1.5);dmgE(o,R.hp(gt)*.3)})}}},
+ 'ice+zap':{d:'Tormenta: el rayo llega el doble de lejos y congela a cada alien que toca.',mod(o){o.chr*=2}},
+ 'ice+bounce':{d:'Granizo: rebotar contra un alien congelado le hace el doble de daño.',dmg(b,e){return b.hit.size>1&&e.fz>0?2:1}},
+ 'ice+pierce':{d:'Carámbano: se queda clavado en el último alien que atraviesa y 1 s después explota en hielo.',
+  hit(b,e){if(b.pierce<=0&&!b.frag&&!b.isEcho)echoes.push({t:1,fn:()=>explode(e.x,e.y,P*12,b.dmg*.8,{c:'#8ff0ff',fz:2},null)})}},
+ 'ice+split':{d:'Ventisca: cada trozo que acierta frena a toda la flota un 20% durante 2 s.',hit(b){if(b.frag)fleetSlow=2}},
+ 'ice+homing':{d:'Copo buscador: persigue primero a los aliens que no están congelados.',
+  tick(b){if(!b.tg||b.tg.fz>0){const t=nearest(b.x,b.y,x=>!b.hit.has(x)&&!(x.fz>0)&&x.y<b.y+P*4);if(t)b.tg=t}}},
+ 'ice+boomer':{d:'A la vuelta congela el doble de tiempo a todo lo que cruza.',hit(b,e){if(b.rp===2)frz(e,b.fz*2)}},
+ 'ice+wind':{d:'Empujar a un alien congelado lo manda el doble de alto.',pre(b,e){b._pf=e.fz>0},hit(b,e){if(b._pf&&!e.dead)pushUp(e,b.push)}},
+ 'ice+bleed':{d:'Golpear a un congelado con heridas las rompe: medio golpe extra por cada herida.',pre(b,e){b._pf=e.fz>0},hit(b,e){if(b._pf&&e.bls>0&&!e.dead){const n=e.bls;e.bls=0;dmgE(e,b.dmg*.5*n);sparks(e.x,e.y,'#c8102e',8,140,6)}}},
+ 'ice+hole':{d:'Cero absoluto: el remolino congela lo que atrapa y, al cerrarse, deja a todos congelados 2 s más.',
+  mod(o){o.vxo=()=>({endFn:v=>foesNear(v.x,v.y,v.r+EH()).forEach(o=>frz(o,2))})}},
+ 'ice+sweep':{d:'Muro de hielo: congela la fila y deja debajo una barrera de hielo 4 s que para 3 balas enemigas.',
+  hit(b,e){if(!b.frag)zone({x:W/2,y:e.y+ESP()*.8,w:W,h:P*3,t:4,block:3,c:'#8ff0ff'})}},
+ 'ice+puddle':{d:'Pista de hielo: los aliens del charco resbalan de lado y, si chocan con otro, ambos reciben el 30% del daño.',
+  mod(o){o.pdo=(b)=>({c:'#bff8ff',tk:e=>{e.dx=(e.dx||0)+(Math.random()<.5?-1:1)*P*5;const o=foesNear(e.x,e.y,EH()*2.2,e)[0];if(o){dmgE(o,b.dmg*.3);dmgE(e,b.dmg*.3)}}})}},
+ 'ice+charm':{d:'Corazón helado: los disparos del encantado congelan 1,5 s.',hit(b,e){if(e.charm>0)e.chFz=1.5}},
+ 'ice+guard':{d:'Glaciar: cada bala enemiga destruida congela 2 s al alien que la disparó.',guard(b,q){if(q.src)frz(q.src,2)}},
+ 'ice+vamp':{d:'Matar a un alien congelado cuenta doble para recuperar vida.',vamp(e){return e.fz>0?2:1}},
+ 'ice+snake':{d:'Va dejando escarcha: congela 0,7 s a los aliens que pasan a su lado.',tick(b){graze(b,P*7,o=>frz(o,.7))}},
+ 'ice+tri':{d:'Las balas laterales congelan; la central no congela pero hace el triple de daño a los congelados.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22],(nb,i)=>{if(i===1){nb.fz=0;nb.ctr=1}});return true},dmg(b,e){return b.ctr&&e.fz>0?3:1}},
+ 'ice+echo':{d:'El eco vuelve a congelar y alarga el congelado 1 s.',hit(b,e){if(b.isEcho)frz(e,(e.fz||0)+1)}},
+ 'ice+exec':{d:'Congelación: remata a los aliens congelados por debajo del 40% de vida.',thr(b,e){return e.fz>0?.4:0}},
+ 'ice+dis':{d:'Criogenia: los congelados pierden el 3% de su vida máxima por segundo.',hit(b,e){e.cryo=1}},
+ 'ice+meteor':{d:'Granizada: en vez de un meteorito caen 4 granizos sobre la columna que congelan 1 s (40% del daño cada uno).',
+  mod(o){o.noMet=1},hit(b,e){if(b.frag)return;const L=colOf(e.x).sort((p,q)=>p.y-q.y);if(!L.length)return;for(let k=0;k<4;k++)meteorOn(L[k%L.length],b.dmg*b.met*.4,{t:.2+k*.12,b:{fz:1,c:'#8ff0ff'}})}},
+ // ---------- VENENO ----------
+ 'poison+boom':{d:'Nube tóxica: la explosión deja una nube 3 s que da 1 carga de veneno cada medio segundo.',
+  hit(b,e){if(!b.frag)zone({x:e.x,y:e.y,w:b.ex*1.8,h:b.ex*1.4,t:3,c:'#5cff4a',tk:o=>charge(o,1,b.pdps)})}},
+ 'poison+zap':{d:'Descarga ácida: el rayo copia las cargas de veneno del alien a cada alien de la cadena.',hit(b,e){for(const o of lastChain)charge(o,Math.max(0,(e.ps||0)-(o.ps||0)),b.pdps)}},
+ 'poison+bounce':{d:'Plaga: al rebotar, el siguiente alien recibe todas las cargas que tenía el anterior.',hit(b,e){if(b.prevPs)charge(e,b.prevPs,b.pdps);b.prevPs=e.ps||0}},
+ 'poison+pierce':{d:'Cada alien atravesado recibe 1 carga más que el anterior (1, 2, 3...).',hit(b,e){b.pn=(b.pn||0)+1;charge(e,b.pn-1,b.pdps)}},
+ 'poison+split':{d:'Esporas: cuando muere un alien envenenado salen 3 esporas que envenenan a los que tocan.',
+  kill(e){if(e.ps>0&&bullets.length<400)for(let i=0;i<3;i++){const a=Math.random()*6.283;bullets.push(child({id:'poison',c:'#5cff4a',c2:'#d4ffb8'},{x:e.x,y:e.y,vx:Math.cos(a)*300,vy:Math.sin(a)*300,dmg:R.hp(gt)*.1,pdps:Math.max(.3,e.pdps),pt:4,psp:1,hit:new Set([e]),r:P}))}}},
+ 'poison+homing':{d:'Avispa: persigue al alien con más cargas de veneno y le pica 3 veces (3 cargas).',
+  tick(b){if(!b.t0){b.t0=pick(o=>(o.ps||0)*10-Math.hypot(o.x-b.x,o.y-b.y)/100)||1;if(b.t0!==1)b.tg=b.t0}},hit(b,e){charge(e,2,b.pdps);dmgE(e,b.dmg*.3)}},
+ 'poison+boomer':{d:'A la vuelta duplica las cargas de veneno de los aliens que toca.',hit(b,e){if(b.rp===2)charge(e,e.ps||0,b.pdps)}},
+ 'poison+wind':{d:'Miasma: al empujar, el alien de encima recibe 2 cargas de veneno.',hit(b,e){colOf(e.x,o=>o!==e&&o.y<e.y&&e.y-o.y<ESP()*2.5).forEach(o=>charge(o,2,b.pdps))}},
+ 'poison+bleed':{d:'Gangrena: el veneno hace un 10% más de daño por cada herida.',hit(b,e){e.gang=1}},
+ 'poison+hole':{d:'Pozo tóxico: el remolino da 1 carga cada medio segundo a todos los atrapados.',mod(o){o.vxo=(b)=>({tk:e=>charge(e,1,b.pdps)})}},
+ 'poison+sweep':{d:'Gas: toda la fila recibe 2 cargas de veneno.',hit(b,e){rowOf(e).forEach(o=>charge(o,2,b.pdps))}},
+ 'poison+puddle':{d:'Ciénaga: el charco da 1 carga cada medio segundo y deja acumular hasta 12 cargas.',mod(o){o.pdo=(b)=>({tk:e=>{e.cap12=1;charge(e,1,b.pdps)}})}},
+ 'poison+charm':{d:'Filtro de amor: los aliens con 4 cargas o más se encantan seguro al golpearlos.',hit(b,e){if(!e.dead&&(e.ps||0)>=4)charmE(e,b.charmT)}},
+ 'poison+guard':{d:'Antídoto: cada bala enemiga destruida da 3 cargas al alien que la disparó.',guard(b,q){if(q.src)charge(q.src,3,b.pdps)}},
+ 'poison+vamp':{d:'Sanguijuela: los aliens que mueren envenenados cuentan doble para recuperar vida.',vamp(e){return e.ps>0?2:1}},
+ 'poison+snake':{d:'Víbora: cada mordida mete 3 cargas y el veneno dura 8 s.',hit(b,e){charge(e,2,b.pdps);if(!e.dead)e.pt=8}},
+ 'poison+tri':{d:'Si las tres balas aciertan al mismo alien, recibe 3 cargas extra.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.12,0,.12]);return true},hit(b,e){if(grpHit(b,e)===3)charge(e,3,b.pdps)}},
+ 'poison+echo':{d:'Recaída: el eco duplica las cargas de veneno del alien.',hit(b,e){if(b.isEcho)charge(e,e.ps||0,b.pdps)}},
+ 'poison+exec':{d:'Cicuta: el umbral de remate sube un 5% por cada carga de veneno.',thr(b,e){return b.exec+.05*(e.ps||0)}},
+ 'poison+dis':{d:'Ácido: quita además un 1% de vida máxima por cada carga de veneno.',hit(b,e){if(!e.dead&&e.ps)dmgE(e,e.max*.01*e.ps)}},
+ 'poison+meteor':{d:'Lluvia ácida: donde cae el meteorito deja un charco de ácido 3 s que da cargas de veneno.',
+  met(m,b){m.fn=mm=>zone({x:mm.x,y:mm.y,w:P*16,h:P*8,t:3,c:'#5cff4a',dps:b.dmg*.3,tk:o=>charge(o,1,b.pdps)})}},
+ // ---------- EXPLOSIÓN ----------
+ 'boom+zap':{d:'Trueno: cada salto del rayo provoca una mini explosión.',hit(b){for(const o of lastChain)explode(o.x,o.y,P*7,b.dmg*.35,{c:'#fff200'},null)}},
+ 'boom+bounce':{d:'Granada: cada rebote hace la explosión un 20% más grande.',hit(b){if(b.bnc>0)b.ex*=1.2}},
+ 'boom+pierce':{d:'Misil: no explota hasta el último alien que atraviesa; la explosión crece un 25% por cada alien atravesado.',
+  mod(o){o.noEx=1},hit(b,e){b.mn=(b.mn||0)+1;if(b.pierce<=0||b.frag||b.isEcho)explode(e.x,e.y,b.ex*(1+.25*b.mn),b.dmg*b.exm,b,e)}},
+ 'boom+split':{d:'Racimo: los trozos son minibombas que explotan con todo el daño.',frag(f,b){f.ex=b.ex*.7;f.exm=1}},
+ 'boom+homing':{d:'Cohete: va a por el grupo de aliens más apretado, no al más cercano.',tick(b){if(!b.t0){b.t0=densest()||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'boom+boomer':{d:'Explota también arriba al darse la vuelta, con un 30% más de radio.',turn(b){explode(b.x,b.y,b.ex*1.3,b.dmg*b.exm,b,null)}},
+ 'boom+wind':{d:'Onda expansiva: la explosión lanza a los aliens el doble de alto.',mod(o){o.push*=2}},
+ 'boom+bleed':{d:'Esquirla: la explosión deja 2 heridas a cada alien que alcanza.',hit(b,e){foesNear(e.x,e.y,b.ex+EH()).forEach(o=>wound(o,1,b.bl))}},
+ 'boom+hole':{d:'Supernova: el remolino junta a los aliens y explota al cerrarse.',mod(o){o.holeBoom=1}},
+ 'boom+sweep':{d:'Bombardeo: cada alien de la fila sufre una pequeña explosión, en cadena de dentro hacia fuera.',
+  hit(b,e){if(b.frag)return;rowOf(e).sort((p,q)=>Math.abs(p.x-e.x)-Math.abs(q.x-e.x)).forEach((o,i)=>echoes.push({t:.06*(i+1),fn:()=>{if(!o.dead)explode(o.x,o.y,P*8,b.dmg*.5,{c:'#ff3b3b'},null)}}))}},
+ 'boom+puddle':{d:'Mina: en vez de charco deja una mina que explota cuando un alien la pisa (máximo 4 minas).',
+  mod(o){o.noPud=1},hit(b,e){if(b.frag)return;const ms=puddles.filter(p=>p.mine);if(ms.length>=4)ms[0].t=0;zone({x:e.x,y:e.y+ESP(),w:P*8,h:P*8,t:10,c:'#ff3b3b',mine:{r:b.ex*1.3,d:b.dmg*1.2}})}},
+ 'boom+charm':{d:'Petardo: el encantado vuela hacia el grupo más grande y explota con el triple de radio.',
+  hit(b,e){if(e.charm>0&&!e.kami)e.kami={t:1,r:P*30,d:R.hp(gt)*2,c:'#ff3b3b',big:1}}},
+ 'boom+guard':{d:'Contramedida: al parar una bala, explota en el aire y destruye todas las balas enemigas de alrededor.',
+  guard(b,q){rings.push({x:q.x,y:q.y,r:P*22,t:.3,T:.3,c:'#ff3b3b'});for(const o of ebs)if(Math.hypot(o.x-q.x,o.y-q.y)<P*22)o.dead=1}},
+ 'boom+vamp':{d:'Sangría: las muertes por explosión cuentan doble para recuperar vida.',vamp(e){return e.exk?2:1}},
+ 'boom+snake':{d:'Traca: suelta un petardo pequeño en cada curva de la ese.',tick(b){const s=Math.sign(Math.sin(b.ph));if(b.ls&&s!==b.ls)explode(b.x,b.y,P*7,b.dmg*.35,{c:'#ff3b3b'},null);b.ls=s}},
+ 'boom+tri':{d:'Salva: la bala central explota con el doble de radio.',fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22],(nb,i)=>{if(i===1)nb.ex*=2});return true}},
+ 'boom+echo':{d:'Doble detonación: la explosión del eco tiene un 50% más de radio.',echoMod(nb){nb.ex*=1.5}},
+ 'boom+exec':{d:'Demolición: mata al momento a los aliens con poca vida que estén dentro de la explosión.',hit(b,e){foesNear(e.x,e.y,b.ex+EH()).forEach(o=>{if(o.hp<o.max*b.exec)execE(o)})}},
+ 'boom+dis':{d:'Implosión: la explosión atrae hacia el centro a los aliens de alrededor.',hit(b,e){foesNear(e.x,e.y,b.ex*2).forEach(o=>o.dx=(o.dx||0)+(e.x-o.x)*.6)}},
+ 'boom+meteor':{d:'Impacto: el meteorito hace una explosión enorme, con el triple de radio.',met(m){m.big=1}},
+ // ---------- RAYO ----------
+ 'zap+bounce':{d:'Cada rebote hace que el rayo salte a 1 alien más.',hit(b){if(b.bnc>0)b.ch++}},
+ 'zap+pierce':{d:'Atraviesa sin soltar rayos y, en el último alien, lanza una cadena con el doble de saltos.',
+  mod(o){o.noCh=1},hit(b,e){if(b.pierce<=0||b.frag||b.isEcho){lastChain=[];chain(e,Object.assign({},b,{ch:b.ch*2}))}}},
+ 'zap+split':{d:'Tesla: cada trozo lanza su propio rayo de 2 saltos.',frag(f,b){f.ch=2;f.chr=b.chr}},
+ 'zap+homing':{d:'Chispa guiada: la cadena no se corta nunca, salta al alien más cercano de toda la pantalla.',mod(o){o.chr=9999}},
+ 'zap+boomer':{d:'Arco voltaico: mientras vuela, un rayo lo une a tu nave y daña lo que cruza.',
+  tick(b,dt){b.av=(b.av||0)-dt;if(b.av>0)return;b.av=.2;arcs.push({x1:px,y1:py,x2:b.x,y2:b.y,t:.15,T:.15,c:'#fff200'});
+   for(const o of en){if(!foe(o))continue;const vx=b.x-px,vy=b.y-py,L=vx*vx+vy*vy||1,t=Math.max(0,Math.min(1,((o.x-px)*vx+(o.y-py)*vy)/L));if(Math.hypot(px+vx*t-o.x,py+vy*t-o.y)<EH()+P*2)dmgE(o,b.dmg*.3)}}},
+ 'zap+wind':{d:'Tempestad: cada salto del rayo empuja hacia arriba al alien que toca.',hit(b){for(const o of lastChain)pushUp(o,b.push*.7)}},
+ 'zap+bleed':{d:'Cada salto del rayo deja una herida y hace un 50% más a los que ya tenían heridas.',hit(b){for(const o of lastChain){if((o.bls||0)>1)dmgE(o,b.dmg*.4);wound(o,1,b.bl)}}},
+ 'zap+hole':{d:'Bobina: el remolino lanza un rayo cada medio segundo al alien más cercano.',
+  mod(o){o.vxo=(b)=>({tk2:v=>{const t=nearest(v.x,v.y,()=>true,v.r*2.5);if(t)zapTo(v,t,b.dmg*.6)}})}},
+ 'zap+sweep':{d:'Red eléctrica: un rayo une a todos los aliens de la fila y les hace el 50% más.',hit(b,e){let a=e;for(const o of rowOf(e).sort((p,q)=>p.x-q.x)){zapTo(a,o,b.dmg*.5);a=o}}},
+ 'zap+puddle':{d:'Charco eléctrico: cada segundo el charco lanza un rayo al alien más cercano.',
+  mod(o){o.pdo=(b)=>({c:'#fff200',zap:p=>{const t=nearest(p.x,p.y,()=>true,TWO()*3);if(t)zapTo(p,t,b.dmg*.6)}})}},
+ 'zap+charm':{d:'Flechazo: si hay un alien encantado, cada impacto lanza también una cadena de rayo desde él.',hit(b){const c=en.find(o=>o.charm>0&&!o.dead);if(c&&!b.frag){lastChain=[];chain(c,b)}}},
+ 'zap+guard':{d:'Pararrayos: cada bala enemiga destruida lanza una cadena de rayo.',guard(b,q){const t=nearest(q.x,q.y,()=>true,b.chr*2);if(t){arcs.push({x1:q.x,y1:q.y,x2:t.x,y2:t.y,t:.2,T:.2,c:'#fff200'});dmgE(t,b.dmg*.8);chain(t,b)}}},
+ 'zap+vamp':{d:'Dínamo: cada 10 saltos de rayo cuentan como una muerte para recuperar vida.',hit(b){if(lastChain.length)addVamp(lastChain.length*.1,b.vamp)}},
+ 'zap+snake':{d:'Anguila: electrifica a los aliens que pasan a su lado (60% del daño) aunque no los toque.',tick(b){graze(b,P*10,o=>zapTo(b,o,b.dmg*.6))}},
+ 'zap+tri':{d:'Cuando las tres balas aciertan, un rayo une a los tres aliens y les hace el 50% más.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22]);return true},hit(b,e){grpHit(b,e);const L=b.grp&&b.grp.list;if(L&&L.length===3&&!b.grp.done){b.grp.done=1;zapTo(L[0],L[1],b.dmg*.5);zapTo(L[1],L[2],b.dmg*.5);dmgE(L[0],b.dmg*.5)}}},
+ 'zap+echo':{d:'Réplica: el eco repite la cadena con el doble de saltos.',echoMod(nb){nb.ch*=2}},
+ 'zap+exec':{d:'Silla eléctrica: si un salto mata a un alien, el rayo salta una vez más desde él.',hit(b){const d=lastChain.find(o=>o.dead);if(d){const L=lastChain;chain(d,Object.assign({},b,{ch:1}));lastChain=L}}},
+ 'zap+dis':{d:'Sobrecarga: cada salto del rayo quita además la mitad del % de vida máxima.',hit(b){for(const o of lastChain)if(!o.dead)dmgE(o,o.max*b.dis*.5)}},
+ 'zap+meteor':{d:'Relámpago: el meteorito cae como un rayo que daña a toda la columna y luego salta en cadena.',
+  met(m,b){m.col=1;m.fn=mm=>{if(!mm.e.dead)chain(mm.e,b)}}},
+ // ---------- REBOTE ----------
+ 'bounce+pierce':{d:'Pinball: cada choque, con aliens o con los bordes, le suma un 10% de daño.',hit(b){b.dmg*=1.1},tick(b){const w=b.x<=4||b.x>=W-4;if(w&&!b.onW)b.dmg*=1.1;b.onW=w}},
+ 'bounce+split':{d:'Metralla: en cada rebote suelta 2 trozos.',hit(b,e){if(b.bnc>0&&!b.frag)frags(Object.assign({},b,{fr:2}),e,e.x,e.y)}},
+ 'bounce+homing':{d:'Cada rebote va a por el alien más bajo y tiene 2 rebotes extra.',mod(o){o.bnc+=2;o.lowFirst=1}},
+ 'bounce+boomer':{d:'Yoyó: rebota entre aliens y, cuando acaba, vuelve a ti golpeando otra vez.'},
+ 'bounce+wind':{d:'Balón: cada rebote sube un poco al alien que golpea.',hit(b,e){if(!e.dead)pushUp(e,P*8)}},
+ 'bounce+bleed':{d:'Sierra: rebota de ida y vuelta entre los dos mismos aliens, dejando una herida cada vez.',
+  bt(b,e){const p=b.prevE;b.prevE=e;return p&&foe(p)&&p!==e?p:null},hit(b,e){wound(e,1,b.bl)}},
+ 'bounce+hole':{d:'Órbita: con el último rebote abre un remolino.',hit(b,e){if(b.bnc<=0&&!b.frag)addVortex(Object.assign({},b,{hole:Math.max(b.hole,.8)}),e.x,e.y)}},
+ 'bounce+sweep':{d:'Carambola: el último rebote barre la fila entera al 100%.',hit(b,e){if(b.bnc<=0)sweepRow(Object.assign({},b,{sweep:1,sweepR:1e9}),e)}},
+ 'bounce+puddle':{d:'Salpicadura: el último rebote deja un charco el doble de grande y que dura el doble.',
+  mod(o){o.noPud=1},hit(b,e){if(b.bnc<=0&&!b.frag)addPuddle(b,e.x,e.y,{w:P*28,h:P*12,t:b.pudT*2})}},
+ 'bounce+charm':{d:'Cupido: cada rebote tiene un 10% más de encantar.',hit(b,e){if(!e.dead&&Math.random()<.1)charmE(e,b.charmT)}},
+ 'bounce+guard':{d:'Frontón: por cada bala enemiga que destruye gana un rebote.',guard(b){b.bnc++}},
+ 'bounce+vamp':{d:'Murciélago: los aliens que mata rebotando cuentan doble para recuperar vida.',vamp(e,b){return b&&b.hit&&b.hit.size>1?2:1}},
+ 'bounce+snake':{d:'Saltamontes: entre rebote y rebote roza a los aliens que pasan cerca (40% del daño).',tick(b){if(b.hit.size)graze(b,P*6,o=>dmgE(o,b.dmg*.4))}},
+ 'bounce+tri':{d:'Malabares: las tres balas nunca rebotan al mismo alien que las otras.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22]);return true},
+  bt(b,e){if(!b.grp)return null;const t=nearest(b.x,b.y,x=>!b.rec.includes(x)&&!b.grp.claim.has(x));if(t)b.grp.claim.add(t);return t}},
+ 'bounce+echo':{d:'Ping pong: medio segundo después del último rebote, golpea a la vez a todos los aliens en los que rebotó.',
+  mod(o){o.noEcho=1},hit(b,e){(b.pl=b.pl||[]).push(e);if(b.bnc<=0&&!b.frag){const L=b.pl.slice();echoes.push({t:.45,fn:()=>L.forEach(o=>{if(foe(o)){rings.push({x:o.x,y:o.y,r:P*8,t:.2,T:.2,c:'#b0b0ff'});dmgE(o,b.dmg*b.echo)}})})}}},
+ 'bounce+exec':{d:'Rematador: rebota primero a los aliens con menos vida y los remata con un 50% más de umbral.',
+  bt(b,e){return pick(o=>b.rec.includes(o)?-1e9:-o.hp/o.max)},thr(b){return b.exec*1.5}},
+ 'bounce+dis':{d:'Trituradora: el % de vida que quita sube 2 puntos con cada rebote.',hit(b,e){if(!e.dead)dmgE(e,e.max*.02*(b.hit.size-1))}},
+ 'bounce+meteor':{d:'Lluvia de estrellas: cada rebote llama además una estrella sobre el alien más bajo (40% del daño).',hit(b){if(!b.frag)meteorOn(lowest(),b.dmg*.4)}},
+ // ---------- PERFORANTE ----------
+ 'pierce+split':{d:'Astillas: cada alien atravesado suelta 2 astillas a los lados.',
+  hit(b,e){if(b.frag||b.pierce<=0)return;for(const s of[-1,1])bullets.push(child(b,{x:e.x,y:e.y,vx:s*380,vy:-120,dmg:b.dmg*.4,hit:new Set([e]),r:P}))}},
+ 'pierce+homing':{d:'Flecha: atraviesa y se curva hacia el siguiente alien.'},
+ 'pierce+boomer':{d:'Hoja curva: atraviesa a la ida y otra vez a la vuelta.'},
+ 'pierce+wind':{d:'Vendaval: empuja hacia arriba a toda la columna que atraviesa.',hit(b,e){if(!b.vd){b.vd=1;colOf(e.x).forEach(o=>pushUp(o,b.push*.6))}}},
+ 'pierce+bleed':{d:'Estoque: atravesar a un alien con 3 heridas o más no gasta perforación.',hit(b,e){if((e.bls||0)>=3)b.pierce++}},
+ 'pierce+hole':{d:'Agujero de gusano: abre un remolino en el primer alien que atraviesa y otro en el último.',
+  mod(o){o.noHole=1},hit(b,e){if(b.frag)return;if(!b.wh1){b.wh1=1;addVortex(b,e.x,e.y)}else if(b.pierce<=0)addVortex(b,e.x,e.y)}},
+ 'pierce+sweep':{d:'Cruz: cada alien atravesado barre su fila con el doble de alcance.',mod(o){o.sweepR*=2}},
+ 'pierce+puddle':{d:'Reguero: además, el último alien deja una franja de charco en toda su columna.',
+  hit(b,e){if(b.pierce<=0&&!b.frag)addPuddle(b,e.x,(lineY()+topY())/2,{w:P*6,h:lineY()-topY(),t:3})}},
+ 'pierce+charm':{d:'Flecha de Cupido: el último alien que atraviesa se encanta seguro.',hit(b,e){if(b.pierce<=0&&!e.dead)charmE(e,b.charmT)}},
+ 'pierce+guard':{d:'Pica: destruye todas las balas enemigas que cruza, sin límite.',guard(b){b.guard++}},
+ 'pierce+vamp':{d:'Estaca: si mata a 3 aliens con la misma bala, cuentan como 6 para recuperar vida.',vamp(e,b){if(!b)return 1;b.kc=(b.kc||0)+1;return b.kc===3?4:1}},
+ 'pierce+snake':{d:'Cobra: muerde dos veces al atravesar: +50% de daño a cada alien.',hit(b,e){if(!e.dead)dmgE(e,b.dmg*.5)}},
+ 'pierce+tri':{d:'Abanico: sale en 5 balas en vez de 3.',fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.36,-.18,0,.18,.36]);return true}},
+ 'pierce+echo':{d:'Doble estocada: en vez de eco, 0,4 s después sale otra bala igual por la misma línea.',
+  mod(o){o.noEcho=1},hit(b,e){if(b.ds||b.isEcho||b.frag)return;b.ds=1;const vx=b.vx,vy=b.vy,x0=b.x-vx*((py-b.y)/(-vy||1));echoes.push({t:.4,fn:()=>{bullets.push(child(b,{x:Math.max(4,Math.min(W-4,x0)),y:py-P*5,vx,vy,dmg:b.dmg*b.echo,pierce:b.pierce0,frag:0,isEcho:1,r:b.r}))}})}},
+ 'pierce+exec':{d:'Guillotina: matar a un alien no gasta perforación.',hit(b,e){if(e.dead)b.pierce++}},
+ 'pierce+dis':{d:'Taladro atómico: el % de vida que quita sube 3 puntos por cada alien que atraviesa.',hit(b){b.dis+=.03}},
+ 'pierce+meteor':{d:'Estrella fugaz: el meteorito atraviesa la columna entera dañando a todos.',met(m){m.col=1}},
+ // ---------- DIVIDIDO ----------
+ 'split+homing':{d:'Enjambre: cada trozo persigue a un alien.',frag(f){f.hom=8;f.fh=1}},
+ 'split+boomer':{d:'Shuriken: los trozos vuelven girando hacia ti y golpean otra vez.',frag(f){f.ret=1}},
+ 'split+wind':{d:'Confeti: cada trozo empuja al alien que toca con toda la fuerza.',frag(f,b){f.push=b.push}},
+ 'split+bleed':{d:'Cristales: cada trozo deja 2 heridas.',hit(b,e){if(b.frag)wound(e,1,b.bl)}},
+ 'split+hole':{d:'Nebulosa: cada trozo abre un mini remolino donde golpea.',frag(f,b){f.hole=b.hole*.6;f.miniHole=1}},
+ 'split+sweep':{d:'Cortina: los trozos también barren la fila del alien que tocan (40%).',frag(f){f.sweep=.4;f.sweepR=P*40}},
+ 'split+puddle':{d:'Aspersor: cada trozo deja un charquito donde cae.',frag(f,b){f.pud=b.pud*.6;f.pudT=2;f.miniPud=1}},
+ 'split+charm':{d:'Pétalos: cada trozo puede encantar (con la mitad de probabilidad).',frag(f,b){f.charm=b.charm*.5;f.charmT=b.charmT}},
+ 'split+guard':{d:'Granalla: cada trozo destruye 1 bala enemiga.',frag(f){f.guard=1}},
+ 'split+vamp':{d:'Mordiscos: los aliens que matan los trozos cuentan doble para recuperar vida.',vamp(e,b){return b&&b.frag?2:1}},
+ 'split+snake':{d:'Hidra: los trozos serpentean y cada uno se vuelve a partir una vez.',frag(f,b){f.snake=P*6;if(!b.frag){f.fr=2;f.hydra=1}}},
+ 'split+tri':{d:'Escopetazo: sale triple y cada bala se parte en trozos al impactar.',mod(o){o.fr=Math.max(2,o.fr-2)}},
+ 'split+echo':{d:'Fuegos artificiales: el eco suelta el doble de trozos.',echoMod(nb){nb.fr*=2}},
+ 'split+exec':{d:'Diezmo: los trozos rematan con el doble de umbral.',thr(b){return b.frag?b.exec*2:0}},
+ 'split+dis':{d:'Polvo: los trozos quitan el % de vida completo, no la mitad.',frag(f,b){f.dis=b.dis}},
+ 'split+meteor':{d:'Lluvia de meteoros: cada trozo que acierta llama un meteorito pequeño (30% del daño).',hit(b,e){if(b.frag)meteorOn(e,b.dmg*.6,{t:.2})}},
+ // ---------- TELEDIRIGIDO ----------
+ 'homing+boomer':{d:'Halcón: sube a por un alien, vuelve a por otro y regresa a ti.'},
+ 'homing+wind':{d:'Brisa: persigue al alien más bajo (el más peligroso) y lo sube el doble.',
+  tick(b){if(!b.t0){b.t0=lowest()||1;if(b.t0!==1)b.tg=b.t0}},hit(b,e){if(!e.dead)pushUp(e,b.push)}},
+ 'homing+bleed':{d:'Tiburón: persigue al alien con más heridas.',tick(b){if(!b.t0){b.t0=pick(o=>(o.bls||0)*10-Math.hypot(o.x-b.x,o.y-b.y)/100)||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'homing+hole':{d:'Atractor: abre el remolino en el centro del grupo de aliens más apretado.',mod(o){o.noHole=1},hit(b){if(b.frag)return;const d=densest();if(d)addVortex(b,d.x,d.y)}},
+ 'homing+sweep':{d:'Rastrillo: persigue a la fila con más aliens.',tick(b){if(!b.t0){b.t0=pick(o=>rowOf(o).length)||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'homing+puddle':{d:'Gotero: deja el charco justo delante del alien más bajo, por donde va a pasar.',mod(o){o.noPud=1},hit(b){if(b.frag)return;const l=lowest();if(l)addPuddle(b,l.x,l.y+ESP())}},
+ 'homing+charm':{d:'Admirador: persigue al alien con más vida y tiene el doble de probabilidad de encantarlo.',
+  mod(o){o.charm=Math.min(.6,o.charm*2)},tick(b){if(!b.t0){b.t0=pick(o=>o.hp)||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'homing+guard':{d:'Guardián: persigue antes a las balas enemigas que a los aliens.',
+  tick(b){if(b.guard<=0)return;let q=null,bd=1e9;for(const o of ebs){if(o.dead)continue;const d=Math.hypot(o.x-b.x,o.y-b.y);if(d<bd){bd=d;q=o}}if(q)b.tg=q}},
+ 'homing+vamp':{d:'Mosquito: persigue a los aliens con menos vida.',tick(b){if(!b.t0){b.t0=pick(o=>-o.hp)||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'homing+snake':{d:'Culebra: eses que se van cerrando hacia el alien: cubre mucho y no falla.'},
+ 'homing+tri':{d:'Tríada: las tres balas persiguen a tres aliens distintos.',
+  fire(mk,x,y,mul,st){const g=volley(mk,x,mul*st.tri,[-.22,0,.22]);const L=en.filter(foe).sort((p,q)=>Math.hypot(p.x-x,p.y-y)-Math.hypot(q.x-x,q.y-y));bullets.slice(-3).forEach((nb,i)=>{if(L[i]){nb.tg=L[i];nb.t0=L[i]}});return true}},
+ 'homing+echo':{d:'Sombra: el eco golpea a otro alien en vez de repetir sobre el mismo.',echoMod(nb,ec){const o=nearest(ec.e.x,ec.e.y,x=>x!==ec.e);if(o)ec.e=o}},
+ 'homing+exec':{d:'Sicario: persigue al alien que puede rematar; si no hay, al más cercano.',tick(b){if(!b.t0){b.t0=pick(o=>o.hp<o.max*b.exec*1.6?1e6-o.hp:-Math.hypot(o.x-b.x,o.y-b.y))||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'homing+dis':{d:'Depredador: persigue al alien con más vida máxima.',tick(b){if(!b.t0){b.t0=pick(o=>o.max)||1;if(b.t0!==1)b.tg=b.t0}}},
+ 'homing+meteor':{d:'Satélite: el meteorito cae sobre el alien más bajo en vez del más alto.',met(m){const l=lowest();if(l)m.e=l}},
+ // ---------- BUMERÁN ----------
+ 'boomer+wind':{d:'Hélice: a la vuelta empuja hacia arriba a todo lo que cruza.',hit(b,e){if(b.rp===2&&!e.dead)pushUp(e,b.push)}},
+ 'boomer+bleed':{d:'Hacha: a la vuelta hace un 20% más de daño por cada herida.',dmg(b,e){return b.rp===2?1+.2*(e.bls||0):1}},
+ 'boomer+hole':{d:'Marea: al darse la vuelta arriba deja un remolino.',turn(b){addVortex(b,b.x,b.y)}},
+ 'boomer+sweep':{d:'Guadaña doble: a la vuelta el barrido llega a la fila entera.',hit(b,e){if(b.rp===2)sweepRow(Object.assign({},b,{sweepR:1e9}),e)}},
+ 'boomer+puddle':{d:'Regadera: a la vuelta va soltando 3 charcos por el camino.',tick(b,dt){if(b.rp!==2||(b.rg||0)>=3)return;b.rgT=(b.rgT||0)-dt;if(b.rgT<=0){b.rgT=.2;b.rg=(b.rg||0)+1;addPuddle(b,b.x,b.y)}}},
+ 'boomer+charm':{d:'Querencia: a la vuelta encanta seguro al primer alien que toca.',hit(b,e){if(b.rp===2&&!b.qc&&!e.dead&&charmE(e,b.charmT))b.qc=1}},
+ 'boomer+guard':{d:'Rodela: a la vuelta destruye todas las balas enemigas que cruza, sin límite.',tick(b){if(b.rp!==2)return;for(const q of ebs)if(!q.dead&&Math.hypot(q.x-b.x,q.y-b.y)<P*7){q.dead=1;sparks(q.x,q.y,'#d4af37',6,120,6)}}},
+ 'boomer+vamp':{d:'Sanguinario: si en un viaje mata a 3 o más, todas esas muertes cuentan doble.',vamp(e,b){if(!b)return 1;b.kc=(b.kc||0)+1;return b.kc===3?4:b.kc>3?2:1}},
+ 'boomer+snake':{d:'Látigo: hace eses a la ida y también a la vuelta.',turn(b){b.snakeOff=0}},
+ 'boomer+tri':{d:'Bandada: tres bumeranes que, a la vuelta, hacen un 30% más de daño.',dmg(b){return b.rp===2?1.3:1}},
+ 'boomer+echo':{d:'Péndulo: en vez de eco, lanza un segundo bumerán desde tu nave.',
+  mod(o){o.noEcho=1},hit(b){if(b.pd||b.isEcho||b.frag)return;b.pd=1;echoes.push({t:.3,fn:()=>bullets.push(child(b,{x:px,y:py-P*5,vx:0,vy:-Math.max(560,b.spd),dmg:b.dmg*b.echo,frag:0,isEcho:1,ret:b.ret,pierce:b.pierce0,pierce0:b.pierce0,r:b.r}))})}},
+ 'boomer+exec':{d:'Segadora: a la vuelta remata a cualquier alien por debajo del 35% de vida.',thr(b){return b.rp===2?.35:0}},
+ 'boomer+dis':{d:'Erosión: a la vuelta quita el doble de % de vida.',hit(b,e){if(b.rp===2&&!e.dead)dmgE(e,e.max*b.dis)}},
+ 'boomer+meteor':{d:'Órbita lunar: al darse la vuelta llama un meteorito sobre el alien más cercano.',turn(b){meteorOn(nearest(b.x,b.y,()=>true),b.dmg*b.met)}},
+ // ---------- VIENTO ----------
+ 'wind+bleed':{d:'Viento cortante: el alien empujado choca con el de encima y los dos reciben una herida.',
+  hit(b,e){colOf(e.x,o=>o!==e&&o.y<e.y&&e.y-o.y<ESP()*2.5).forEach(o=>{wound(o,1,b.bl);wound(e,1,b.bl)})}},
+ 'wind+hole':{d:'Huracán: el remolino atrapa a los aliens y al cerrarse los lanza hacia arriba.',mod(o){o.hurricane=1}},
+ 'wind+sweep':{d:'Ventolera: empuja hacia arriba a toda la fila.',hit(b,e){rowOf(e).forEach(o=>pushUp(o,b.push))}},
+ 'wind+puddle':{d:'Niebla: en vez de charco deja una niebla que empuja hacia arriba a quien entra.',mod(o){o.pdo=()=>({c:'#e6f3ff',tk:e=>pushUp(e,P*4,1)})}},
+ 'wind+charm':{d:'Brisa dulce: el doble de probabilidad de encantar.',mod(o){o.charm=Math.min(.6,o.charm*2)}},
+ 'wind+guard':{d:'Muro de viento: las balas enemigas que pasan cerca se dan la vuelta y dañan a la flota.',
+  tick(b){for(const q of ebs)if(!q.dead&&Math.hypot(q.x-b.x,q.y-b.y)<P*12){q.dead=1;bullets.push(Object.assign(blank(),{id:'laser',dmg:R.hp(gt)*.5,spd:520,x:q.x,cx:q.x,y:q.y,vx:0,vy:-520,hit:new Set(),c:'#e6f3ff',c2:'#ffffff',r:P*1.5,refl:1,rp:0}))}}},
+ 'wind+vamp':{d:'Céfiro: empujar a un alien hasta arriba del todo cuenta como una muerte para recuperar vida.',hit(b,e){if(!e.dead&&!e.cef&&e.y<=topY()+P*2){e.cef=1;addVamp(1,b.vamp)}}},
+ 'wind+snake':{d:'Tornado: atrae hacia su camino a los aliens que pasan cerca.',tick(b){for(const o of en)if(foe(o)&&Math.abs(o.y-b.y)<TWO()&&Math.abs(o.x-b.x)<TWO()*2)o.dx=(o.dx||0)+(b.x-o.x)*.05}},
+ 'wind+tri':{d:'Ráfagas: las balas laterales empujan a los aliens hacia el centro, apelotonándolos.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22],(nb,i)=>{nb.side=i-1});return true},hit(b,e){if(b.side)e.dx=(e.dx||0)-b.side*P*7}},
+ 'wind+echo':{d:'Galerna: el eco empuja con el doble de fuerza.',echoMod(nb){nb.push*=2}},
+ 'wind+exec':{d:'Ciclón: el alien empujado choca con el de encima y lo remata si tiene poca vida.',hit(b,e){colOf(e.x,o=>o!==e&&o.y<e.y&&e.y-o.y<ESP()*2.5).forEach(o=>{if(o.hp<o.max*b.exec*1.5)execE(o)})}},
+ 'wind+dis':{d:'Arena: quita un 2% de vida máxima por cada fila que sube el alien.',hit(b,e){if(!e.dead)dmgE(e,e.max*.02*(b.push/ESP()))}},
+ 'wind+meteor':{d:'Lluvia de rocas: el meteorito empuja hacia arriba a toda la columna.',met(m){m.fn=mm=>colOf(mm.x).forEach(o=>pushUp(o,P*10))}},
+ // ---------- SANGRADO ----------
+ 'bleed+hole':{d:'Hemorragia: el remolino suma 1 herida cada medio segundo a los atrapados.',mod(o){o.vxo=(b)=>({tk:e=>wound(e,1,b.bl)})}},
+ 'bleed+sweep':{d:'Tajo: toda la fila recibe 2 heridas.',hit(b,e){rowOf(e).forEach(o=>wound(o,1,b.bl))}},
+ 'bleed+puddle':{d:'Charco de sangre: los que pisan el charco ganan 1 herida cada medio segundo.',mod(o){o.pdo=(b)=>({c:'#c8102e',tk:e=>wound(e,1,b.bl)})}},
+ 'bleed+charm':{d:'Herida de amor: si al acabar el encanto el alien tiene 5 heridas o más, muere desangrado.',hit(b,e){if(e.charm>0)e.hdl=1}},
+ 'bleed+guard':{d:'Espinas: cada bala enemiga destruida da 2 heridas al alien que la disparó.',guard(b,q){if(q.src)wound(q.src,2,b.bl)}},
+ 'bleed+vamp':{d:'Conde: cada 20 golpes que dejan herida cuentan como una muerte para recuperar vida.',hit(b){addVamp(.05,b.vamp)}},
+ 'bleed+snake':{d:'Látigo de espinas: deja 2 heridas a los aliens que pasan a su lado aunque no les dé.',tick(b){graze(b,P*8,o=>wound(o,2,b.bl))}},
+ 'bleed+tri':{d:'Zarpazo: si las tres balas aciertan al mismo alien, sus heridas se duplican.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.12,0,.12]);return true},hit(b,e){if(grpHit(b,e)===3)wound(e,e.bls||0,b.bl)}},
+ 'bleed+echo':{d:'Desgarro: el eco abre las heridas: 30% del daño extra por cada herida.',hit(b,e){if(b.isEcho&&!e.dead)dmgE(e,b.dmg*.3*(e.bls||0))}},
+ 'bleed+exec':{d:'Carnicero: el umbral de remate sube un 3% por cada herida.',thr(b,e){return b.exec+.03*(e.bls||0)}},
+ 'bleed+dis':{d:'Necrosis: quita además un 1% de vida máxima por cada herida.',hit(b,e){if(!e.dead)dmgE(e,e.max*.01*(e.bls||0))}},
+ 'bleed+meteor':{d:'Lluvia roja: el meteorito deja 3 heridas a todos los de su columna.',met(m,b){m.fn=mm=>colOf(mm.x).forEach(o=>wound(o,3,b.bl))}},
+ // ---------- AGUJERO NEGRO ----------
+ 'hole+sweep':{d:'Horizonte de sucesos: el remolino es una franja que atrapa a toda la fila.',mod(o){o.vxo=()=>({row:1})}},
+ 'hole+puddle':{d:'Sumidero: el charco también atrae a los aliens hacia su centro.',mod(o){o.pdo=()=>({pull:1})}},
+ 'hole+charm':{d:'Atracción: cada medio segundo dentro del remolino, 8% de encantarse.',mod(o){o.vxo=(b)=>({tk:e=>{if(Math.random()<.08)charmE(e,b.charmT)}})}},
+ 'hole+guard':{d:'Aspiradora: el remolino se traga las balas enemigas que pasan por él.',mod(o){o.vxo=()=>({eat:1})}},
+ 'hole+vamp':{d:'Vacío: los aliens que mueren dentro del remolino cuentan doble para recuperar vida.',vamp(e){return tm-(e.vT||-9)<.2?2:1}},
+ 'hole+snake':{d:'Espiral: mientras sube va dejando 3 remolinos pequeños por el camino.',tick(b,dt){if(b.frag||(b.sp||0)>=3)return;b.spT=(b.spT||.15)-dt;if(b.spT<=0){b.spT=.25;b.sp=(b.sp||0)+1;addVortex(b,b.x,b.y,{r:P*9,t:1})}}},
+ 'hole+tri':{d:'Constelación: los remolinos se atraen entre sí y se juntan.',mod(o){o.vxo=()=>({mg:1})}},
+ 'hole+echo':{d:'Púlsar: el remolino del eco tira con el doble de fuerza.',echoMod(nb){nb.vxo=()=>({pull:2})}},
+ 'hole+exec':{d:'Espaguetización: el remolino remata a los aliens que tengan menos del 30% de vida.',mod(o){o.vxo=()=>({tk:e=>{if(e.hp<e.max*.3)execE(e)}})}},
+ 'hole+dis':{d:'Antimateria: el remolino quita un 4% de vida máxima por segundo.',mod(o){o.vxo=()=>({tk:e=>dmgE(e,e.max*.02,1)})}},
+ 'hole+meteor':{d:'Gravedad: donde cae el meteorito se abre un remolino.',met(m,b){m.fn=mm=>addVortex(b,mm.x,mm.y)}},
+ // ---------- BARRIDO ----------
+ 'sweep+puddle':{d:'Riada: deja un charco a lo ancho de toda la fila.',mod(o){o.pdo=(b,p)=>({w:W,x:W/2})}},
+ 'sweep+charm':{d:'Ola: cada alien barrido tiene la mitad de probabilidad de encantarse.',hit(b,e){rowOf(e).forEach(o=>{if(Math.random()<b.charm*.5)charmE(o,b.charmT)})}},
+ 'sweep+guard':{d:'Barrera: deja debajo de la fila una barrera 3 s que para todas las balas enemigas.',hit(b,e){if(!b.frag)zone({x:W/2,y:e.y+ESP()*.8,w:W,h:P*3,t:3,block:99,c:'#d4af37'})}},
+ 'sweep+vamp':{d:'Banquete: si un barrido mata a 3 o más, cuentan triple para recuperar vida.',pre(b){b.k0=kills},hit(b){const n=kills-b.k0;if(n>=3)addVamp(n*2,b.vamp)}},
+ 'sweep+snake':{d:'Oleaje: barre la fila del alien y también la de encima.',hit(b,e){const up=en.find(o=>foe(o)&&o.y<e.y-EH()*1.5&&e.y-o.y<ESP()*1.6);if(up)sweepRow(b,up)}},
+ 'sweep+tri':{d:'Rastrillada: el barrido hace un 15% más por cada alien que haya en la fila.',pre(b,e){b.sweep0=b.sweep0||b.sweep;b.sweep=b.sweep0*(1+.15*rowOf(e).length)}},
+ 'sweep+echo':{d:'Resaca: el barrido del eco llega a la fila entera.',echoMod(nb){nb.sweepR=1e9}},
+ 'sweep+exec':{d:'Siega: remata a todos los de la fila que estén por debajo del umbral.',hit(b,e){rowOf(e).forEach(o=>{if(o.hp<o.max*b.exec)execE(o)})}},
+ 'sweep+dis':{d:'Borrador: el barrido también quita la mitad del % de vida máxima.',hit(b,e){rowOf(e).forEach(o=>dmgE(o,o.max*b.dis*.5))}},
+ 'sweep+meteor':{d:'Aguacero: cae un meteorito pequeño sobre cada alien de la fila (40% del daño).',hit(b,e){if(!b.frag)rowOf(e).slice(0,6).forEach(o=>meteorOn(o,b.dmg*.4,{t:rnd(.2,.5)}))}},
+ // ---------- CHARCO ----------
+ 'puddle+charm':{d:'Perfume: cada medio segundo en el charco, 6% de encantarse.',mod(o){o.pdo=(b)=>({c:'#ff8fd0',tk:e=>{if(Math.random()<.06)charmE(e,b.charmT)}})}},
+ 'puddle+guard':{d:'Foso: el charco disuelve las balas enemigas que pasan por encima.',mod(o){o.pdo=()=>({block:99})}},
+ 'puddle+vamp':{d:'Fuente: los aliens que mueren dentro del charco cuentan doble para recuperar vida.',vamp(e){return tm-(e.pT||-9)<.2?2:1}},
+ 'puddle+snake':{d:'Río: el charco se mueve despacio de lado a lado.',mod(o){o.pdo=()=>({vx:(Math.random()<.5?-1:1)*P*12})}},
+ 'puddle+tri':{d:'Delta: los charcos duran un 50% más y son el doble de anchos.',mod(o){o.pudT*=1.5;o.pdo=(b,p)=>({w:p.w*2})}},
+ 'puddle+echo':{d:'Goteo: el charco dura el doble y cada segundo repite el golpe al 50% a los que están dentro.',
+  mod(o){o.pud2=1;o.pdo=(b)=>({tk2:e=>dmgE(e,b.dmg*.5)})}},
+ 'puddle+exec':{d:'Arenas movedizas: los aliens dentro bajan a la mitad de velocidad y se rematan al 25% de vida.',mod(o){o.pdo=()=>({slow:1,c:'#c0a060',tk:e=>{if(e.hp<e.max*.25)execE(e)}})}},
+ 'puddle+dis':{d:'Disolvente: el charco quita un 2% de vida máxima por segundo.',mod(o){o.pdo=()=>({tk:e=>dmgE(e,e.max*.01,1)})}},
+ 'puddle+meteor':{d:'Cráter: donde cae el meteorito deja un charco del doble de tamaño.',met(m,b){m.fn=mm=>addPuddle(b,mm.x,mm.y,{w:P*28,h:P*14})}},
+ // ---------- ENCANTO ----------
+ 'charm+guard':{d:'Amuleto: los encantados paran las balas enemigas que les pasan cerca.',hit(b,e){if(e.charm>0)e.shieldCh=1}},
+ 'charm+vamp':{d:'Súcubo: los aliens que han estado encantados cuentan triple al morir para recuperar vida.',vamp(e){return e.wasCh?3:1}},
+ 'charm+snake':{d:'Encantador de serpientes: los encantados se ponen encima de ti y paran las balas enemigas.',hit(b,e){if(e.charm>0){e.guardian=1;e.shieldCh=1}}},
+ 'charm+tri':{d:'Trío: si encantas a uno, también se encantan los dos que tenga más cerca.',pre(b,e){b._c0=e.charm>0},hit(b,e){if(!b._c0&&e.charm>0)foesNear(e.x,e.y,TWO()*2,e).slice(0,2).forEach(o=>charmE(o,b.charmT))}},
+ 'charm+echo':{d:'Serenata: el eco vuelve a intentar encantar y, si ya está encantado, alarga el encanto 2 s.',hit(b,e){if(!b.isEcho)return;if(e.charm>0)e.charm+=2;else if(Math.random()<b.charm)charmE(e,b.charmT)}},
+ 'charm+exec':{d:'Viuda negra: al acabarse el encanto, el alien muere y explota.',hit(b,e){if(e.charm>0)e.vn=1}},
+ 'charm+dis':{d:'Mal de amores: los encantados disparan con el doble de daño pero pierden un 8% de vida por segundo.',hit(b,e){if(e.charm>0)e.mda=1}},
+ 'charm+meteor':{d:'Estrella del amor: el meteorito tiene un 30% de encantar a los aliens que alcanza.',met(m,b){m.fn=mm=>foesNear(mm.x,mm.y,P*14).forEach(o=>{if(Math.random()<.3)charmE(o,b.charmT)})}},
+ // ---------- ANTIBALAS ----------
+ 'guard+vamp':{d:'Égida: cada 8 balas enemigas destruidas cuentan como una muerte para recuperar vida.',guard(b){addVamp(1/8,b.vamp)}},
+ 'guard+snake':{d:'Barricada: su zona para balas es el triple de ancha.',mod(o){o.gR=P*13}},
+ 'guard+tri':{d:'Falange: las tres balas suben en paralelo, pegadas, y paran balas sin límite.',
+  mod(o){o.guard=99},fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[0,0,0],null,[-P*7,0,P*7]);return true}},
+ 'guard+echo':{d:'Bastión: donde golpea deja una barrera 2 s que para balas enemigas.',hit(b,e){if(!b.frag)zone({x:e.x,y:e.y+ESP()*.8,w:P*22,h:P*3,t:2,block:99,c:'#d4af37'})}},
+ 'guard+exec':{d:'Paladín: cada bala enemiga parada sube un 3% el umbral de remate de esa bala.',guard(b){b.exec+=.03}},
+ 'guard+dis':{d:'Deflector: las balas paradas vuelven hacia arriba como balas tuyas que desintegran.',guard(b,q){bullets.push(child(b,{x:q.x,y:q.y,vx:0,vy:-600,dmg:b.dmg*.6,dis:b.dis,r:P*1.5}))}},
+ 'guard+meteor':{d:'Paraguas: el meteorito borra todas las balas enemigas de su columna.',met(m){m.fn=mm=>{for(const q of ebs)if(Math.abs(q.x-mm.x)<P*10)q.dead=1}}},
+ // ---------- VAMPIRO ----------
+ 'vamp+snake':{d:'Basilisco: los aliens que muerde se quedan petrificados 1 s; matar a un petrificado cuenta doble para recuperar vida.',hit(b,e){frz(e,1);e.petr=1},vamp(e){return e.petr&&e.fz>0?2:1}},
+ 'vamp+tri':{d:'Tres colmillos: un alien que muere tocado por las tres balas cuenta triple para recuperar vida.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.12,0,.12]);return true},hit(b,e){if(grpHit(b,e)===3)e.t3=1},vamp(e){return e.t3?3:1}},
+ 'vamp+echo':{d:'Hambre: el eco hace un 50% más a los aliens con menos de la mitad de vida.',dmg(b,e){return b.isEcho&&e.hp<e.max*.5?1.5:1}},
+ 'vamp+exec':{d:'Nosferatu: cada remate cuenta como 3 muertes para recuperar vida.',execd(b){addVamp(2,b.vamp)}},
+ 'vamp+dis':{d:'Drenaje: el % de vida que quita sube 2 puntos por cada vida que te falte (hasta 5).',hit(b,e){if(!e.dead)dmgE(e,e.max*.02*Math.max(0,5-lives))}},
+ 'vamp+meteor':{d:'Luna de sangre: con 1 vida, cada 1,5 s el meteorito cae en todas las columnas con aliens.',
+  hit(b){if(lives!==1||b.frag||(TM.luna||0)>tm)return;TM.luna=tm+1.5;for(let c=0;c<cols();c++)meteorOn(topOfCol(c),b.dmg*b.met*.5,{t:rnd(.2,.5)})}},
+ // ---------- SERPIENTE ----------
+ 'snake+tri':{d:'Medusa: tres serpientes; si dos están juntas al golpear, hacen el doble de daño.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.16,0,.16]);return true},dmg(b,e){if(!b.grp)return 1;return bullets.some(o=>o!==b&&o.grp===b.grp&&!o.dead&&Math.hypot(o.x-b.x,o.y-b.y)<P*8)?2:1}},
+ 'snake+echo':{d:'Cascabel: en vez de eco, sale una nueva serpiente desde el alien golpeado hacia arriba.',
+  mod(o){o.noEcho=1},hit(b,e){if(b.isEcho||b.frag||b.cs)return;b.cs=1;echoes.push({t:.3,fn:()=>bullets.push(child(b,{x:e.x,y:e.y-EH(),vx:0,vy:-600,dmg:b.dmg*b.echo,snake:b.snake,frag:0,isEcho:1,hit:new Set([e]),r:b.r}))})}},
+ 'snake+exec':{d:'Mamba: remata a los aliens con poca vida que tenga al lado al serpentear, aunque no los toque.',tick(b){graze(b,P*8,o=>{if(o.hp<o.max*b.exec)execE(o)})}},
+ 'snake+dis':{d:'Ciempiés: sale como 4 segmentos seguidos; cada segmento golpea y desintegra (40% del daño).',
+  fire(mk,x,y,mul){const ph=Math.random()*6.283;for(let k=0;k<4;k++){const nb=mk(x,mul*.4,0);nb.y+=k*P*5;nb.ph=ph-k*.5;bullets.push(nb)}return true}},
+ 'snake+meteor':{d:'Dragón celeste: el meteorito cae serpenteando y golpea también a los aliens de alrededor (50%).',met(m){m.fn=mm=>foesNear(mm.x,mm.y,P*22).forEach(o=>dmgE(o,mm.dmg*.5))}},
+ // ---------- TRIPLE ----------
+ 'tri+echo':{d:'Sexteto: 0,3 s después repite las tres balas desde donde estés.',
+  mod(o){o.noEcho=1},fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.22,0,.22]);echoes.push({t:.3,fn:()=>{const nb=[-.22,0,.22].map(a=>{const b2=mk(px,mul*st.tri*st.echo,a);b2.x=b2.cx=px;b2.y=py-P*5;b2.vol=null;return b2});bullets.push(...nb)}});return true}},
+ 'tri+exec':{d:'Tribunal: si dos balas del trío dan al mismo alien y le queda menos de la mitad de vida, lo remata.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.12,0,.12]);return true},hit(b,e){if(grpHit(b,e)>=2&&!e.dead&&e.hp<e.max*.5)execE(e)}},
+ 'tri+dis':{d:'Trisector: el alien que recibe las tres balas pierde el triple de % de vida.',
+  fire(mk,x,y,mul,st){volley(mk,x,mul*st.tri,[-.12,0,.12]);return true},hit(b,e){if(grpHit(b,e)===3&&!e.dead)dmgE(e,e.max*b.dis*2)}},
+ 'tri+meteor':{d:'Tres estrellas: el meteorito cae tres veces seguidas en la misma columna.',met(m){m.twice=1;m.fn=mm=>{if(!mm.three){mm.three=1;meteorOn(topOfCol(mm.e.col),mm.dmg,{t:.6})}}}},
+ // ---------- ECO ----------
+ 'echo+exec':{d:'Sentencia: si al llegar el eco el alien tiene menos de la mitad de vida, lo remata.',thr(b){return b.isEcho?.5:0}},
+ 'echo+dis':{d:'Resonancia: el eco quita el doble de % de vida.',echoMod(nb){nb.dis*=2}},
+ 'echo+meteor':{d:'Tormenta de ecos: el eco llama un segundo meteorito.',hit(b,e){if(b.isEcho)meteorOn(topOfCol(e.col),b.dmg*b.met,{t:.2})}},
+ // ---------- EJECUCIÓN / DESINTEGRADOR ----------
+ 'exec+dis':{d:'Juicio final: remata a cualquier alien por debajo del 35% de vida.',thr(){return .35}},
+ 'exec+meteor':{d:'Apocalipsis: el meteorito remata a todo lo que alcanza por debajo del umbral.',met(m,b){m.fn=mm=>foesNear(mm.x,mm.y,P*16).forEach(o=>{if(o.hp<o.max*b.exec)execE(o)})}},
+ 'dis+meteor':{d:'Asteroide: el meteorito quita un 25% de vida máxima a todo lo que alcanza.',met(m){m.fn=mm=>foesNear(mm.x,mm.y,P*18).forEach(o=>dmgE(o,o.max*.25))}},
+};
+
+// ================= PÍXELES =================
+const SPR={
+ laser:['2','1','1','1'],
+ fire:['.2.','121','121','111','.1.'],
+ ice:['..2..','2.1.2','.111.','2.1.2','..2..'],
+ poison:['.1.','.1.','121','111','.1.'],
+ boom:['..2','.1.','111','121','111'],
+ zap:['.2.','.1.','1..','.1.','..1','.1.'],
+ bounce:['.11.','1221','1111','.11.'],
+ pierce:['.2.','.1.','111','.1.','.1.','.1.'],
+ split:['1.1','121','.1.','.1.'],
+ homing:['..2..','.111.','1.1.1','..1..','..1..'],
+ boomer:['11..','.21.','..11','.21.','11..'],
+ wind:['111.','...1','.22.','1...','.111'],
+ bleed:['..1..','.111.','11211','11111','.111.'],
+ hole:['.111.','12221','12.21','12221','.111.'],
+ sweep:['11111','.222.','11111'],
+ puddle:['.1.1.','11211','.111.'],
+ charm:['11.11','12111','.111.','..1..'],
+ guard:['11111','12221','.121.','..1..'],
+ vamp:['1...1','11.11','12121','.1.1.'],
+ snake:['.11','1..','.1.','..1','11.'],
+ tri:['1.1.1','1.1.1','.111.'],
+ echo:['.111.','1...1','..2..','1...1','.111.'],
+ exec:['.111.','12121','11111','.1.1.'],
+ dis:['1...1','.121.','..2..','.121.','1...1'],
+ meteor:['..2','.12','121','11.'],
+};
+// una fusión se dibuja como los dos proyectiles pegados, cada uno con su color
+const fuseCache={};
+function mixHex(a,b){const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round((v+B[i])/2).toString(16).padStart(2,'0')).join('')}
+function fuseRows(a,b){
+ // los dos proyectiles superpuestos y centrados: lo que es solo de uno lleva su color, lo que comparten se mezcla
+ const A=SPR[a],B=SPR[b],w=Math.max(A[0].length,B[0].length),h=Math.max(A.length,B.length);
+ const grid=Rw=>{const ox=Math.floor((w-Rw[0].length)/2),oy=Math.floor((h-Rw.length)/2),g=[];for(let r=0;r<h;r++){const row=[];for(let c=0;c<w;c++){const rr=r-oy,cc=c-ox;row.push(rr>=0&&rr<Rw.length&&cc>=0&&cc<Rw[0].length?Rw[rr][cc]:'.')}g.push(row)}return g};
+ const ga=grid(A),gb=grid(B);
+ return ga.map((row,r)=>row.map((ca,c)=>{const cb=gb[r][c];if(ca!=='.'&&cb!=='.')return (ca==='2'||cb==='2')?'W':'m';if(ca!=='.')return ca==='2'?'A':'a';if(cb!=='.')return cb==='2'?'B':'b';return '.'}).join(''));
+}
+function look(id){
+ if(isF(id)){
+  if(!fuseCache[id]){const [a,b]=parts2(id);fuseCache[id]={rows:fuseRows(a,b),map:{a:T[a].c,A:T[a].c2,b:T[b].c,B:T[b].c2,m:mixHex(T[a].c,T[b].c),W:'#ffffff'}}}
+  return fuseCache[id];
+ }
+ return{rows:SPR[id],map:{'1':T[id].c,'2':T[id].c2}};
+}
+const ESPR=[
+ [['..XXXX..','.XXXXXX.','X..XX..X','XXXXXXXX','XX....XX','.XXXXXX.','.X....X.','X......X'],
+  ['..XXXX..','.XXXXXX.','X..XX..X','XXXXXXXX','XX....XX','.XXXXXX.','X......X','.X....X.']],
+ [['..XXXX..','.XXXXXX.','XXX..XXX','XXX..XXX','.XXXXXX.','X.X..X.X','X.X..X.X','..X..X..'],
+  ['..XXXX..','.XXXXXX.','XXX..XXX','XXX..XXX','.XXXXXX.','X.X..X.X','.X.XX.X.','X......X']],
+ [['X......X','.X.XX.X.','.XXXXXX.','XX.XX.XX','XXXXXXXX','X.XXXX.X','..X..X..','.X....X.'],
+  ['X......X','.X.XX.X.','.XXXXXX.','XX.XX.XX','XXXXXXXX','X.XXXX.X','.X....X.','..X..X..']]
+];
+const ECOL=['#b06bff','#ff5c9a','#ffd23f'],EMUL=[1,1.8,3];
+const SHIP=['....1....','...111...','...121...','.1.111.1.','111111111','111.1.111','11.....11'];
+const EB=[['.1','1.','.1'],['1.','.1','1.']];
+const ARROW=['11111','.111.','..1..'];
+function drawSpr(g,rows,cx,cy,s,map){
+ const h=rows.length,w=rows[0].length,x0=Math.round(cx-w*s/2),y0=Math.round(cy-h*s/2);
+ for(let r=0;r<h;r++){const row=rows[r];for(let c=0;c<w;c++){const ch=row[c];if(ch==='.')continue;g.fillStyle=map[ch];g.fillRect(x0+c*s,y0+r*s,s,s)}}
+}
+
+
+// ================= ARTEFACTOS =================
+const CB='#5cff4a';
+// Familias: defensa (cian), disparo (blanco), aliados (azul), control (morado), experiencia (amarillo),
+// sinergias con un tipo de disparo (su color, piden tener ese disparo) y riesgo (rojo).
+const ART={
+ // ---------- DEFENSA ----------
+ barrera:{n:'Barrera',c:'#8ff0ff',m:3,ic:['2222222','.......','..1.1..','.11111.','1111111']},
+ escudo:{n:'Escudo',c:'#8ff0ff',m:3,ic:['.22222.','2.....2','2..1..2','..111..','.11111.']},
+ espejo:{n:'Espejo',c:'#8ff0ff',m:3,ic:['2.....2','.2...2.','..2.2..','...1...','..111..']},
+ pequena:{n:'Nave pequeña',c:'#8ff0ff',m:3,ic:['2.....2','.2...2.','...1...','..111..','.1.1.1.']},
+ segunda:{n:'Segunda oportunidad',c:'#8ff0ff',m:1,ic:['.11.11.','1111111','1112111','1122211','.11211.','..111..','...1...']},
+ venganza:{n:'Venganza',c:'#8ff0ff',m:3,ic:['2.2.2.2','.2.2.2.','2..1..2','..111..','.11111.']},
+ repulsor:{n:'Repulsor',c:'#8ff0ff',m:3,ic:['..1..','.111.','11111','..1..','22222']},
+ // ---------- DISPARO ----------
+ cadencia:{n:'Cadencia',c:'#ffffff',m:3,ic:['..1..','.111.','11111','..1..','..1..','.111.','11111','..1..']},
+ doble:{n:'Cañón doble',c:'#ffffff',m:3,ic:['.1.1.','.1.1.','.1.1.','11111','11111']},
+ rafaga:{n:'Ráfaga',c:'#ffffff',m:3,ic:['1.1.1','.111.','..1..','11111']},
+ carga:{n:'Cañón de carga',c:'#ffffff',m:3,ic:['.222.','21112','21112','.222.','..1..','.111.']},
+ critico:{n:'Crítico',c:'#ffffff',m:3,ic:['2.1.2','.212.','11211','.212.','2.1.2']},
+ racha:{n:'Racha',c:'#ffffff',m:3,ic:['....1','...11','..111','.1111','11111']},
+ calibre:{n:'Calibre',c:'#ffffff',m:3,ic:['.111.','11211','11111','11111','.111.']},
+ techo:{n:'Techo',c:'#ffffff',m:3,ic:['1111.','1..1.','1..1.','1.111','1..1.']},
+ metralla:{n:'Metralla',c:'#ffffff',m:3,ic:['1.2.1','.2.2.','2.1.2','.2.2.','1.2.1']},
+ sobrante:{n:'Sobrante',c:'#ffffff',m:3,ic:['..1..','..1..','.212.','..1..','.212.']},
+ retroceso:{n:'Retroceso',c:'#ffffff',m:3,ic:['.222.','..2..','.....','..1..','.111.']},
+ // ---------- ALIADOS ----------
+ dron:{n:'Dron',c:'#3d7bff',m:3,ic:['.1.1.','11111','12121','11111','.1.1.']},
+ gemelo:{n:'Gemelo',c:'#3d7bff',m:3,req:()=>alv('dron'),ic:['11..11','21..21','11..11']},
+ satelites:{n:'Satélites',c:'#3d7bff',m:3,ic:['..1..','.....','1.2.1','.....','..1..']},
+ escolta:{n:'Escolta',c:'#3d7bff',m:3,ic:['..2..','.....','1.1.1','11111','.1.1.']},
+ // ---------- CONTROL ----------
+ pulso:{n:'Pulso de frío',c:'#b06bff',m:3,ic:['..2..','2.1.2','.111.','2.1.2','..2..']},
+ lastre:{n:'Lastre',c:'#b06bff',m:3,ic:['..1..','..1..','11111','.111.','..1..','11111']},
+ orbital:{n:'Rayo orbital',c:'#b06bff',m:3,ic:['11111','..1..','.1...','..1..','...1.','..2..']},
+ barredora:{n:'Barredora',c:'#b06bff',m:3,ic:['1...1','11111','22222','11111','1...1']},
+ bolsillo:{n:'Agujero de bolsillo',c:'#b06bff',m:3,ic:['.111.','12221','12.21','12221','.111.']},
+ // ---------- EXPERIENCIA ----------
+ estudioso:{n:'Estudioso',c:'#ffd23f',m:3,ic:['11111','12121','11111','12121','11111']},
+ cuarta:{n:'Cuarta carta',c:'#ffd23f',m:1,ic:['11.11','11.11','.....','11.11','11.11']},
+ tirar:{n:'Volver a tirar',c:'#ffd23f',m:3,ic:['.111.','1...1','1.111','1..1.','.11..']},
+ cazador:{n:'Cazador',c:'#ffd23f',m:3,ic:['..1..','.111.','11211','.111.','..1..']},
+ iman:{n:'Imán de arcoíris',c:'#ffd23f',m:3,ic:['1...1','1...1','1...1','.111.','2...2']},
+ fusionista:{n:'Fusionista',c:'#ffd23f',m:3,ic:['1...2','.1.2.','..1..','.1.2.','1...2']},
+ // ---------- SINERGIAS (piden tener ese disparo) ----------
+ combustion:{n:'Combustión',c:'#ff8a1f',c2:'#5cff4a',m:3,req:()=>hasE('fire')&&hasE('poison'),ic:['.2.','121','121','111','.1.']},
+ anicos:{n:'Añicos',c:'#8ff0ff',m:3,req:()=>hasE('ice'),ic:['2...2','.1.1.','..1..','.1.1.','2...2']},
+ conductor:{n:'Conductor',c:'#fff200',c2:'#8ff0ff',m:3,req:()=>hasE('zap'),ic:['.2.','.1.','1..','.1.','..1','.1.']},
+ epidemia:{n:'Epidemia',c:'#5cff4a',m:3,req:()=>hasE('poison'),ic:['.1..1.','.1..1.','121121','111111','.1..1.']},
+ brasas:{n:'Brasas',c:'#ff8a1f',c2:'#ffe14d',m:3,req:()=>hasE('fire'),ic:['.2...','...2.','2....','..1.2','11111']},
+ hemorragia:{n:'Hemorragia',c:'#c8102e',c2:'#ff8a9a',m:3,req:()=>hasE('bleed'),ic:['..1..','.111.','11211','11111','.2.2.']},
+ gravedad:{n:'Gravedad',c:'#7a4dff',m:3,req:()=>hasE('hole'),ic:['2.....2','.11111.','.1...1.','.1.2.1.','.11111.','2.....2']},
+ detonador:{n:'Detonador',c:'#ff3b3b',m:3,req:()=>hasE('boom'),ic:['..2..','.111.','11211','.111.','..1..']},
+ persistente:{n:'Charco eterno',c:'#2fb39a',m:3,req:()=>hasE('puddle'),ic:['.1.1.','11211','.111.','.....','22222']},
+ // ---------- RIESGO ----------
+ cristal:{n:'Cañón de cristal',c:'#ff4d6d',m:1,ic:['..1..','.121.','12221','.121.','..1..']},
+ furia:{n:'Furia',c:'#ff4d6d',m:3,ic:['.111.','1.1.1','11111','.1.1.']},
+ avaricia:{n:'Avaricia',c:'#ff4d6d',m:3,ic:['.111.','12221','12111','11121','12221','.111.']},
+ acorralado:{n:'Acorralado',c:'#ff4d6d',m:3,ic:['1...1','.1.1.','..2..','.1.1.','1...1']},
+};
+// texto concreto de cada artefacto por nivel (lo que hace en ese nivel)
+const ARTT={
+ barrera:['Una barrera de energía sobre tu nave para 3 balas enemigas y se recarga en 8 s. Tus disparos la atraviesan','Para 5 balas, se recarga en 7 s','Para 8 balas, se recarga en 6 s'],
+ escudo:['Aguanta 1 golpe y se recarga en 20 s','Se recarga en 15 s','Se recarga en 10 s'],
+ espejo:['El 35% de las balas enemigas que destruyes (Barrera, Escudo, Satélites o tus disparos) rebotan contra la flota','El 65% rebotan','Rebotan todas'],
+ pequena:['Hitbox un 20% más pequeña: cuesta más darte','35% más pequeña','50% más pequeña'],
+ segunda:['Si mueres, revives con 1 vida y la flota se congela 4 s. Se gasta y deja libre el hueco'],
+ venganza:['Cuando te dan, explosión de radio 2,8 aliens que hace 2 veces la vida de un alien','Radio 3,6 aliens, 3 veces','Radio 4,5 aliens, 4 veces'],
+ repulsor:['El alien que llega abajo sale despedido hacia arriba y se congela 1,5 s. Se recarga en 30 s','Se recarga en 22 s','Se recarga en 15 s'],
+ cadencia:['Disparas un 15% más rápido','Un 28% más rápido','Un 39% más rápido'],
+ doble:['Cada disparo sale doble, cada bala al 65% del daño','Cada bala al 75%','Cada bala al 90%'],
+ rafaga:['Cada 5 disparos salen 2 balas extra abiertas al 80%','Cada 4 disparos','Cada 3 disparos'],
+ carga:['Cada 8 disparos sale uno cargado: triple daño y el doble de grande','Cada 6 disparos','Cada 4 disparos'],
+ critico:['12% de crítico: doble daño','20% de crítico','28% de crítico y los críticos explotan'],
+ racha:['+2% de daño por cada disparo seguido que acierta (hasta +50%)','+3% por disparo (hasta +75%)','+4% por disparo (hasta +100%)'],
+ calibre:['Zona de impacto de tus balas un 67% más ancha','Un 133% más ancha','El triple de ancha'],
+ techo:['Las balas que salen por arriba vuelven a bajar al 70% del daño','Vuelven al 100% del daño','Al 100% y rebotan dos veces'],
+ metralla:['Cuando un disparo tuyo mata, el alien suelta 2 esquirlas al 40% del daño','3 esquirlas','4 esquirlas'],
+ sobrante:['El daño que sobra al matar pasa al 50% al alien de detrás (en su columna)','Pasa al 75%','Pasa entero'],
+ retroceso:['Cada impacto empuja al alien un poco hacia arriba','Lo empuja el doble','Lo empuja el triple'],
+ dron:['Un dron a tu lado dispara un láser nivel 1 cada 0,8 s','Láser nivel 2 cada 0,6 s','Láser nivel 3 cada 0,45 s'],
+ gemelo:['El dron deja su láser y copia tu disparo al 60% del daño','Al 80% del daño','Al 100% del daño'],
+ satelites:['1 orbe gira a tu alrededor y para balas enemigas','2 orbes','3 orbes'],
+ escolta:['Cada 12 s cruza la pantalla una nave aliada disparando láseres hacia arriba','Cada 9 s','Cada 6 s'],
+ pulso:['Cada 25 s congela a toda la flota 2 s','Cada 20 s','Cada 15 s'],
+ lastre:['Los aliens bajan un 12% más despacio','Un 22% más despacio','Un 30% más despacio'],
+ orbital:['Cada 8 s un rayo golpea al alien más bajo: 1,5 veces la vida de un alien','Cada 6 s, 2 veces','Cada 4,5 s, 2,5 veces'],
+ barredora:['Cada 30 s destruye entera la fila más baja','Cada 25 s','Cada 20 s'],
+ bolsillo:['Cada 15 s se abre un agujero negro 3 s en el grupo de aliens más apretado','Cada 12 s','Cada 9 s'],
+ estudioso:['+20% de experiencia','+40% de experiencia','+60% de experiencia'],
+ cuarta:['Eliges entre 4 cartas en vez de 3'],
+ tirar:['1 cambio de cartas en cada subida de nivel','2 cambios','3 cambios'],
+ cazador:['Los aliens rosas y amarillos dan +50% de experiencia','+100%','+150%'],
+ iman:['El alien arcoíris (el de las fusiones) sale un 30% más a menudo','Un 60% más a menudo','El doble de a menudo'],
+ fusionista:['Las cartas para subir de nivel una fusión salen el doble de a menudo','El triple','4 veces más'],
+ combustion:['Quemar a un envenenado hace estallar el veneno: todo su daño pendiente ×1,2 de golpe','×1,6','×2'],
+ anicos:['Los congelados reciben un 30% más de daño','Un 60% más','El doble'],
+ conductor:['Un rayo sobre un congelado salta a su fila: hasta 4 aliens a cada lado','Hasta 7 a cada lado','La fila entera'],
+ epidemia:['Al golpear a un envenenado, 30% de contagiar al alien más cercano','60%','Siempre'],
+ brasas:['Los quemados al morir prenden a 1 cercano y le hacen el 30% de la vida de un alien','Prenden a 2','Prenden a 2 y además explotan'],
+ hemorragia:['Cada herida hace además un 8% de la vida de un alien por segundo','Un 12% por segundo','Un 16% por segundo'],
+ gravedad:['Los remolinos son un 25% más grandes','Un 50% más grandes','Un 75% más grandes'],
+ detonador:['Todas las explosiones son un 20% más grandes','Un 40% más grandes','Un 60% más grandes'],
+ persistente:['Los charcos y zonas duran un 50% más','El doble','2,5 veces más'],
+ cristal:['Haces el doble de daño, pero te quedas con 1 vida y no puedes ganar más'],
+ furia:['Con 1 sola vida disparas un 33% más rápido','Un 67% más rápido','El doble de rápido'],
+ avaricia:['+30% de experiencia, pero salen un 15% más de aliens','+60% de experiencia, 30% más aliens','+90% de experiencia, 50% más aliens'],
+ acorralado:['+1% de daño por cada alien en pantalla (hasta +40%)','Hasta +60%','Hasta +80%'],
+};
+
+// las 11 que ya tenían regla propia antes de este cambio
+const SPECIAL=new Set(['laser+zap','bounce+homing','pierce+homing','homing+snake','homing+boomer','pierce+boomer','bounce+boomer','wind+hole','boom+hole','split+tri','puddle+echo']);
+const WEAK=new Set(['laser','guard','vamp','exec','dis']);
+const f=n=>{const r=Math.round(n*100)/100;return String(r).replace('.',',')};
+const f1=n=>String(Math.round(n*10)/10).replace('.',',');
+const pct=n=>Math.round(n*100)+'%';
+const A=px=>f1(px/28); // unidad de tamaño: un alien ocupa unos 28 px con P=3
+function describe(b){
+ const L=[];
+ L.push('Daño '+f(b.dmg));
+ if(b.beam)L.push('Haz instantáneo a toda la columna');
+ if(b.tri)L.push('Sale en 3 balas abiertas, cada una con el '+pct(b.tri)+' del daño');
+ if(b.pierce)L.push('Atraviesa '+b.pierce+' aliens');
+ if(b.bnc)L.push('Rebota '+b.bnc+' veces al alien más cercano');
+ if(b.hom)L.push('Persigue al alien más cercano');
+ if(b.ret)L.push('Sube y vuelve a tu nave golpeando otra vez'+(b.ret>=3?'; si lo recoges, recargas':''));
+ if(b.snake)L.push('Hace eses de '+A(b.snake*2)+' aliens de ancho');
+ if(b.ex)L.push('Explota: radio de '+A(b.ex)+' aliens, '+pct(b.exm||.5)+' del daño');
+ if(b.ch)L.push('El rayo salta a '+b.ch+' aliens (80% del daño), hasta '+A(b.chr)+' aliens de distancia');
+ if(b.fr)L.push('Se parte en '+b.fr+' trozos con el 50% del daño');
+ if(b.burn)L.push('Quema '+f(b.burn)+'/s durante '+f(b.bt)+' s'+(b.ign?' y prende a '+b.ign+' cercano'+(b.ign>1?'s':''):''));
+ if(b.fz)L.push('Congela '+f(b.fz)+' s: ni baja ni dispara');
+ if(b.pdps)L.push('Veneno: 1 carga por golpe (máx. 6), cada carga '+f(b.pdps)+'/s durante 4 s; al morir contagia a '+b.psp);
+ if(b.bl)L.push('1 herida por golpe (máx. 10): cada herida suma +'+f(b.bl)+' a cada golpe que reciba');
+ if(b.push)L.push('Empuja '+f1(b.push/24)+' filas hacia arriba');
+ if(b.hole){const r=P*(12+b.hole*5),t=1+b.hole*.5;L.push('Remolino de '+A(r)+' aliens de radio durante '+f(t)+' s: atrae y hace '+f(b.hole*Math.max(1,b.dmg*.7))+'/s')}
+ if(b.sweep)L.push('Daña a la fila: '+pct(b.sweep)+' del daño, '+(b.sweepR>=1e8?'fila entera':'hasta '+A(b.sweepR)+' aliens a cada lado'));
+ if(b.pud)L.push('Charco durante '+f(b.pudT*(b.pud2?2:1))+' s que hace '+f(b.pud*Math.max(1,b.dmg*.7))+'/s');
+ if(b.charm)L.push(pct(b.charm)+' de encantar '+f(b.charmT)+' s: no baja y dispara a los suyos');
+ if(b.guard)L.push('Destruye '+b.guard+' balas enemigas que cruce');
+ if(b.vamp)L.push('+1 vida cada '+Math.round(30/b.vamp)+' aliens que mate');
+ if(b.echo)L.push('0,45 s después repite el golpe al '+pct(b.echo));
+ if(b.exec)L.push('Remata si le queda menos del '+pct(b.exec)+' de vida');
+ if(b.dis)L.push('Quita además el '+pct(b.dis)+' de la vida máxima');
+ if(b.met)L.push('Llama un meteorito al alien más alto de la columna: '+pct(b.met)+' del daño');
+ return L;
+}
+function sprite(cnv,id,box){const g=cnv.getContext('2d');g.clearRect(0,0,cnv.width,cnv.height);const L=look(id),s=Math.max(1,Math.floor(box/Math.max(L.rows.length,L.rows[0].length)));drawSpr(g,L.rows,cnv.width/2,cnv.height/2,s,L.map)}
+// tabla de disparos
+const tb=document.getElementById('basetb');
+for(const id of BASE){
+ const tr=document.createElement('tr');
+ const td0=document.createElement('td');td0.innerHTML='<div class="shot"><canvas class="spr" width="48" height="48"></canvas>'+T[id].n+'</div>';
+ tr.appendChild(td0);sprite(td0.querySelector('canvas'),id,36);
+ for(let l=1;l<=3;l++){const td=document.createElement('td');td.innerHTML='<ul>'+describe(S(id,l)).map(x=>'<li>'+x+'</li>').join('')+'</ul>';tr.appendChild(td)}
+ tb.appendChild(tr);
+}
+sprite(document.getElementById('mk1'),'fire',48);sprite(document.getElementById('mk2'),'f:fire+ice',48);
+// fusiones
+const items=[];
+for(let i=0;i<BASE.length;i++)for(let j=i+1;j<BASE.length;j++){
+ const a=BASE[i],b=BASE[j],k=a+'+'+b,tw=[FN[k],TW[k].d];
+ const st=SPECIAL.has(k)?'esp':(WEAK.has(a)||WEAK.has(b))?'floja':'suma';
+ const id='f:'+k;
+ items.push({a,b,k,id,name:tw[0],tw:tw[1],st,inh:describe(FS(id,3,3))});
+}
+const BADGE={esp:['b-esp','Antes: ya era especial'],floja:['b-floja','Antes: muy floja'],suma:['b-suma','Antes: solo sumaba']};
+const grid=document.getElementById('grid');
+for(const it of items){
+ const el=document.createElement('article');el.className='card';
+ const [bc,bt]=BADGE[it.st];
+ el.innerHTML='<header><canvas width="60" height="60"></canvas><div><h3>'+it.name+'</h3><div class="par"><i style="--c:'+T[it.a].c+'">'+T[it.a].n+'</i> + <i style="--c:'+T[it.b].c+'">'+T[it.b].n+'</i></div></div></header>'+
+  '<span class="badge '+bc+'">'+bt+'</span>'+
+  '<div class="tw"><div class="label">Efecto propio</div><p>'+it.tw+'</p></div>'+
+  '<div><div class="label">Además lleva</div><ul class="inh">'+it.inh.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>';
+ sprite(el.querySelector('canvas'),it.id,48);
+ it.el=el;it.text=(it.name+' '+it.tw+' '+T[it.a].n+' '+T[it.b].n).toLowerCase();
+ grid.appendChild(el);
+}
+// filtros
+const chips=document.getElementById('chips'),sel=new Set();
+for(const id of BASE){
+ const b=document.createElement('button');b.className='chip';b.type='button';b.setAttribute('aria-pressed','false');b.style.setProperty('--c',T[id].c);
+ b.innerHTML='<canvas width="36" height="36"></canvas>'+T[id].n;sprite(b.querySelector('canvas'),id,30);
+ b.onclick=()=>{if(sel.has(id))sel.delete(id);else sel.add(id);b.setAttribute('aria-pressed',sel.has(id));apply()};
+ chips.appendChild(b);
+}
+const q=document.getElementById('q'),stSel=document.getElementById('st'),cnt=document.getElementById('cnt');
+function apply(){
+ const s=q.value.trim().toLowerCase(),st=stSel.value;let n=0;
+ for(const it of items){
+  const ok=(!s||it.text.includes(s))&&(!st||it.st===st)&&[...sel].every(x=>it.a===x||it.b===x);
+  it.el.hidden=!ok;if(ok)n++;
+ }
+ cnt.textContent=n+' de 300 fusiones'+(sel.size?' · con '+[...sel].map(x=>T[x].n).join(' + '):'');
+}
+q.oninput=apply;stSel.onchange=apply;apply();
+// artefactos por familia
+const FAM=[['Defensa','barrera'],['Disparo','cadencia'],['Aliados','dron'],['Control','pulso'],['Experiencia','estudioso'],['Sinergias','combustion'],['Riesgo','cristal']];
+const REQ={gemelo:'Dron',combustion:'Fuego y Veneno',anicos:'Hielo',conductor:'Rayo',epidemia:'Veneno',brasas:'Fuego',hemorragia:'Sangrado',gravedad:'Agujero negro',detonador:'Explosión',persistente:'Charco'};
+const artKeys=Object.keys(ART),artList=document.getElementById('artlist');
+document.getElementById('n-art').textContent=artKeys.length;
+FAM.forEach(([fam,first],fi)=>{
+ const start=artKeys.indexOf(first),end=fi+1<FAM.length?artKeys.indexOf(FAM[fi+1][1]):artKeys.length;
+ const sec=document.createElement('div');sec.className='artfam';
+ sec.innerHTML='<div class="label">'+fam+'</div><div class="artgrid"></div>';
+ const g=sec.querySelector('.artgrid');
+ for(const id of artKeys.slice(start,end)){
+  const A=ART[id],el=document.createElement('article');el.className='leg';
+  el.innerHTML='<header class="ah"><canvas width="48" height="48"></canvas><div><h3>'+A.n+'</h3>'+(REQ[id]?'<div class="recipe">Pide: <b>'+REQ[id]+'</b></div>':'')+'</div></header>'+
+   '<ol class="lv">'+ARTT[id].map((t,i)=>'<li><span class="pipn">'+(ARTT[id].length>1?'Nv '+(i+1):'Único')+'</span>'+t+'</li>').join('')+'</ol>';
+  const c=el.querySelector('canvas'),cx=c.getContext('2d'),s=Math.max(1,Math.floor(36/Math.max(A.ic.length,A.ic[0].length)));
+  drawSpr(cx,A.ic,24,24,s,{'1':A.c,'2':A.c2||'#ffffff'});
+  g.appendChild(el);
+ }
+ artList.appendChild(sec);
+});
+</script>

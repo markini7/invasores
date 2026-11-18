@@ -1,0 +1,281 @@
+<title>Fusiones de Invasores</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: una columna de lectura con el estilo de la pantalla del juego; la lista de fusiones es una rejilla que pasa a una columna en el móvil */
+:root{
+ --bg:#07080c;--panel:#10131b;--panel2:#161a25;--line:#252b3b;--fg:#e6ecf2;--muted:#8fa0a0;
+ --accent:#5cff4a;--warn:#ffd23f;--bad:#ff4d6d;--cool:#8ff0ff;
+ --display:'Press Start 2P',ui-monospace,monospace;--body:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',ui-monospace,monospace;
+ color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 60px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:44px}
+h1{font-family:var(--display);font-size:clamp(18px,4vw,26px);line-height:1.4;margin:0;text-shadow:3px 3px 0 #1f6b1f;text-wrap:balance}
+h2{font-family:var(--display);font-size:13px;line-height:1.6;margin:0 0 14px;color:var(--accent);letter-spacing:.02em}
+h3{font-size:16px;margin:0;font-weight:600}
+p{margin:0;max-width:68ch}
+.lead{color:var(--muted);margin-top:12px}
+.stats{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.stat{border:2px solid var(--line);padding:10px 14px;min-width:120px}
+.stat b{display:block;font-family:var(--display);font-size:16px;margin-bottom:6px}
+.stat span{font-size:12px;color:var(--muted)}
+section{display:flex;flex-direction:column;gap:14px}
+.find{display:grid;gap:10px}
+.find div{border-left:4px solid var(--warn);background:var(--panel);padding:12px 14px}
+.find div b{display:block;margin-bottom:4px}
+.find div.bad{border-color:var(--bad)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:13px}
+th,td{text-align:left;vertical-align:top;padding:10px;border-bottom:1px solid var(--line)}
+th{font-family:var(--mono);font-weight:500;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:var(--panel)}
+td ul{margin:0;padding-left:16px}
+td li{margin:2px 0}
+.shot{display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap}
+canvas.spr{image-rendering:pixelated;width:32px;height:32px;flex:none}
+.example{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:14px}
+.mock{background:#000;border:3px solid var(--fg);padding:12px;display:flex;gap:12px;font-family:var(--display)}
+.mock .tag{font-size:7px;color:var(--muted);line-height:1.6;margin-bottom:6px}
+.mock .nm{font-size:11px;line-height:1.5}
+.mock .ds{font-family:var(--mono);font-size:12px;color:#c8d0d0;margin-top:8px;line-height:1.5}
+.mock .ds div+div{margin-top:3px}
+.mock .new{color:var(--accent)}
+.label{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+.filters{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--line)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+input#q{flex:1;min-width:0;background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:9px 12px;font:inherit}
+input#q:focus,select#st:focus,.chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+select#st{background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:9px;font:inherit}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.chip{flex:none;display:flex;align-items:center;gap:6px;background:var(--panel);color:var(--fg);border:2px solid var(--line);padding:5px 9px 5px 6px;font:500 12px var(--body);cursor:pointer}
+.chip canvas{width:18px;height:18px;image-rendering:pixelated}
+.chip[aria-pressed="true"]{border-color:var(--c);background:var(--panel2)}
+.count{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(290px,100%),1fr));gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.card header{display:flex;gap:12px;align-items:center}
+.card header canvas{width:40px;height:40px;image-rendering:pixelated;flex:none}
+.par{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:3px}
+.par i{font-style:normal;color:var(--c)}
+.badge{align-self:flex-start;font-family:var(--mono);font-size:11px;padding:2px 7px;border:1px solid currentColor}
+.b-esp{color:var(--cool)}.b-floja{color:var(--bad)}.b-suma{color:var(--warn)}
+.tw{border-left:3px solid var(--accent);padding-left:10px}
+.tw .label{color:var(--accent)}
+.inh{font-family:var(--mono);font-size:12px;color:#b9c4c4;margin:0;padding-left:16px}
+.inh li{margin:2px 0}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:12px}
+.opt{border:2px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:8px}
+.opt.rec{border-color:var(--accent)}
+.opt .label{color:var(--warn)}
+.opt.rec .label{color:var(--accent)}
+.legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));gap:12px}
+.leg{background:var(--panel);padding:14px;border:1px solid var(--line);display:flex;flex-direction:column;gap:6px}
+.leg .recipe{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.leg .recipe b{color:var(--fg);font-weight:500}
+.artgroups{display:flex;flex-direction:column;gap:22px}
+.artfam{display:flex;flex-direction:column;gap:10px}
+.artgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(280px,100%),1fr));gap:12px}
+.ah{display:flex;gap:12px;align-items:center}
+.ah canvas{width:36px;height:36px;image-rendering:pixelated;flex:none}
+ol.lv{margin:0;padding:0;list-style:none;display:grid;gap:6px;font-size:13px}
+ol.lv li{display:grid;grid-template-columns:52px 1fr;gap:8px}
+.pipn{font-family:var(--mono);font-size:11px;color:var(--muted);padding-top:2px}
+ol.q{margin:0;padding-left:20px;display:grid;gap:8px;max-width:70ch}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+ <header>
+  <h1>FUSIONES DE INVASORES</h1>
+  <p class="lead">Las 300 fusiones y los 46 artefactos de Invasores, tal y como están ahora en el juego: qué hace cada uno, con sus números. Al final, la propuesta de recetas legendarias.</p>
+  <div class="stats">
+   <div class="stat"><b>300</b><span>fusiones, todas con efecto propio</span></div>
+   <div class="stat"><b id="n-art">46</b><span>artefactos</span></div>
+   <div class="stat"><b>3</b><span>niveles por fusión</span></div>
+  </div>
+ </header>
+
+ <section>
+  <h2>QUÉ HA CAMBIADO</h2>
+  <div class="find">
+   <div><b>Las 300 fusiones tienen su efecto especial.</b><p>Antes, 289 solo sumaban los dos disparos. Ahora cada una mantiene los dos efectos y gana uno propio que los hace interactuar. Las 11 que ya eran especiales siguen igual, salvo Goteo, que se ha mejorado.</p></div>
+   <div><b>Las fusiones suben de nivel.</b><p>Hasta nivel 3, con cartas algo más raras que las demás mejoras. Cada nivel da más daño y más fuerza a sus efectos, y sube los disparos de origen si eran de nivel bajo.</p></div>
+   <div><b>Adiós a los búnkeres.</b><p>Tapaban tus propios disparos. Su papel lo hace ahora la Barrera: una línea de energía sobre tu nave que para balas enemigas y que tus disparos atraviesan. También se han ido los 8 artefactos que dependían de los búnkeres.</p></div>
+   <div><b>Artefactos nuevos.</b><p>Barrera, Espejo (ahora sirve con cualquier defensa), Cañón de carga, Metralla, Sobrante, Retroceso, Escolta, Agujero de bolsillo, Imán de arcoíris, Fusionista, Hemorragia, Gravedad, Detonador, Charco eterno y Acorralado.</p></div>
+  </div>
+ </section>
+
+ <section>
+  <h2>DESCRIPCIONES CON NÚMEROS</h2>
+  <p>El juego escribe las descripciones a partir de los números reales del disparo. Así siempre son exactas y, al subir de nivel, la carta enseña lo que cambia. La unidad de tamaño es «aliens»: un radio de 1,5 aliens alcanza al alien golpeado y a los pegados a él. Un alien normal empieza con 1 de vida.</p>
+  <div class="example">
+   <div><div class="label" style="margin-bottom:8px">Carta de subir de nivel (ejemplo)</div>
+    <div class="mock"><canvas class="spr" id="mk1" width="66" height="66"></canvas><div><div class="tag">DISPARO · NIVEL 2</div><div class="nm">Fuego</div><div class="ds"><div>Daño 0,8</div><div>Quema 0,7 → <span class="new">1,05</span>/s durante 2,5 s</div><div>Prende a 0 → <span class="new">1</span> alien cercano</div></div></div></div></div>
+   <div><div class="label" style="margin-bottom:8px">Carta de fusión (ejemplo)</div>
+    <div class="mock"><canvas class="spr" id="mk2" width="66" height="66"></canvas><div><div class="tag">FUSIÓN · FUEGO + HIELO</div><div class="nm">Choque térmico</div><div class="ds"><div class="new">Choque térmico: golpear a un alien congelado le hace el triple de daño.</div><div>Daño 1,2 · Quema 1,75/s durante 2,5 s y prende a 3 · Congela 4,06 s</div></div></div></div></div>
+  </div>
+  <div class="label">Los 25 disparos, nivel por nivel</div>
+  <div class="tablewrap"><table><thead><tr><th>Disparo</th><th>Nivel 1</th><th>Nivel 2</th><th>Nivel 3</th></tr></thead><tbody id="basetb"></tbody></table></div>
+ </section>
+
+ <section id="lista">
+  <h2>LAS 300 FUSIONES</h2>
+  <p>Cada fusión mantiene los dos efectos de sus disparos y gana un efecto propio. «Además lleva» es lo que hereda en nivel de fusión 1, con los dos disparos a nivel 3. La etiqueta dice cómo estaba antes de este cambio.</p>
+  <div class="filters">
+   <div class="row"><input id="q" type="search" placeholder="Buscar por nombre o efecto" aria-label="Buscar fusión"><select id="st" aria-label="Estado actual"><option value="">Todas</option><option value="floja">Antes muy flojas</option><option value="suma">Antes solo sumaban</option><option value="esp">Ya eran especiales</option></select></div>
+   <div class="chips" id="chips" aria-label="Filtrar por disparo"></div>
+   <div class="row"><span class="count" id="cnt"></span></div>
+  </div>
+  <div class="grid" id="grid"></div>
+ </section>
+
+ <section id="artefactos">
+  <h2>LOS ARTEFACTOS</h2>
+  <p>Seis huecos por partida. Los de sinergia solo salen si tienes el disparo que piden (o una fusión que lo lleve).</p>
+  <div id="artlist" class="artgroups"></div>
+ </section>
+
+ <section>
+  <h2>FUSIONES DE FUSIONES</h2>
+  <p>Hay tres formas de plantearlo. Las tres funcionan con el juego actual; la diferencia es cuántas habría y cuánto carácter tendría cada una.</p>
+  <div class="opts">
+   <div class="opt rec"><span class="label">Recomendada</span><h3>Recetas legendarias</h3><p>Una lista cerrada de unas 20–25 recetas: dos fusiones concretas (o una fusión y un disparo a nivel 3) dan un disparo legendario con nombre, aspecto y mecánica únicos, que no se parece a nada anterior. Es como funcionan las evoluciones en juegos como Ball x Pit: descubrirlas es parte del juego.</p><p class="par">Pocas, muy especiales y fáciles de equilibrar una a una.</p></div>
+   <div class="opt"><span class="label">Alternativa</span><h3>Tercer elemento</h3><p>A una fusión le sumas un tercer disparo a nivel 3 y queda una fusión triple. Salen unas 2.300 combinaciones, así que no pueden tener nombre ni efecto propio: serían «tres efectos sumados».</p><p class="par">Muchísima variedad, poco carácter.</p></div>
+   <div class="opt"><span class="label">Alternativa</span><h3>Fusión libre</h3><p>Cualquier par de fusiones se junta en una de cuatro elementos. Son decenas de miles de combinaciones, imposibles de nombrar o equilibrar a mano.</p><p class="par">No la recomiendo.</p></div>
+  </div>
+  <p>Con las recetas legendarias, propongo que aparezca un alien dorado (más raro que el arcoíris) cuando tengas en tus huecos las dos piezas de una receta, las dos a nivel 3. Al matarlo, eliges si las fusionas. Un hueco queda libre, como al fusionar ahora.</p>
+  <div class="label">Ocho recetas de ejemplo</div>
+  <div class="legend">
+   <div class="leg"><h3>Estrella moribunda</h3><div class="recipe"><b>Supernova</b> + <b>Plasma</b></div><p>Cada disparo crea una estrella pequeña que atrae y quema durante 2 s; al apagarse explota y lanza rayos a 6 aliens.</p></div>
+   <div class="leg"><h3>Cero kelvin</h3><div class="recipe"><b>Cañón de riel</b> + <b>Carámbano</b></div><p>Un haz que congela la columna entera. Si el haz da a un congelado, lo rompe en esquirlas que congelan a toda su fila.</p></div>
+   <div class="leg"><h3>Tormenta de fuego</h3><div class="recipe"><b>Napalm</b> + <b>Huracán</b></div><p>Deja torbellinos de fuego que vagan 4 s por la pantalla, suben a los aliens que tocan y los dejan ardiendo.</p></div>
+   <div class="leg"><h3>Colonia</h3><div class="recipe"><b>Enjambre</b> + <b>Colmillo</b></div><p>Cada disparo suelta 6 murciélagos que persiguen aliens distintos. Cada muerte de murciélago cuenta doble para recuperar vida.</p></div>
+   <div class="leg"><h3>Hoja eterna</h3><div class="recipe"><b>Yoyó</b> + <b>Guillotina</b></div><p>Un disco que no vuelve nunca: rebota por la pantalla 5 s atravesando y rematando todo lo que baja del 30%.</p></div>
+   <div class="leg"><h3>Corte real</h3><div class="recipe"><b>Cupido</b> + <b>Égida</b></div><p>Los encantados forman una escolta en fila delante de ti que para balas y dispara a la flota. Máximo 4 a la vez.</p></div>
+   <div class="leg"><h3>Fin del mundo</h3><div class="recipe"><b>Juicio final</b> + <b>Gravedad</b></div><p>Cada 3 disparos cae un meteorito con su propio agujero negro que traga y remata a todo lo que baje del 35%.</p></div>
+   <div class="leg"><h3>Hidra venenosa</h3><div class="recipe"><b>Hidra</b> + <b>Recaída</b></div><p>Serpientes que se parten en dos cada vez que muerden; cada mordida duplica las cargas de veneno del alien.</p></div>
+  </div>
+  <div class="label">Para decidir antes de programarlo</div>
+  <ol class="q">
+   <li>¿Te gustan las recetas legendarias, o prefieres el tercer elemento?</li>
+   <li>¿Se ven las recetas en algún sitio (un libro de recetas que se va rellenando), o se descubren a ciegas?</li>
+   <li>¿Las fusiones suben de nivel con cartas? Lo necesitamos si las legendarias piden fusiones a nivel 3.</li>
+  </ol>
+ </section>
+</div>
+
+<script>
+let P=3;
+/*GAME*/
+/*ARTS*/
+// las 11 que ya tenían regla propia antes de este cambio
+const SPECIAL=new Set(['laser+zap','bounce+homing','pierce+homing','homing+snake','homing+boomer','pierce+boomer','bounce+boomer','wind+hole','boom+hole','split+tri','puddle+echo']);
+const WEAK=new Set(['laser','guard','vamp','exec','dis']);
+const f=n=>{const r=Math.round(n*100)/100;return String(r).replace('.',',')};
+const f1=n=>String(Math.round(n*10)/10).replace('.',',');
+const pct=n=>Math.round(n*100)+'%';
+const A=px=>f1(px/28); // unidad de tamaño: un alien ocupa unos 28 px con P=3
+function describe(b){
+ const L=[];
+ L.push('Daño '+f(b.dmg));
+ if(b.beam)L.push('Haz instantáneo a toda la columna');
+ if(b.tri)L.push('Sale en 3 balas abiertas, cada una con el '+pct(b.tri)+' del daño');
+ if(b.pierce)L.push('Atraviesa '+b.pierce+' aliens');
+ if(b.bnc)L.push('Rebota '+b.bnc+' veces al alien más cercano');
+ if(b.hom)L.push('Persigue al alien más cercano');
+ if(b.ret)L.push('Sube y vuelve a tu nave golpeando otra vez'+(b.ret>=3?'; si lo recoges, recargas':''));
+ if(b.snake)L.push('Hace eses de '+A(b.snake*2)+' aliens de ancho');
+ if(b.ex)L.push('Explota: radio de '+A(b.ex)+' aliens, '+pct(b.exm||.5)+' del daño');
+ if(b.ch)L.push('El rayo salta a '+b.ch+' aliens (80% del daño), hasta '+A(b.chr)+' aliens de distancia');
+ if(b.fr)L.push('Se parte en '+b.fr+' trozos con el 50% del daño');
+ if(b.burn)L.push('Quema '+f(b.burn)+'/s durante '+f(b.bt)+' s'+(b.ign?' y prende a '+b.ign+' cercano'+(b.ign>1?'s':''):''));
+ if(b.fz)L.push('Congela '+f(b.fz)+' s: ni baja ni dispara');
+ if(b.pdps)L.push('Veneno: 1 carga por golpe (máx. 6), cada carga '+f(b.pdps)+'/s durante 4 s; al morir contagia a '+b.psp);
+ if(b.bl)L.push('1 herida por golpe (máx. 10): cada herida suma +'+f(b.bl)+' a cada golpe que reciba');
+ if(b.push)L.push('Empuja '+f1(b.push/24)+' filas hacia arriba');
+ if(b.hole){const r=P*(12+b.hole*5),t=1+b.hole*.5;L.push('Remolino de '+A(r)+' aliens de radio durante '+f(t)+' s: atrae y hace '+f(b.hole*Math.max(1,b.dmg*.7))+'/s')}
+ if(b.sweep)L.push('Daña a la fila: '+pct(b.sweep)+' del daño, '+(b.sweepR>=1e8?'fila entera':'hasta '+A(b.sweepR)+' aliens a cada lado'));
+ if(b.pud)L.push('Charco durante '+f(b.pudT*(b.pud2?2:1))+' s que hace '+f(b.pud*Math.max(1,b.dmg*.7))+'/s');
+ if(b.charm)L.push(pct(b.charm)+' de encantar '+f(b.charmT)+' s: no baja y dispara a los suyos');
+ if(b.guard)L.push('Destruye '+b.guard+' balas enemigas que cruce');
+ if(b.vamp)L.push('+1 vida cada '+Math.round(30/b.vamp)+' aliens que mate');
+ if(b.echo)L.push('0,45 s después repite el golpe al '+pct(b.echo));
+ if(b.exec)L.push('Remata si le queda menos del '+pct(b.exec)+' de vida');
+ if(b.dis)L.push('Quita además el '+pct(b.dis)+' de la vida máxima');
+ if(b.met)L.push('Llama un meteorito al alien más alto de la columna: '+pct(b.met)+' del daño');
+ return L;
+}
+function sprite(cnv,id,box){const g=cnv.getContext('2d');g.clearRect(0,0,cnv.width,cnv.height);const L=look(id),s=Math.max(1,Math.floor(box/Math.max(L.rows.length,L.rows[0].length)));drawSpr(g,L.rows,cnv.width/2,cnv.height/2,s,L.map)}
+// tabla de disparos
+const tb=document.getElementById('basetb');
+for(const id of BASE){
+ const tr=document.createElement('tr');
+ const td0=document.createElement('td');td0.innerHTML='<div class="shot"><canvas class="spr" width="48" height="48"></canvas>'+T[id].n+'</div>';
+ tr.appendChild(td0);sprite(td0.querySelector('canvas'),id,36);
+ for(let l=1;l<=3;l++){const td=document.createElement('td');td.innerHTML='<ul>'+describe(S(id,l)).map(x=>'<li>'+x+'</li>').join('')+'</ul>';tr.appendChild(td)}
+ tb.appendChild(tr);
+}
+sprite(document.getElementById('mk1'),'fire',48);sprite(document.getElementById('mk2'),'f:fire+ice',48);
+// fusiones
+const items=[];
+for(let i=0;i<BASE.length;i++)for(let j=i+1;j<BASE.length;j++){
+ const a=BASE[i],b=BASE[j],k=a+'+'+b,tw=[FN[k],TW[k].d];
+ const st=SPECIAL.has(k)?'esp':(WEAK.has(a)||WEAK.has(b))?'floja':'suma';
+ const id='f:'+k;
+ items.push({a,b,k,id,name:tw[0],tw:tw[1],st,inh:describe(FS(id,3,3))});
+}
+const BADGE={esp:['b-esp','Antes: ya era especial'],floja:['b-floja','Antes: muy floja'],suma:['b-suma','Antes: solo sumaba']};
+const grid=document.getElementById('grid');
+for(const it of items){
+ const el=document.createElement('article');el.className='card';
+ const [bc,bt]=BADGE[it.st];
+ el.innerHTML='<header><canvas width="60" height="60"></canvas><div><h3>'+it.name+'</h3><div class="par"><i style="--c:'+T[it.a].c+'">'+T[it.a].n+'</i> + <i style="--c:'+T[it.b].c+'">'+T[it.b].n+'</i></div></div></header>'+
+  '<span class="badge '+bc+'">'+bt+'</span>'+
+  '<div class="tw"><div class="label">Efecto propio</div><p>'+it.tw+'</p></div>'+
+  '<div><div class="label">Además lleva</div><ul class="inh">'+it.inh.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>';
+ sprite(el.querySelector('canvas'),it.id,48);
+ it.el=el;it.text=(it.name+' '+it.tw+' '+T[it.a].n+' '+T[it.b].n).toLowerCase();
+ grid.appendChild(el);
+}
+// filtros
+const chips=document.getElementById('chips'),sel=new Set();
+for(const id of BASE){
+ const b=document.createElement('button');b.className='chip';b.type='button';b.setAttribute('aria-pressed','false');b.style.setProperty('--c',T[id].c);
+ b.innerHTML='<canvas width="36" height="36"></canvas>'+T[id].n;sprite(b.querySelector('canvas'),id,30);
+ b.onclick=()=>{if(sel.has(id))sel.delete(id);else sel.add(id);b.setAttribute('aria-pressed',sel.has(id));apply()};
+ chips.appendChild(b);
+}
+const q=document.getElementById('q'),stSel=document.getElementById('st'),cnt=document.getElementById('cnt');
+function apply(){
+ const s=q.value.trim().toLowerCase(),st=stSel.value;let n=0;
+ for(const it of items){
+  const ok=(!s||it.text.includes(s))&&(!st||it.st===st)&&[...sel].every(x=>it.a===x||it.b===x);
+  it.el.hidden=!ok;if(ok)n++;
+ }
+ cnt.textContent=n+' de 300 fusiones'+(sel.size?' · con '+[...sel].map(x=>T[x].n).join(' + '):'');
+}
+q.oninput=apply;stSel.onchange=apply;apply();
+// artefactos por familia
+const FAM=[['Defensa','barrera'],['Disparo','cadencia'],['Aliados','dron'],['Control','pulso'],['Experiencia','estudioso'],['Sinergias','combustion'],['Riesgo','cristal']];
+const REQ={gemelo:'Dron',combustion:'Fuego y Veneno',anicos:'Hielo',conductor:'Rayo',epidemia:'Veneno',brasas:'Fuego',hemorragia:'Sangrado',gravedad:'Agujero negro',detonador:'Explosión',persistente:'Charco'};
+const artKeys=Object.keys(ART),artList=document.getElementById('artlist');
+document.getElementById('n-art').textContent=artKeys.length;
+FAM.forEach(([fam,first],fi)=>{
+ const start=artKeys.indexOf(first),end=fi+1<FAM.length?artKeys.indexOf(FAM[fi+1][1]):artKeys.length;
+ const sec=document.createElement('div');sec.className='artfam';
+ sec.innerHTML='<div class="label">'+fam+'</div><div class="artgrid"></div>';
+ const g=sec.querySelector('.artgrid');
+ for(const id of artKeys.slice(start,end)){
+  const A=ART[id],el=document.createElement('article');el.className='leg';
+  el.innerHTML='<header class="ah"><canvas width="48" height="48"></canvas><div><h3>'+A.n+'</h3>'+(REQ[id]?'<div class="recipe">Pide: <b>'+REQ[id]+'</b></div>':'')+'</div></header>'+
+   '<ol class="lv">'+ARTT[id].map((t,i)=>'<li><span class="pipn">'+(ARTT[id].length>1?'Nv '+(i+1):'Único')+'</span>'+t+'</li>').join('')+'</ol>';
+  const c=el.querySelector('canvas'),cx=c.getContext('2d'),s=Math.max(1,Math.floor(36/Math.max(A.ic.length,A.ic[0].length)));
+  drawSpr(cx,A.ic,24,24,s,{'1':A.c,'2':A.c2||'#ffffff'});
+  g.appendChild(el);
+ }
+ artList.appendChild(sec);
+});
+</script>
