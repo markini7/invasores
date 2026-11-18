@@ -31,13 +31,24 @@ function buildWeb(html) {
   const out2 = html.replace('<title>Invasores</title>', '<title>Invasores</title>\n' + head);
   const prev2 = fs.existsSync(web) ? fs.readFileSync(web, 'utf8') : '';
   if (prev2 !== out2) fs.writeFileSync(web, out2);
+  buildLab(out2);
+}
+
+// Laboratorio (docs/lab.html): el mismo juego con game/lab.js al final para probar disparos.
+function buildLab(web) {
+  const lab = fs.readFileSync(path.join(__dirname, '..', 'game', 'lab.js'), 'utf8');
+  const out = web.replace('<title>Invasores</title>', '<title>Laboratorio de Invasores</title>')
+    .replace(/<\/body>\s*<\/html>\s*$/, '<script>\n' + lab + '</script>\n</body>\n</html>\n');
+  const dst = path.join(__dirname, '..', 'docs', 'lab.html');
+  const prev = fs.existsSync(dst) ? fs.readFileSync(dst, 'utf8') : '';
+  if (prev !== out) fs.writeFileSync(dst, out);
 }
 
 build();
 if (process.argv.includes('--watch')) {
   let t;
   fs.watch(path.dirname(src), (_, file) => {
-    if (file !== 'index.html') return;
+    if (file !== 'index.html' && file !== 'lab.js') return;
     clearTimeout(t);
     t = setTimeout(() => { try { build(); } catch (e) { console.error(e.message); } }, 100);
   });
