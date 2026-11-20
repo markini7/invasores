@@ -10,7 +10,7 @@
     act: 0, min: 2, fixed: false, rate: 1, speed: 1, inv: true, ebs: true,
     hits: 0, why: '',
     // pruebas de diseño (solo laboratorio)
-    d: { eb: 'actual', big: false, top: false, trail: false, hb: 'siempre', pause: 'actual', move: 'salta', dot: false, txt: false, lvl: false },
+    d: { eb: 'laser', big: false, top: false, trail: false, hb: 'siempre', pause: 'actual', move: 'salta', dot: false, txt: false, lvl: false },
   };
   try { const sv = JSON.parse(localStorage.getItem(LS) || 'null'); if (sv) for (const k of ['slots', 'min', 'fixed', 'rate', 'speed', 'inv', 'ebs']) if (sv[k] != null) LAB[k] = sv[k]; if (sv.d) Object.assign(LAB.d, sv.d); } catch (e) {}
   const save = () => { try { localStorage.setItem(LS, JSON.stringify({ slots: LAB.slots, min: LAB.min, fixed: LAB.fixed, rate: LAB.rate, speed: LAB.speed, inv: LAB.inv, ebs: LAB.ebs, d: LAB.d })) } catch (e) {} };
@@ -160,7 +160,7 @@ body.labtxt #ov .card .ds{font-size:9px;line-height:1.7}body.labtxt #ov .card .n
     const D = LAB.d, ch = (k, v, t) => `<span class="chip${D[k] === v ? ' on' : ''}" role="button" tabindex="0" data-dk="${k}" data-dv="${v}">${t}</span>`, tg = (k, t) => `<span class="chip${D[k] ? ' on' : ''}" role="button" tabindex="0" data-dt="${k}">${t}</span>`;
     h += `<div class="sec"><div class="tg" style="color:#ffd23f">PRUEBAS DE DISEÑO · SOLO EN EL LABORATORIO</div>
       <div class="grp"><div class="ds">Bala enemiga</div><canvas class="pv" id="lpv" width="840" height="168"></canvas>
-        <div class="chips">${ch('eb', 'actual', 'ACTUAL')}${ch('eb', 'laser', 'LASER')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
+        <div class="chips">${ch('eb', 'laser', 'LASER (JUEGO)')}${ch('eb', 'actual', 'ANTIGUA')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
         <div class="chips">${tg('big', 'GRANDE')}${tg('top', 'ENCIMA DE TODO')}${tg('trail', 'ESTELA')}</div></div>
       <div class="grp"><div class="ds">Barras de vida de los aliens</div><div class="chips">${ch('hb', 'siempre', 'SIEMPRE')}${ch('hb', 'golpe', 'TRAS GOLPE')}${ch('hb', 'fina', 'FINAS')}${ch('hb', 'nunca', 'NUNCA')}</div></div>
       <div class="grp"><div class="ds">Botón de pausa</div><div class="chips">${ch('pause', 'actual', 'COMO AHORA')}${ch('pause', 'barra', 'EN LA BARRA')}</div></div>

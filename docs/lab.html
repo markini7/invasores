@@ -930,6 +930,16 @@ function stBands(e,base){const L=[];
 function stTint(e,base){const L=stBands(e,base),n=L.length;if(!n)return null;if(n===1)return L[0];
  const per=.45,u=tm/per+(e.cx||0)*.01,i=Math.floor(u)%n,f=u-Math.floor(u),k=f<.7?0:(f-.7)/.3;
  return k?mixK(L[i],L[(i+1)%n],k*k*(3-2*k)):L[i]}
+// bala enemiga: el zigzag de siempre con brillo de láser (halo que respira y un rastro corto de luz)
+function drawEBullet(q){
+ const fl=.75+.25*Math.sin(tm*14+q.x*.05),vx=q.vx||0,vy=q.vy||100,m=Math.hypot(vx,vy)||1;
+ ctx.globalCompositeOperation='lighter';
+ ctx.globalAlpha=.55*fl;ctx.drawImage(glowTex('#ff4d6d'),q.x-P*5,q.y-P*5,P*10,P*10);
+ ctx.fillStyle='#ff4d6d';for(let i=1;i<=3;i++){ctx.globalAlpha=(.5-i*.14)*fl;const w=Math.max(1,Math.round(P*.9)),h=Math.max(1,Math.round(P*1.4));ctx.fillRect(Math.round(q.x-vx/m*P*1.4*i-w/2),Math.round(q.y-vy/m*P*1.4*i-h/2),w,h)}
+ ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+ if(q.big){ctx.fillStyle='#ff6a85';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}
+ else{drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff6a85'});const d=Math.max(1,Math.round(P*.5));ctx.globalAlpha=.9;ctx.fillStyle='#ffe0e6';ctx.fillRect(Math.round(q.x-d/2),Math.round(q.y-d/2),d,d);ctx.globalAlpha=1}
+}
 function drawSpr(g,rows,cx,cy,s,map){
  const h=rows.length,w=rows[0].length,x0=Math.round(cx-w*s/2),y0=Math.round(cy-h*s/2);
  for(let r=0;r<h;r++){const row=rows[r];for(let c=0;c<w;c++){const ch=row[c];if(ch==='.')continue;g.fillStyle=map[ch];g.fillRect(x0+c*s,y0+r*s,s,s)}}
@@ -2614,7 +2624,7 @@ function draw(){
   if(b.ally){drawSpr(ctx,SPR.laser,b.x,b.y,P,{'1':'#ff8fd0','2':'#ffffff'});continue}
   const L=look(b.id);drawSpr(ctx,L.rows,b.x,b.y,bs*(b.big?2:1),b.crit?{...L.map,'1':'#ffffff',a:'#ffffff'}:L.map);
  }
- if(window.labEB)labEB(0);else{for(const q of ebs){if(q.big){ctx.fillStyle='#ff4d6d';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffd0d8';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}else drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff4d6d'})}}
+ if(window.labEB)labEB(0);else{for(const q of ebs)drawEBullet(q);}
  // nave, dron, satélites, escudo
  if(state!=='title'&&state!=='over'&&state!=='dead'){
   if(!(inv>0&&Math.floor(tm*12)%2)){
@@ -2792,7 +2802,7 @@ showTitle();requestAnimationFrame(loop);
     act: 0, min: 2, fixed: false, rate: 1, speed: 1, inv: true, ebs: true,
     hits: 0, why: '',
     // pruebas de diseño (solo laboratorio)
-    d: { eb: 'actual', big: false, top: false, trail: false, hb: 'siempre', pause: 'actual', move: 'salta', dot: false, txt: false, lvl: false },
+    d: { eb: 'laser', big: false, top: false, trail: false, hb: 'siempre', pause: 'actual', move: 'salta', dot: false, txt: false, lvl: false },
   };
   try { const sv = JSON.parse(localStorage.getItem(LS) || 'null'); if (sv) for (const k of ['slots', 'min', 'fixed', 'rate', 'speed', 'inv', 'ebs']) if (sv[k] != null) LAB[k] = sv[k]; if (sv.d) Object.assign(LAB.d, sv.d); } catch (e) {}
   const save = () => { try { localStorage.setItem(LS, JSON.stringify({ slots: LAB.slots, min: LAB.min, fixed: LAB.fixed, rate: LAB.rate, speed: LAB.speed, inv: LAB.inv, ebs: LAB.ebs, d: LAB.d })) } catch (e) {} };
@@ -2942,7 +2952,7 @@ body.labtxt #ov .card .ds{font-size:9px;line-height:1.7}body.labtxt #ov .card .n
     const D = LAB.d, ch = (k, v, t) => `<span class="chip${D[k] === v ? ' on' : ''}" role="button" tabindex="0" data-dk="${k}" data-dv="${v}">${t}</span>`, tg = (k, t) => `<span class="chip${D[k] ? ' on' : ''}" role="button" tabindex="0" data-dt="${k}">${t}</span>`;
     h += `<div class="sec"><div class="tg" style="color:#ffd23f">PRUEBAS DE DISEÑO · SOLO EN EL LABORATORIO</div>
       <div class="grp"><div class="ds">Bala enemiga</div><canvas class="pv" id="lpv" width="840" height="168"></canvas>
-        <div class="chips">${ch('eb', 'actual', 'ACTUAL')}${ch('eb', 'laser', 'LASER')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
+        <div class="chips">${ch('eb', 'laser', 'LASER (JUEGO)')}${ch('eb', 'actual', 'ANTIGUA')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
         <div class="chips">${tg('big', 'GRANDE')}${tg('top', 'ENCIMA DE TODO')}${tg('trail', 'ESTELA')}</div></div>
       <div class="grp"><div class="ds">Barras de vida de los aliens</div><div class="chips">${ch('hb', 'siempre', 'SIEMPRE')}${ch('hb', 'golpe', 'TRAS GOLPE')}${ch('hb', 'fina', 'FINAS')}${ch('hb', 'nunca', 'NUNCA')}</div></div>
       <div class="grp"><div class="ds">Botón de pausa</div><div class="chips">${ch('pause', 'actual', 'COMO AHORA')}${ch('pause', 'barra', 'EN LA BARRA')}</div></div>

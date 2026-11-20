@@ -39,7 +39,7 @@ function buildLab(web) {
   const lab = fs.readFileSync(path.join(__dirname, '..', 'game', 'lab.js'), 'utf8');
   // enganches solo para el laboratorio: dibujo de balas enemigas, capa de encima y barras de vida
   const hook = (html, from, to) => { if (!html.includes(from)) throw new Error('lab: no encuentro en el juego: ' + from.slice(0, 60)); return html.replace(from, to); };
-  const EBD = "for(const q of ebs){if(q.big){ctx.fillStyle='#ff4d6d';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffd0d8';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}else drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff4d6d'})}";
+  const EBD = "for(const q of ebs)drawEBullet(q);";
   let g = hook(web, EBD, 'if(window.labEB)labEB(0);else{' + EBD + '}');
   g = hook(g, ' // viñetas y destellos de pantalla', ' if(window.labEB)labEB(1);\n // viñetas y destellos de pantalla');
   g = hook(g, 'if(e.hp<e.max&&!fogged){', 'if(e.hp<e.max&&!fogged&&(!window.labHB||labHB(e))){');

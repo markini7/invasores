@@ -924,6 +924,16 @@ function stBands(e,base){const L=[];
 function stTint(e,base){const L=stBands(e,base),n=L.length;if(!n)return null;if(n===1)return L[0];
  const per=.45,u=tm/per+(e.cx||0)*.01,i=Math.floor(u)%n,f=u-Math.floor(u),k=f<.7?0:(f-.7)/.3;
  return k?mixK(L[i],L[(i+1)%n],k*k*(3-2*k)):L[i]}
+// bala enemiga: el zigzag de siempre con brillo de láser (halo que respira y un rastro corto de luz)
+function drawEBullet(q){
+ const fl=.75+.25*Math.sin(tm*14+q.x*.05),vx=q.vx||0,vy=q.vy||100,m=Math.hypot(vx,vy)||1;
+ ctx.globalCompositeOperation='lighter';
+ ctx.globalAlpha=.55*fl;ctx.drawImage(glowTex('#ff4d6d'),q.x-P*5,q.y-P*5,P*10,P*10);
+ ctx.fillStyle='#ff4d6d';for(let i=1;i<=3;i++){ctx.globalAlpha=(.5-i*.14)*fl;const w=Math.max(1,Math.round(P*.9)),h=Math.max(1,Math.round(P*1.4));ctx.fillRect(Math.round(q.x-vx/m*P*1.4*i-w/2),Math.round(q.y-vy/m*P*1.4*i-h/2),w,h)}
+ ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
+ if(q.big){ctx.fillStyle='#ff6a85';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffffff';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}
+ else{drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff6a85'});const d=Math.max(1,Math.round(P*.5));ctx.globalAlpha=.9;ctx.fillStyle='#ffe0e6';ctx.fillRect(Math.round(q.x-d/2),Math.round(q.y-d/2),d,d);ctx.globalAlpha=1}
+}
 function drawSpr(g,rows,cx,cy,s,map){
  const h=rows.length,w=rows[0].length,x0=Math.round(cx-w*s/2),y0=Math.round(cy-h*s/2);
  for(let r=0;r<h;r++){const row=rows[r];for(let c=0;c<w;c++){const ch=row[c];if(ch==='.')continue;g.fillStyle=map[ch];g.fillRect(x0+c*s,y0+r*s,s,s)}}
@@ -2608,7 +2618,7 @@ function draw(){
   if(b.ally){drawSpr(ctx,SPR.laser,b.x,b.y,P,{'1':'#ff8fd0','2':'#ffffff'});continue}
   const L=look(b.id);drawSpr(ctx,L.rows,b.x,b.y,bs*(b.big?2:1),b.crit?{...L.map,'1':'#ffffff',a:'#ffffff'}:L.map);
  }
- for(const q of ebs){if(q.big){ctx.fillStyle='#ff4d6d';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffd0d8';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}else drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff4d6d'})}
+ for(const q of ebs)drawEBullet(q);
  // nave, dron, satélites, escudo
  if(state!=='title'&&state!=='over'&&state!=='dead'){
   if(!(inv>0&&Math.floor(tm*12)%2)){
