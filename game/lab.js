@@ -160,7 +160,7 @@ body.labtxt #ov .card .ds{font-size:9px;line-height:1.7}body.labtxt #ov .card .n
     const D = LAB.d, ch = (k, v, t) => `<span class="chip${D[k] === v ? ' on' : ''}" role="button" tabindex="0" data-dk="${k}" data-dv="${v}">${t}</span>`, tg = (k, t) => `<span class="chip${D[k] ? ' on' : ''}" role="button" tabindex="0" data-dt="${k}">${t}</span>`;
     h += `<div class="sec"><div class="tg" style="color:#ffd23f">PRUEBAS DE DISEÑO · SOLO EN EL LABORATORIO</div>
       <div class="grp"><div class="ds">Bala enemiga</div><canvas class="pv" id="lpv" width="840" height="168"></canvas>
-        <div class="chips">${ch('eb', 'actual', 'ACTUAL')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
+        <div class="chips">${ch('eb', 'actual', 'ACTUAL')}${ch('eb', 'laser', 'LASER')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
         <div class="chips">${tg('big', 'GRANDE')}${tg('top', 'ENCIMA DE TODO')}${tg('trail', 'ESTELA')}</div></div>
       <div class="grp"><div class="ds">Barras de vida de los aliens</div><div class="chips">${ch('hb', 'siempre', 'SIEMPRE')}${ch('hb', 'golpe', 'TRAS GOLPE')}${ch('hb', 'fina', 'FINAS')}${ch('hb', 'nunca', 'NUNCA')}</div></div>
       <div class="grp"><div class="ds">Botón de pausa</div><div class="chips">${ch('pause', 'actual', 'COMO AHORA')}${ch('pause', 'barra', 'EN LA BARRA')}</div></div>
@@ -218,7 +218,7 @@ body.labtxt #ov .card .ds{font-size:9px;line-height:1.7}body.labtxt #ov .card .n
   }, 250);
 
   // ---------- pruebas de diseño ----------
-  const EBC = { actual: '#ff4d6d', nucleo: '#ff2a3a', orbe: '#ff2a50', rombo: '#ff2bd6', flecha: '#ff2a3a' };
+  const EBC = { actual: '#ff4d6d', laser: '#ff4d6d', nucleo: '#ff2a3a', orbe: '#ff2a50', rombo: '#ff2bd6', flecha: '#ff2a3a' };
   const ROMBO = ['..1..', '.121.', '12221', '.121.', '..1..'];
   function sqr(g, x, y, w, h, c, a) { g.globalAlpha = a == null ? 1 : a; g.fillStyle = c; g.fillRect(Math.round(x - w / 2), Math.round(y - h / 2), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); }
   // dibuja una bala enemiga con el estilo elegido
@@ -227,7 +227,16 @@ body.labtxt #ov .card .ds{font-size:9px;line-height:1.7}body.labtxt #ov .card .n
     const vx = q.vx || 0, vy = q.vy || 100;
     if (D.trail) for (let i = 4; i >= 1; i--) sqr(g, q.x - vx * .022 * i, q.y - vy * .022 * i, u * (1.6 - i * .25), u * (1.6 - i * .25), c, .55 - i * .1);
     g.globalAlpha = 1;
-    if (D.eb === 'actual') { if (q.big) { sqr(g, q.x, q.y, u * 3, u * 3, '#ff4d6d'); sqr(g, q.x, q.y, u, u, '#ffd0d8') } else drawSpr(g, EB[Math.floor(q.y / (P * 4)) % 2], q.x, q.y, u, { '1': '#ff4d6d' }); }
+    if (D.eb === 'laser') { // el zigzag de siempre con brillo de láser: halo que respira, rastro de luz y zigzag más vivo
+      const fl = .75 + .25 * Math.sin(tm * 14 + q.x * .05), m = Math.hypot(vx, vy) || 1;
+      g.globalCompositeOperation = 'lighter';
+      g.globalAlpha = .55 * fl; g.drawImage(glowTex('#ff4d6d'), q.x - u * 5, q.y - u * 5, u * 10, u * 10);
+      for (let i = 1; i <= 3; i++) sqr(g, q.x - vx / m * u * 1.4 * i, q.y - vy / m * u * 1.4 * i, u * .9, u * 1.4, '#ff4d6d', (.5 - i * .14) * fl);
+      g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+      if (q.big) { sqr(g, q.x, q.y, u * 3, u * 3, '#ff6a85'); sqr(g, q.x, q.y, u, u, '#ffffff') }
+      else { const row = EB[Math.floor(q.y / (P * 4)) % 2]; drawSpr(g, row, q.x, q.y, u, { '1': '#ff6a85' }); sqr(g, q.x, q.y, Math.max(1, u * .5), Math.max(1, u * .5), '#ffe0e6', .9); }
+    }
+    else if (D.eb === 'actual') { if (q.big) { sqr(g, q.x, q.y, u * 3, u * 3, '#ff4d6d'); sqr(g, q.x, q.y, u, u, '#ffd0d8') } else drawSpr(g, EB[Math.floor(q.y / (P * 4)) % 2], q.x, q.y, u, { '1': '#ff4d6d' }); }
     else if (D.eb === 'nucleo') { sqr(g, q.x, q.y, u * 3 + 2, u * 5 + 2, '#1a0008'); sqr(g, q.x, q.y, u * 3, u * 5, pulse ? '#ff2a3a' : '#ff6a78'); sqr(g, q.x, q.y, u, u * 3, '#ffffff'); }
     else if (D.eb === 'orbe') { g.globalAlpha = .85; g.drawImage(glowTex(c), q.x - u * 4.5, q.y - u * 4.5, u * 9, u * 9); g.globalAlpha = 1; g.beginPath(); g.arc(q.x, q.y, u * 1.6, 0, 6.283); g.fillStyle = c; g.fill(); g.lineWidth = 1; g.strokeStyle = '#1a0008'; g.stroke(); g.beginPath(); g.arc(q.x, q.y, u * .75, 0, 6.283); g.fillStyle = '#ffffff'; g.fill(); }
     else if (D.eb === 'rombo') { for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) drawSpr(g, ROMBO, q.x + ox, q.y + oy, u, { '1': '#14000f', '2': '#14000f' }); drawSpr(g, ROMBO, q.x, q.y, u, { '1': pulse ? '#ff2bd6' : '#ff7ae6', '2': '#ffffff' }); }
