@@ -2599,7 +2599,7 @@ function draw(){
   const tint=(e.flash>0||e.charm>0||e.aim>0||e.army)?null:stTint(e,ec===col?ECOL[e.type]:ec);
   drawSpr(ctx,ESPR[e.type][e.anim||0],e.x,e.y-(e.hop>0?EP:0),EP,{X:tint||ec});
   if(e.charm>0)drawSpr(ctx,SPR.charm,e.x,e.y-EH()-EP*4,EP,{'1':'#ff8fd0','2':'#ffffff'});
-  if(e.hp<e.max&&!fogged){const w=EP*8,x0=Math.round(e.x-w/2),y0=Math.round(e.y+EH()+EP);ctx.fillStyle='#222';ctx.fillRect(x0,y0,w,Math.max(2,P-1));ctx.fillStyle=ECOL[e.type];ctx.fillRect(x0,y0,Math.round(w*Math.max(0,e.hp/e.max)),Math.max(2,P-1))}
+  if(e.hp<e.max&&!fogged&&(!window.labHB||labHB(e))){const w=EP*8,x0=Math.round(e.x-w/2),y0=Math.round(e.y+EH()+EP);ctx.fillStyle='#222';ctx.fillRect(x0,y0,w,Math.max(2,P-1));ctx.fillStyle=ECOL[e.type];ctx.fillRect(x0,y0,Math.round(w*Math.max(0,e.hp/e.max)),Math.max(2,P-1))}
   ctx.globalAlpha=1;
  }
  // nubes de niebla de la Nebulosa
@@ -2614,7 +2614,7 @@ function draw(){
   if(b.ally){drawSpr(ctx,SPR.laser,b.x,b.y,P,{'1':'#ff8fd0','2':'#ffffff'});continue}
   const L=look(b.id);drawSpr(ctx,L.rows,b.x,b.y,bs*(b.big?2:1),b.crit?{...L.map,'1':'#ffffff',a:'#ffffff'}:L.map);
  }
- for(const q of ebs){if(q.big){ctx.fillStyle='#ff4d6d';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffd0d8';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}else drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff4d6d'})}
+ if(window.labEB)labEB(0);else{for(const q of ebs){if(q.big){ctx.fillStyle='#ff4d6d';ctx.fillRect(Math.round(q.x-P*1.5),Math.round(q.y-P*1.5),P*3,P*3);ctx.fillStyle='#ffd0d8';ctx.fillRect(Math.round(q.x-P*.5),Math.round(q.y-P*.5),P,P)}else drawSpr(ctx,EB[Math.floor(q.y/(P*4))%2],q.x,q.y,P,{'1':'#ff4d6d'})}}
  // nave, dron, satélites, escudo
  if(state!=='title'&&state!=='over'&&state!=='dead'){
   if(!(inv>0&&Math.floor(tm*12)%2)){
@@ -2676,6 +2676,7 @@ function draw(){
  ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;
  ctx.restore();
  if(state==='title')return;
+ if(window.labEB)labEB(1);
  // viñetas y destellos de pantalla
  if(lives===1&&(state==='play'||state==='lvup'))vignette('255,40,70',.22+.12*Math.sin(tm*5));
  vignette('255,40,70',vigR*.85);vignette('120,230,255',vigC*.7);
@@ -2790,9 +2791,11 @@ showTitle();requestAnimationFrame(loop);
     slots: [{ a: 'laser', b: null, l: 3 }, { a: null, b: null, l: 3 }, { a: null, b: null, l: 3 }],
     act: 0, min: 2, fixed: false, rate: 1, speed: 1, inv: true, ebs: true,
     hits: 0, why: '',
+    // pruebas de diseño (solo laboratorio)
+    d: { eb: 'actual', big: false, top: false, trail: false, hb: 'siempre', pause: 'actual', move: 'salta', dot: false, txt: false, lvl: false },
   };
-  try { const sv = JSON.parse(localStorage.getItem(LS) || 'null'); if (sv) for (const k of ['slots', 'min', 'fixed', 'rate', 'speed', 'inv', 'ebs']) if (sv[k] != null) LAB[k] = sv[k]; } catch (e) {}
-  const save = () => { try { localStorage.setItem(LS, JSON.stringify({ slots: LAB.slots, min: LAB.min, fixed: LAB.fixed, rate: LAB.rate, speed: LAB.speed, inv: LAB.inv, ebs: LAB.ebs })) } catch (e) {} };
+  try { const sv = JSON.parse(localStorage.getItem(LS) || 'null'); if (sv) for (const k of ['slots', 'min', 'fixed', 'rate', 'speed', 'inv', 'ebs']) if (sv[k] != null) LAB[k] = sv[k]; if (sv.d) Object.assign(LAB.d, sv.d); } catch (e) {}
+  const save = () => { try { localStorage.setItem(LS, JSON.stringify({ slots: LAB.slots, min: LAB.min, fixed: LAB.fixed, rate: LAB.rate, speed: LAB.speed, inv: LAB.inv, ebs: LAB.ebs, d: LAB.d })) } catch (e) {} };
 
   // ---------- la horda: minuto de partida, dificultad fija o creciente, cantidad y velocidad ----------
   const R0 = Object.assign({}, R);
@@ -2809,8 +2812,11 @@ showTitle();requestAnimationFrame(loop);
   const U0 = update;
   update = function (dt) {
     if (LAB.open) return;
-    if (LAB.on) { pend = 0; xp = 0; TM.rb = 1e9; fuseReady = false; if (!LAB.ebs) ebs = []; }
+    // sin subidas de nivel: la experiencia no puede llegar a la cuenta ni aunque mueran muchos a la vez
+    const noLv = LAB.on && !LAB.d.lvl;
+    if (LAB.on) { if (noLv) { pend = 0; xp = -1e9; } TM.rb = 1e9; fuseReady = false; if (!LAB.ebs) ebs = []; }
     U0(dt);
+    if (noLv) { xp = 0; xpShow = 0; pend = 0; }
   };
   const H0 = hurt;
   hurt = function () {
@@ -2859,6 +2865,10 @@ showTitle();requestAnimationFrame(loop);
 #labb{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));top:60px;z-index:4;display:none;align-items:center;gap:8px;font-family:'Press Start 2P',ui-monospace,monospace;font-size:7px;color:#c8d0d0;pointer-events:none}
 #labb.show{display:flex}
 #labb .st{text-align:right;line-height:1.9;text-shadow:1px 1px 0 #000}
+#pz.mini{width:26px;height:26px;gap:4px}#pz.mini i{width:4px;height:10px}
+body.labtxt #ov .card .ds{font-size:9px;line-height:1.7}body.labtxt #ov .card .nm{font-size:13px}body.labtxt #ov .card .tag{font-size:8px}
+#lab .pv{width:100%;height:84px;image-rendering:pixelated;border:2px solid #222;background:#000}
+#lab .grp{display:flex;flex-direction:column;gap:6px}
 #labb .b{pointer-events:auto;border:2px solid #4a5656;background:rgba(0,0,0,.35);padding:9px 7px;font-size:8px;color:#fff;cursor:pointer}
 `;
   document.head.appendChild(st);
@@ -2928,6 +2938,18 @@ showTitle();requestAnimationFrame(loop);
       <input type="range" id="lspd" min="0.25" max="4" step="0.25" value="${LAB.speed}" aria-label="Velocidad de bajada">
       <div class="chips"><span class="chip${LAB.inv ? ' on' : ''}" role="button" tabindex="0" id="linv">INVENCIBLE</span><span class="chip${LAB.ebs ? ' on' : ''}" role="button" tabindex="0" id="lebs">BALAS ENEMIGAS</span></div>
       <div class="ds">Sin subidas de nivel ni artefactos. Invencible: los golpes se cuentan pero no quitan vida.</div></div>`;
+    // pruebas de diseño
+    const D = LAB.d, ch = (k, v, t) => `<span class="chip${D[k] === v ? ' on' : ''}" role="button" tabindex="0" data-dk="${k}" data-dv="${v}">${t}</span>`, tg = (k, t) => `<span class="chip${D[k] ? ' on' : ''}" role="button" tabindex="0" data-dt="${k}">${t}</span>`;
+    h += `<div class="sec"><div class="tg" style="color:#ffd23f">PRUEBAS DE DISEÑO · SOLO EN EL LABORATORIO</div>
+      <div class="grp"><div class="ds">Bala enemiga</div><canvas class="pv" id="lpv" width="840" height="168"></canvas>
+        <div class="chips">${ch('eb', 'actual', 'ACTUAL')}${ch('eb', 'nucleo', 'NUCLEO')}${ch('eb', 'orbe', 'ORBE')}${ch('eb', 'rombo', 'ROMBO')}${ch('eb', 'flecha', 'FLECHA')}</div>
+        <div class="chips">${tg('big', 'GRANDE')}${tg('top', 'ENCIMA DE TODO')}${tg('trail', 'ESTELA')}</div></div>
+      <div class="grp"><div class="ds">Barras de vida de los aliens</div><div class="chips">${ch('hb', 'siempre', 'SIEMPRE')}${ch('hb', 'golpe', 'TRAS GOLPE')}${ch('hb', 'fina', 'FINAS')}${ch('hb', 'nunca', 'NUNCA')}</div></div>
+      <div class="grp"><div class="ds">Botón de pausa</div><div class="chips">${ch('pause', 'actual', 'COMO AHORA')}${ch('pause', 'barra', 'EN LA BARRA')}</div></div>
+      <div class="grp"><div class="ds">Movimiento de la nave</div><div class="chips">${ch('move', 'salta', 'SALTA AL DEDO')}${ch('move', 'rel', 'RELATIVO')}</div>
+        <div class="ds">Relativo: la nave se mueve lo mismo que arrastras, pongas el dedo donde lo pongas.</div></div>
+      <div class="grp"><div class="ds">Otros</div><div class="chips">${tg('dot', 'PUNTO DE IMPACTO')}${tg('txt', 'TEXTO DE CARTAS GRANDE')}${tg('lvl', 'SUBIDAS DE NIVEL')}</div>
+        <div class="ds">Activa las subidas de nivel para ver las cartas con el texto grande.</div></div></div>`;
     h += `<div class="go" role="button" tabindex="0" id="lgo">${LAB.on ? 'REINICIAR CON ESTO' : 'EMPEZAR'}</div>`;
     panel.innerHTML = h;
     // dibujos
@@ -2951,6 +2973,9 @@ showTitle();requestAnimationFrame(loop);
     on(document.getElementById('lebs'), () => { LAB.ebs = !LAB.ebs; save(); render(); });
     on(document.getElementById('lres'), () => { sfx('pick'); closePanel(); });
     on(document.getElementById('lgo'), start);
+    panel.querySelectorAll('[data-dk]').forEach(el => on(el, () => { LAB.d[el.dataset.dk] = el.dataset.dv; applyD(); save(); render(); }));
+    panel.querySelectorAll('[data-dt]').forEach(el => on(el, () => { LAB.d[el.dataset.dt] = !LAB.d[el.dataset.dt]; applyD(); save(); render(); }));
+    preview();
     accFix(panel);
   }
   // estadísticas del disparo para la ficha (sin depender de la partida)
@@ -2973,6 +2998,72 @@ showTitle();requestAnimationFrame(loop);
     const m = LAB.fixed ? LAB.min * 60 : gt + LAB.min * 60;
     document.getElementById('labst').innerHTML = `HORDA ${fmtT(m)}<br>${kills} MUERTES · ${Math.round(kills / Math.max(gt / 60, 1 / 60))}/MIN<br>${LAB.hits} GOLPES`;
   }, 250);
+
+  // ---------- pruebas de diseño ----------
+  const EBC = { actual: '#ff4d6d', nucleo: '#ff2a3a', orbe: '#ff2a50', rombo: '#ff2bd6', flecha: '#ff2a3a' };
+  const ROMBO = ['..1..', '.121.', '12221', '.121.', '..1..'];
+  function sqr(g, x, y, w, h, c, a) { g.globalAlpha = a == null ? 1 : a; g.fillStyle = c; g.fillRect(Math.round(x - w / 2), Math.round(y - h / 2), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); }
+  // dibuja una bala enemiga con el estilo elegido
+  function drawEB(g, q, D) {
+    const u = Math.max(1, Math.round(P * (D.big ? 1.5 : 1) * (q.big ? 1.5 : 1))), c = EBC[D.eb] || '#ff4d6d', pulse = Math.floor(tm * 8) % 2;
+    const vx = q.vx || 0, vy = q.vy || 100;
+    if (D.trail) for (let i = 4; i >= 1; i--) sqr(g, q.x - vx * .022 * i, q.y - vy * .022 * i, u * (1.6 - i * .25), u * (1.6 - i * .25), c, .55 - i * .1);
+    g.globalAlpha = 1;
+    if (D.eb === 'actual') { if (q.big) { sqr(g, q.x, q.y, u * 3, u * 3, '#ff4d6d'); sqr(g, q.x, q.y, u, u, '#ffd0d8') } else drawSpr(g, EB[Math.floor(q.y / (P * 4)) % 2], q.x, q.y, u, { '1': '#ff4d6d' }); }
+    else if (D.eb === 'nucleo') { sqr(g, q.x, q.y, u * 3 + 2, u * 5 + 2, '#1a0008'); sqr(g, q.x, q.y, u * 3, u * 5, pulse ? '#ff2a3a' : '#ff6a78'); sqr(g, q.x, q.y, u, u * 3, '#ffffff'); }
+    else if (D.eb === 'orbe') { g.globalAlpha = .85; g.drawImage(glowTex(c), q.x - u * 4.5, q.y - u * 4.5, u * 9, u * 9); g.globalAlpha = 1; g.beginPath(); g.arc(q.x, q.y, u * 1.6, 0, 6.283); g.fillStyle = c; g.fill(); g.lineWidth = 1; g.strokeStyle = '#1a0008'; g.stroke(); g.beginPath(); g.arc(q.x, q.y, u * .75, 0, 6.283); g.fillStyle = '#ffffff'; g.fill(); }
+    else if (D.eb === 'rombo') { for (const [ox, oy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) drawSpr(g, ROMBO, q.x + ox, q.y + oy, u, { '1': '#14000f', '2': '#14000f' }); drawSpr(g, ROMBO, q.x, q.y, u, { '1': pulse ? '#ff2bd6' : '#ff7ae6', '2': '#ffffff' }); }
+    else { // flecha: cola roja que se apaga y cabeza blanca, en la dirección de la bala
+      const m = Math.hypot(vx, vy) || 1, dx = vx / m, dy = vy / m;
+      for (let i = 4; i >= 1; i--) sqr(g, q.x - dx * u * 1.6 * i, q.y - dy * u * 1.6 * i, u * 1.6, u * 1.6, c, 1 - i * .2);
+      sqr(g, q.x, q.y, u * 2 + 2, u * 2 + 2, '#1a0008'); sqr(g, q.x, q.y, u * 2, u * 2, '#ffffff'); }
+    g.globalAlpha = 1;
+  }
+  // capa 0: donde se dibujaban antes; capa 1: encima de todos los efectos
+  window.labEB = function (layer) {
+    const D = LAB.d;
+    if (layer === (D.top ? 1 : 0)) for (const q of ebs) if (!q.dead) drawEB(ctx, q, D);
+    if (layer === 1 && D.dot && (state === 'play' || state === 'lvup')) {
+      const hb = hitbox(), w = P * 9 * hb, h = P * 7 * hb;
+      ctx.globalAlpha = .35; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.strokeRect(Math.round(px - w / 2) + .5, Math.round(py - h / 2) + .5, Math.round(w), Math.round(h));
+      sqr(ctx, px, py, P * 1.6 + 2, P * 1.6 + 2, '#000000'); sqr(ctx, px, py, P * 1.6, P * 1.6, '#ffffff'); ctx.globalAlpha = 1;
+    }
+  };
+  // barras de vida: siempre, solo un rato tras recibir un golpe, finas o nunca
+  window.labHB = function (e) {
+    const m = LAB.d.hb;
+    if (m === 'siempre') return true;
+    if (m === 'nunca') return false;
+    if (m === 'golpe') { if (e.flash > 0) e.lhT = tm; return tm - (e.lhT == null ? -9 : e.lhT) < 1.5; }
+    const w = EP * 8, x0 = Math.round(e.x - w / 2), y0 = Math.round(e.y + EH() + EP);
+    ctx.fillStyle = '#222'; ctx.fillRect(x0, y0, w, 1); ctx.fillStyle = ECOL[e.type]; ctx.fillRect(x0, y0, Math.round(w * Math.max(0, e.hp / e.max)), 1);
+    return false;
+  };
+  // vista previa de la bala elegida sobre un fondo con algo de jaleo
+  function preview() {
+    const c = document.getElementById('lpv'); if (!c) return;
+    const g = c.getContext('2d'), k = c.width / 420; g.setTransform(k, 0, 0, k, 0, 0); g.clearRect(0, 0, 420, 84); g.fillStyle = '#000'; g.fillRect(0, 0, 420, 84);
+    const R2 = (i) => (Math.sin(i * 91.7) * .5 + .5);
+    for (let i = 0; i < 26; i++) { g.globalAlpha = .55; g.fillStyle = ['#ff8a1f', '#5cff4a', '#fff200', '#ff5c9a', '#8ff0ff'][i % 5]; g.fillRect(R2(i) * 420, R2(i + 40) * 84, 3 + (i % 3), 3 + (i % 3)); }
+    g.globalAlpha = .5; g.strokeStyle = '#fff200'; g.lineWidth = 2; g.beginPath(); g.moveTo(10, 20); g.lineTo(140, 50); g.lineTo(260, 18); g.lineTo(410, 60); g.stroke(); g.globalAlpha = 1;
+    for (const [x, y] of [[60, 42], [150, 30], [240, 52], [330, 38]]) drawEB(g, { x, y, vx: x > 200 ? 30 : 0, vy: 150 }, LAB.d);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+  }
+  // botón de pausa en la barra de arriba
+  const PP0 = placePause;
+  placePause = function () {
+    if (LAB.d.pause !== 'barra') { if (pz.classList.contains('mini')) { pz.classList.remove('mini'); pzKey = ''; } return PP0(); }
+    const show = state === 'play' || state === 'lvup';
+    pz.classList.toggle('show', show); pz.classList.add('mini'); pz.style.top = (hudY() - P * 2) + 'px'; pz.style.left = (P * 4 + 48) + 'px';
+  };
+  // movimiento relativo: la nave se mueve lo mismo que el dedo, desde donde esté
+  const cvs = document.getElementById('c'); let rel = null;
+  window.addEventListener('pointerdown', e => { if (LAB.d.move !== 'rel' || e.target !== cvs) return; e.stopPropagation(); rel = { x: e.clientX, tx: px }; }, true);
+  window.addEventListener('pointermove', e => { if (LAB.d.move !== 'rel' || e.target !== cvs) return; e.stopPropagation(); if (!rel) return; tx = Math.max(P * 6, Math.min(W - P * 6, rel.tx + (e.clientX - rel.x) * 1.15)); }, true);
+  window.addEventListener('pointerup', () => { rel = null; }, true);
+  window.addEventListener('pointercancel', () => { rel = null; }, true);
+  function applyD() { document.body.classList.toggle('labtxt', !!LAB.d.txt); pzKey = ''; }
+  applyD();
 
   openPanel();
 })();
