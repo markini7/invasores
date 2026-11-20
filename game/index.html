@@ -58,6 +58,9 @@ html,body{margin:0;height:100%;background:#000;overflow:hidden;touch-action:none
 .big{font-size:18px;line-height:1.6}
 .btn{margin-top:16px;padding:14px 22px;border:3px solid #fff;font-size:12px;cursor:pointer}
 .card{width:min(340px,92vw);border:3px solid #fff;padding:12px;display:flex;gap:12px;align-items:center;background:#000;text-align:left;box-sizing:border-box;cursor:pointer}
+.card,.tile,.btn{position:relative}
+.newtag{position:absolute;top:-9px;right:8px;background:#ffd23f;color:#000;font-size:7px;line-height:1;padding:4px 5px;letter-spacing:.04em;animation:newb 1s steps(2) infinite;pointer-events:none}
+@keyframes newb{50%{background:#fff}}
 .card canvas{width:44px;height:44px;image-rendering:pixelated;flex:none}
 .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;width:min(340px,92vw)}
 .tile{border:3px solid #fff;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;opacity:.6}
@@ -1127,7 +1130,7 @@ function reflect(q){run.blocks++;const el=alv('espejo');if(!el||Math.random()>=[
 function newGame(){
  fxq=[];clouds=[];bloodSh=0;sed=0;sedT=0;domeT=0;markT=null;chainN=0;
  run={dmg:{},kills:{},total:0,newDisc:0,maxStreak:0,blocks:0,lost:0,fus:0,used:new Set()};curSrc=null;
- lives=3;slots=[{id:'laser',l:1}];arts=[];qi=0;px=tx=W/2;inv=0;
+ lives=3;slots=[{id:'laser',l:1}];arts=[];qi=0;px=tx=W/2;inv=0;windV=0;windT=7;windPh='calm';snow=[];shipFz=0;
  parts=[];rings=[];arcs=[];beams=[];stHops=[];en=[];bullets=[];ebs=[];hbeams=[];barHP=0;barT=0;escort=null;cargaN=0;
  gt=0;lv=1;xp=0;pend=0;spawnAcc=0;stepT=0;stepN=0;xoff=0;ebT=2.5;kills=0;
  shake=0;vigR=0;vigC=0;hs=0;lvT=0;xpShow=0;barGlow=0;scr.a=0;banner.t=0;vortexes=[];puddles=[];echoes=[];meteors=[];vampN=0;
@@ -1162,7 +1165,7 @@ function spawnAlien(c,y,type){
 function spawnRow(gg){
  const n=cols(),g=gg||R.group(et),cs=shuffle([...Array(n).keys()]).slice(0,g),S=mode==='sector'?SECTORS[sect]:null;
  for(const c of cs){const r=Math.random(),p2=R.p2(et),p1=R.p1(et);spawnAlien(c,topY(),r<p2?2:r<p2+p1?1:0);
-  if(S){const e=en[en.length-1];e.hp*=diffHp();e.max*=diffHp();if(S.armor&&!e.rainbow&&Math.random()<S.armor)e.arm=3;if(S.tele&&!e.rainbow&&Math.random()<S.tele)e.tp=rnd(2,4)}}
+  if(S){const e=en[en.length-1];e.hp*=diffHp();e.max*=diffHp();if(S.armor&&!e.rainbow&&Math.random()<S.armor)e.arm=3;if(S.tele&&!e.rainbow&&Math.random()<S.tele)e.tp=rnd(2,4);if(S.iceArm&&!e.rainbow&&Math.random()<S.iceArm){e.arm=4;e.iceA=1}}}
 }
 // ================= SECTORES Y OLEADAS =================
 // Una partida = un sector de 10 oleadas seguidas (12 en los sectores 4-6). Todo baja a la vez. Jefe menor en la 5 y jefe del sector en la última.
@@ -1172,7 +1175,7 @@ const SECTORS=[
  {n:'Órbita baja',c:'#5cff4a',base:0,step:28,rule:'Sin reglas especiales: aquí se aprende.',boss:'nodriza'},
  {n:'Cinturón de asteroides',c:'#c08040',base:40,step:30,rule:'Caen rocas que paran tus disparos y los enemigos. Se pueden romper.',boss:'gusano',rocks:1,armor:.12},
  {n:'Nebulosa',c:'#b06bff',base:90,step:30,rule:'Nubes de niebla cruzan la pantalla y esconden a los aliens que tapan (1 nube al principio, 3 al final). Hay aliens que se teletransportan.',boss:'espejo',fog:1,tele:.18},
- {n:'Mundo helado',c:'#8ff0ff',soon:1,waves:12},
+ {n:'Mundo helado',c:'#8ff0ff',base:150,step:32,waves:12,rule:'Ventiscas de lado desvían todos los disparos, tuyos y suyos (con aviso). Hay aliens con coraza de hielo: aguantan los primeros golpes y no se congelan; el fuego y las explosiones la rompen de golpe.',boss:'glaciar',wind:1,iceArm:.2},
  {n:'La Colmena',c:'#ffd23f',soon:1,waves:12},
  {n:'El Núcleo',c:'#ff4d6d',soon:1,waves:12},
 ];
@@ -1181,9 +1184,16 @@ const SECTORS=[
 const START_SHOTS=['laser','fire','poison','bleed','pierce','boom'];
 const START_ARTS=['barrera','escudo','venganza','cadencia','doble','rafaga','critico','calibre','techo','dron','satelites','lastre','orbital','estudioso','tirar'];
 let prof={sec:[0,0,0,0,0,0],endless:false,mas:[],shots:START_SHOTS.slice(),arts:START_ARTS.slice(),ships:['explorador'],ship:'explorador',ach:[],ss:{},
+ used:{ships:['explorador'],shots:START_SHOTS.slice(),arts:START_ARTS.slice()},
  st:{kills:0,runs:0,k:{},bosses:0,fus:0,maxLv:0,blocks:0,charmK:0,perfect:0,fp:0}};
 const PROF0=JSON.stringify(prof);
-try{const sv=JSON.parse(localStorage.getItem('invasores_prof')||'{}');if(sv.st)sv.st=Object.assign({},prof.st,sv.st);Object.assign(prof,sv)}catch(e){}
+try{const sv=JSON.parse(localStorage.getItem('invasores_prof')||'{}');if(sv.st)sv.st=Object.assign({},prof.st,sv.st);Object.assign(prof,sv);
+ // partidas guardadas de antes: se da por usado lo que ya tiene muertes o récords (el resto saldrá como NUEVO)
+ if(sv.st&&!sv.used){const k=prof.st.k||{};prof.used={ships:[...new Set(['explorador',...Object.keys(prof.ss||{})])],shots:[...new Set([...START_SHOTS,...Object.keys(k).filter(x=>k[x]>0)])],arts:prof.arts.slice()}}
+}catch(e){}
+// NUEVO: lo que tienes desbloqueado pero no has usado nunca
+function isNew(k,id){return !!prof.used&&!prof.used[k].includes(id)}
+function markUsed(k,id){if(prof.used&&!prof.used[k].includes(id)){prof.used[k].push(id);saveProf()}}
 function saveProf(){try{localStorage.setItem('invasores_prof',JSON.stringify(prof))}catch(e){}}
 function sectorOpen(i){return i===0||prof.sec[i-1]>0}
 let mode='endless',sect=0,diffL=1,wave=0,waveT=0,boss=null,rockT=0,rbPend=0;
@@ -1316,6 +1326,22 @@ function mirrorBounce(b,e){
  if((e.rfT||0)>tm)return;e.rfT=tm+.25;
  ebs.push({x:b.x,y:b.y+P*2,vx:Math.sin(aimAng(b.x,b.y))*R.shotV(et)*1.4,vy:Math.cos(aimAng(b.x,b.y))*R.shotV(et)*1.4,big:1});
 }
+// Mundo helado: ventiscas de lado (calma, aviso, racha) que desvían las balas; nieve de ambiente
+let windV=0,windT=7,windPh='calm',windDir=1,snow=[],shipFz=0;
+function windTick(dt){
+ const S=SECTORS[sect];if(mode!=='sector'||!S.wind){windV=0;snow.length=0;return}
+ if(!snow.length)for(let i=0;i<46;i++)snow.push({x:Math.random()*W,y:Math.random()*H,z:Math.random()});
+ windT-=dt;
+ if(windT<=0){
+  if(windPh==='calm'){windPh='warn';windT=1.2;windDir=Math.random()<.5?-1:1}
+  else if(windPh==='warn'){windPh='gust';windT=rnd(3,4.5)}
+  else{windPh='calm';windT=rnd(5,8)}
+ }
+ const target=windPh==='gust'?windDir*P*(22+Math.min(wave,12)*1.6):0;
+ windV+=(target-windV)*Math.min(1,dt*2.5);
+ for(const f of snow){f.y+=dt*(25+f.z*45);f.x+=dt*(windV*(1.4+f.z)+8);if(f.y>H){f.y=-4;f.x=Math.random()*W}if(f.x>W+4)f.x=-4;if(f.x<-4)f.x=W+4}
+}
+function iceBreak(e){sparks(e.x,e.y,'#e8fbff',12,170,7);flash(e.x,e.y,'#bff8ff',P*12,.15);sfx('block')}
 // Nebulosa: nubes de niebla que cruzan la pantalla (1 en las oleadas 1-3, 2 en la 4-7, 3 desde la 8)
 let clouds=[];
 function cloudTick(dt){
@@ -1347,6 +1373,7 @@ const BOSS_SPR={
  espejo:['.....XX.....','....XXXX....','...XX..XX...','..XX.XX.XX..','.XX.XXXX.XX.','XX.XX..XX.XX','XX.XX..XX.XX','.XX.XXXX.XX.','..XX.XX.XX..','...XX..XX...','....XXXX....','.....XX.....'],
  capitan:['..XXXXXX..','.XXXXXXXX.','XX.XXXX.XX','XXXXXXXXXX','XXX.XX.XXX','.XXXXXXXX.','..X.XX.X..','.X..XX..X.'],
  nodriza:['......XXXXXXXXXX......','...XXXXXXXXXXXXXXXX...','.XXXXXX..XXXX..XXXXXX.','XXXXXXXXXXXXXXXXXXXXXX','XX.XXX.XXX..XXX.XXX.XX','XXXXXXXXXXXXXXXXXXXXXX','..XXX..XX....XX..XXX..','...X....X....X....X...'],
+ glaciar:['....X....X....','...XXX..XXX...','..XXXXXXXXXX..','.XX.XXXXXX.XX.','XXXXX.XX.XXXXX','XXXXXXXXXXXXXX','.XXX.XXXX.XXX.','..XXXXXXXXXX..','...X.X..X.X...','..X..X..X..X..'],
  head:['.XXXXXX.','XX.XX.XX','XXXXXXXX','XXXXXXXX','X.XXXX.X','.XXXXXX.','.X.XX.X.'],
  seg:['..XXXX..','.XXXXXX.','XXX..XXX','XXXXXXXX','.XXXXXX.','..X..X..'],
 };
@@ -1387,6 +1414,16 @@ const BOSSES={
    // abanico de balas, con aviso
    B.fireT-=dt*sl;if(B.fireT<=0){B.fireT=f<.2?.8:f<.5?1.6:2.2;e.tele=.45}
    if(e.tele>0){e.tele-=dt;if(e.tele<=0){if(f<.2){bossShot(e.x,e.y+e.hh,aimAng(e.x,e.y),R.shotV(et)*1.6)}else{const n=f<.5?5:3;for(let i=0;i<n;i++)bossShot(e.x,e.y+e.hh,(i-(n-1)/2)*.28,R.shotV(et)*1.2)}sfx('eshot')}}}},
+ glaciar:{n:'El Glaciar',
+  // abanico de esquirlas, rayo que congela tu nave si sigues en la columna marcada y, por debajo de la mitad, aliens con coraza de hielo
+  spawn(B){const hp=R.bhp(et)*80*diffHp();B.ents=[mkBoss('glaciar',W/2,topY()-P*30,hp,EP*15,EP*11,{ty:topY()+P*30})];B.fireT=2;B.beamT=4;B.sumT=5;B.beam=null},
+  tick(B,dt){const e=B.ents[0];if(e.dead){B.beam=null;return}const f=e.hp/e.hpMax,sl=e.fz>0?.4:1;
+   e.y+=(e.ty-e.y)*Math.min(1,dt*1.5);e.x=e.cx=W/2+Math.sin(B.t*.5)*(W/2-P*24);
+   B.fireT-=dt*sl;if(B.fireT<=0){B.fireT=f<.5?1.3:1.9;e.tele=.4}
+   if(e.tele>0){e.tele-=dt;if(e.tele<=0){const a=aimAng(e.x,e.y),n=f<.5?4:3;for(let i=0;i<n;i++)bossShot(e.x,e.y+e.hh,a+(i-(n-1)/2)*.2,R.shotV(et)*1.3);sfx('eshot')}}
+   B.beamT-=dt*sl;if(!B.beam&&B.beamT<=0){B.beam={x:px,t:1.1};B.beamT=f<.5?4:5.5}
+   if(B.beam){B.beam.t-=dt;if(B.beam.t<=0){const x=B.beam.x;B.beam=null;beams.push({x,t:.35,T:.35,c:'#bff8ff'});sparks(x,py,'#e8fbff',16,200,8);sfx('frz');if(Math.abs(px-x)<P*9&&inv<=0){shipFz=1.4;flash(px,py,'#bff8ff',P*24,.3);haptic('medium')}}}
+   if(f<.5){B.sumT-=dt*sl;if(B.sumT<=0){B.sumT=6;const n=cols();for(const dc of[-1,1]){const c=Math.max(0,Math.min(n-1,Math.round((e.x-P*4)/((W-P*16)/n)-.5)+dc));spawnAlien(c,e.y+e.hh+ESP(),1);const a=en[en.length-1];a.hp*=diffHp();a.max*=diffHp();a.arm=4;a.iceA=1}}}}},
  gusano:{n:'El Gusano',
   spawn(B){const N=12;B.hist=[];B.s=0;B.ents=[];
    for(let i=0;i<N;i++){const head=i===0,hp=R.bhp(et)*(head?12:7)*diffHp();B.ents.push(mkBoss(head?'head':'seg',W/2,topY()-P*30,hp,EP*7,EP*6,{seg:i}))}
@@ -1455,6 +1492,7 @@ function applyShip(){
  if(st==='?'){st=prof.shots[Math.floor(Math.random()*prof.shots.length)]}
  if(!prof.shots.includes(st))st='laser';
  slots=[{id:st,l:1}];run.used=new Set([st]);tracers=[];
+ markUsed('ships',ship===SHIPS[prof.ship]?prof.ship:'explorador');markUsed('shots',st);
  lives=ship.lives||3;shotSlots=ship.shots||SHOT_SLOTS;artSlots=ship.arts||ART_SLOTS;
 }
 function interval(){
@@ -1561,7 +1599,7 @@ function pushUp(e,d,quiet){
 }
 function applyStatus(e,b,stack){
  if(e.dead||e.charm>0)return;
- if(b.fz){if(e.fz<=0){sparks(e.x,e.y,'#bff8ff',6,90,7);sfx('frz')}const fzv=b.fz*(weak(e)?2:1);e.fz=Math.max(e.fz,e.boss?Math.min(fzv,.6):fzv)}
+ if(b.fz&&!(e.iceA&&e.arm>0)){if(e.fz<=0){sparks(e.x,e.y,'#bff8ff',6,90,7);sfx('frz')}const fzv=b.fz*(weak(e)?2:1);e.fz=Math.max(e.fz,e.boss?Math.min(fzv,.6):fzv)}
  if(b.burn){
   const cl=alv('combustion');
   if(cl&&e.ps>0){const d=e.ps*e.pdps*Math.max(1,e.pt)*[0,1.2,1.6,2][cl];e.ps=0;e.pt=0;flash(e.x,e.y,'#c6ff3d',P*18,.25);sparks(e.x,e.y,'#c6ff3d',12,200,8);dmgE(e,d)}
@@ -1585,7 +1623,7 @@ function explode(x,y,rad,d,b,src){
  const c=b.c||'#ff3b3b';addShake(Math.min(5,rad/(P*5)));
  rings.push({x,y,r:rad,t:.35,T:.35,c});
  flash(x,y,'#ffffff',rad*1.4,.12);flash(x,y,c,rad*2.4,.28);sparks(x,y,c,14,rad*6,9);
- for(const e of en){if(!foe(e)||e===src)continue;if(Math.hypot(e.x-x,e.y-y)<rad+(e.hw||EH())){e.exk=1;dmgE(e,d);e.exk=0;applyStatus(e,b)}}
+ for(const e of en){if(!foe(e)||e===src)continue;if(Math.hypot(e.x-x,e.y-y)<rad+(e.hw||EH())){if(e.iceA&&e.arm>0){e.arm=0;iceBreak(e)}e.exk=1;dmgE(e,d);e.exk=0;applyStatus(e,b)}}
 }
 function chain(src,b){
  sfx('zap');
@@ -1653,7 +1691,7 @@ function pick(f){let t=null,bv=-1e9;for(const o of en){if(!foe(o))continue;const
 function densest(){return pick(o=>foesNear(o.x,o.y,TWO()*1.6).length)}
 function wound(e,n,k){if(!foe(e))return;if(stSrc&&stSrc!==e)stHop(stSrc,e,'#e0203a');bloodThirst();e.bls=Math.min(10,(e.bls||0)+n*(weak(e)?2:1));e.blk=Math.max(e.blk||0,k||.15)}
 function charge(e,n,dps){if(foe(e)&&n>0&&stSrc&&stSrc!==e)stHop(stSrc,e,'#5cff4a');if(foe(e)&&n>0)applyStatus(e,{pdps:dps||.4,pt:4,psp:1},n)}
-function frz(e,t){if(foe(e)){if(stSrc&&stSrc!==e)stHop(stSrc,e,'#bff8ff');if(e.fz<=0)sparks(e.x,e.y,'#bff8ff',5,90,6);e.fz=Math.max(e.fz,e.boss?Math.min(t,.6):t)}}
+function frz(e,t){if(foe(e)&&!(e.iceA&&e.arm>0)){if(stSrc&&stSrc!==e)stHop(stSrc,e,'#bff8ff');if(e.fz<=0)sparks(e.x,e.y,'#bff8ff',5,90,6);e.fz=Math.max(e.fz,e.boss?Math.min(t,.6):t)}}
 function burnE(e,dps,t){if(foe(e))applyStatus(e,{burn:dps||1,bt:t||2.5})}
 function charmE(e,t){if(e.dead||e.rainbow||e.boss||e.rock||e.charm>0)return false;e.charm=t||4;e.fz=0;e.cT=.3;e.wasCh=1;sparks(e.x,e.y,'#ff8fd0',10,140,8);return true}
 function execE(e){if(!foe(e))return;if(e.boss){dmgE(e,e.max*.5);return}flash(e.x,e.y,'#e0d8c0',P*16,.2);sparks(e.x,e.y,'#ff3b3b',10,180,7);dmgE(e,e.hp+1)}
@@ -1681,6 +1719,7 @@ function hit(b,e){
  if(H&&H.pre)H.pre(b,e);
  if(e.ps>0&&alv('epidemia')&&Math.random()<[0,.3,.6,1][alv('epidemia')]){const o=byDist(e)[0];if(o&&Math.hypot(o.x-e.x,o.y-e.y)<P*22){applyStatus(o,{pdps:e.pdps,pt:4,psp:e.psp||1});stHop(e,o,'#5cff4a')}}
  const mult=H&&H.dmg?H.dmg(b,e):1;
+ if(e.iceA&&e.arm>0&&(b.burn||b.ex)){e.arm=0;iceBreak(e)}
  dmgE(e,(b.dmg+(b.dis?e.max*b.dis:0))*mult*(b.allyMul||1));
  if(b.dis&&!e.dead)sparks(x,y,'#00ffd5',5,120,6);
  applyStatus(e,b);
@@ -1901,7 +1940,8 @@ function cardHTML(o,i){
  else if(o.k==='alv'){const A=ART[o.id];tag='ARTEFACTO · NIVEL '+o.l;nm=A.n;ds=`<span class="new">${ARTT[o.id][o.l-1]}</span>`;bc=A.c}
  else if(o.k==='xp'){tag='MEJORA';nm='Experiencia';ds='Media barra de golpe';bc='#5cff4a'}
  else{tag='MEJORA';nm='Vida extra';ds='+1 vida';bc='#ff4d6d'}
- return `<div class="card" data-i="${i}" style="border-color:${bc}"><canvas width="66" height="66" data-i="${i}"></canvas><div><div class="tag">${tag}</div><div class="nm">${nm}</div><div class="ds">${ds}</div></div></div>`;
+ const nw=(o.k==='new'&&isNew('shots',o.id))||(o.k==='art'&&isNew('arts',o.id));
+ return `<div class="card" data-i="${i}" style="border-color:${bc}">${nw?'<span class="newtag">NUEVO</span>':''}<canvas width="66" height="66" data-i="${i}"></canvas><div><div class="tag">${tag}</div><div class="nm">${nm}</div><div class="ds">${ds}</div></div></div>`;
 }
 function artIcon(g,id,cx,cy,box){const A=ART[id],s=Math.max(1,Math.floor(box/Math.max(A.ic.length,A.ic[0].length)));drawSpr(g,A.ic,cx,cy,s,{'1':A.c,'2':A.c2||'#ffffff'})}
 function drawIcon(cnv,o){
@@ -1926,10 +1966,10 @@ function showPick(fresh){
  const rr=document.getElementById('rr');if(rr)rr.onclick=()=>{rer--;showPick(false)};
 }
 function apply(o){
- if(o.k==='new'){slots.push({id:o.id,l:1});run.used.add(o.id)}
+ if(o.k==='new'){slots.push({id:o.id,l:1});run.used.add(o.id);markUsed('shots',o.id)}
  else if(o.k==='lv')slots.find(x=>x.id===o.id).l++;
  else if(o.k==='flv'){const s=slots.find(x=>x.id===o.id);s.fl=o.l;s.l=Math.min(3,s.l+1);s.l2=Math.min(3,(s.l2||3)+1)}
- else if(o.k==='art'){arts.push({id:o.id,l:1});onArt(o.id)}
+ else if(o.k==='art'){arts.push({id:o.id,l:1});onArt(o.id);markUsed('arts',o.id)}
  else if(o.k==='alv'){arts.find(a=>a.id===o.id).l++;if(o.id==='barrera')barHP=barMax()}
  else if(o.k==='xp')xp+=need(lv)*.5;
  else lives=Math.min(5,lives+1);
@@ -2000,7 +2040,7 @@ function showFuse(){
 }
 function showTitle(){
  state='title';
- ov.innerHTML=`<div class="logo">INVASORES</div><div class="t" style="margin-top:14px">ARRASTRA PARA MOVERTE<br>QUE NO LLEGUEN ABAJO</div><div class="btn" id="play">JUGAR</div><div class="btn" id="cat" style="margin-top:4px;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0">CATÁLOGO · ${disc.size}/300</div><div class="btn" id="ach" style="margin-top:0;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0">LOGROS · ${prof.ach.length}/${ACH.length}</div><div class="btn" id="cfg" style="margin-top:0;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0">AJUSTES</div>`;
+ ov.innerHTML=`<div class="logo">INVASORES</div><div class="t" style="margin-top:14px">ARRASTRA PARA MOVERTE<br>QUE NO LLEGUEN ABAJO</div><div class="btn" id="play">JUGAR${prof.ships.some(id=>isNew('ships',id))?'<span class="newtag">NUEVO</span>':''}</div><div class="btn" id="cat" style="margin-top:4px;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0">CATÁLOGO · ${disc.size}/300</div><div class="btn" id="ach" style="margin-top:0;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0">LOGROS · ${prof.ach.length}/${ACH.length}</div><div class="btn" id="cfg" style="margin-top:0;font-size:9px;padding:10px 16px;border-color:#555;color:#c8d0d0">AJUSTES</div>`;
  ov.classList.add('show');ov.style.pointerEvents='auto';ov.scrollTop=0;
  document.getElementById('ach').onclick=()=>showAch(showTitle);
  document.getElementById('play').onclick=showSectors;document.getElementById('cat').onclick=()=>showCatalog(showTitle);
@@ -2181,14 +2221,23 @@ function showAch(back){
 // ---------- naves: selección y tabla ----------
 function shipIcon(c,id,locked){const g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);drawSpr(g,SHIP,c.width/2,c.height/2,4,{'1':locked?'#262626':SHIPS[id].c,'2':locked?'#262626':'#ffffff'})}
 function shipLockText(id){const a=ACH.find(a=>(a.r.ships||[]).includes(id));return a?'Se consigue con el logro «'+a.n+'»: '+a.d.toLowerCase():''}
-function shipsHTML(){
- const ids=Object.keys(SHIPS);
- let s='<div class="eq"><div class="tag">NAVE</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
- for(const id of ids){const has=prof.ships.includes(id),on=prof.ship===id;
-  s+=`<div class="shipc" data-id="${id}" style="border:2px solid ${on?SHIPS[id].c:'#333'};padding:4px;cursor:pointer;line-height:0"><canvas width="40" height="40" data-ship="${id}" data-lock="${has?0:1}" style="width:32px;height:32px;image-rendering:pixelated"></canvas></div>`}
- const cur=SHIPS[prof.ship]&&prof.ships.includes(prof.ship)?prof.ship:'explorador';
- s+=`</div><div class="ds" id="shipd"><span style="color:${SHIPS[cur].c}">${SHIPS[cur].n}</span>: ${SHIPS[cur].d}</div></div>`;
- return s;
+// pantalla de elegir nave: sale al darle a JUGAR en un sector (o al modo infinito)
+function showShipPick(si,d){
+ state='title';
+ const ids=Object.keys(SHIPS),cur=SHIPS[prof.ship]&&prof.ships.includes(prof.ship)?prof.ship:'explorador',S=si>=0?SECTORS[si]:null;
+ let h=`<div class="logo" style="font-size:16px">ELIGE NAVE</div><div class="t">${S?'SECTOR '+(si+1)+' · '+S.n.toUpperCase()+' · DIFICULTAD '+d:'MODO INFINITO'}</div><div class="grid">`;
+ for(const id of ids){const has=prof.ships.includes(id),nw=has&&isNew('ships',id);
+  h+=`<div class="tile${id===cur?' on':''}" data-id="${id}" style="border-color:${has?SHIPS[id].c:'#333'}">${nw?'<span class="newtag">NUEVO</span>':''}<canvas width="80" height="80" data-ship="${id}" data-lock="${has?0:1}"></canvas><div class="nm" style="font-size:8px;color:${has?SHIPS[id].c:'#555'}">${has?SHIPS[id].n:'???'}</div></div>`}
+ h+=`</div><div class="ds" id="shipd" style="width:min(340px,92vw);text-align:left"><span style="color:${SHIPS[cur].c}">${SHIPS[cur].n}</span>: ${SHIPS[cur].d}</div>`;
+ h+=`<div class="btn" id="go">EMPEZAR</div>`+smallBtn('back','VOLVER','margin-top:4px');
+ ov.innerHTML=h;
+ ov.querySelectorAll('canvas[data-ship]').forEach(c=>shipIcon(c,c.dataset.ship,c.dataset.lock==='1'));
+ ov.querySelectorAll('.tile').forEach(el=>el.onclick=()=>{const id=el.dataset.id;
+  if(!prof.ships.includes(id)){document.getElementById('shipd').innerHTML='<span style="color:#8fa0a0">???</span>: '+shipLockText(id);sfx('block');return}
+  prof.ship=id;saveProf();sfx('pick');showShipPick(si,d)});
+ document.getElementById('go').onclick=()=>{sfx('pick');si>=0?startSector(si,d):newGame()};
+ document.getElementById('back').onclick=showSectors;
+ ov.classList.add('show');ov.style.pointerEvents='auto';ov.scrollTop=0;
 }
 function tableHTML(){
  const ids=Object.keys(SHIPS);
@@ -2198,17 +2247,11 @@ function tableHTML(){
   s+='<tr><td style="padding:4px;color:'+(has?SHIPS[id].c:'#444')+'">'+(has?SHIPS[id].n:'???')+'</td>'+SECTORS.map((_,i)=>'<td style="padding:4px;text-align:center;color:'+(row[i]?'#ffd23f':'#333')+'">'+(row[i]?'*'+row[i]:'·')+'</td>').join('')+'</tr>'}
  return s+'</table></div></div>';
 }
-function bindShips(){
- ov.querySelectorAll('canvas[data-ship]').forEach(c=>shipIcon(c,c.dataset.ship,c.dataset.lock==='1'));
- ov.querySelectorAll('.shipc').forEach(el=>el.onclick=()=>{const id=el.dataset.id;
-  if(!prof.ships.includes(id)){document.getElementById('shipd').innerHTML='<span style="color:#8fa0a0">???</span>: '+shipLockText(id);return}
-  prof.ship=id;saveProf();sfx('pick');showSectors()});
-}
 // ---------- elegir sector y dificultad ----------
 let pickDiff={};
 function showSectors(){
  state='title';
- let h2='<div class="logo" style="font-size:16px">SECTORES</div><div class="t">JEFE EN LA OLEADA 5 Y EN LA ÚLTIMA</div>'+shipsHTML();
+ let h2='<div class="logo" style="font-size:16px">SECTORES</div><div class="t">JEFE EN LA OLEADA 5 Y EN LA ÚLTIMA</div>';
  SECTORS.forEach((S,i)=>{
   const open=sectorOpen(i),done=prof.sec[i],maxD=Math.min(DIFFS,done+1),d=Math.min(pickDiff[i]||maxD,maxD);
   if(S.soon||!open){h2+=`<div class="card" style="border-color:#333;cursor:default;opacity:.55"><div><div class="tag">SECTOR ${i+1}</div><div class="nm">${open?S.n:'???'}</div><div class="ds">${S.soon&&open?'Próximamente':'Completa el sector anterior para abrirlo'}</div></div></div>`;return}
@@ -2222,10 +2265,9 @@ function showSectors(){
  if(prof.endless)h2+=smallBtn('inf','MODO INFINITO','margin-top:4px');
  h2+=smallBtn('back','VOLVER','margin-top:4px');
  ov.innerHTML=h2;
- bindShips();
  ov.querySelectorAll('.dif').forEach(el=>el.onclick=()=>{pickDiff[+el.dataset.s]=+el.dataset.d;sfx('pick');showSectors()});
- ov.querySelectorAll('.go').forEach(el=>el.onclick=()=>{sfx('pick');startSector(+el.dataset.s,+el.dataset.d)});
- const inf=document.getElementById('inf');if(inf)inf.onclick=newGame;
+ ov.querySelectorAll('.go').forEach(el=>el.onclick=()=>{sfx('pick');showShipPick(+el.dataset.s,+el.dataset.d)});
+ const inf=document.getElementById('inf');if(inf)inf.onclick=()=>showShipPick(-1,0);
  document.getElementById('back').onclick=showTitle;
  ov.classList.add('show');ov.style.pointerEvents='auto';ov.scrollTop=0;
 }
@@ -2287,13 +2329,13 @@ function update(rdt){
  if(state!=='play'&&state!=='lvup'&&state!=='fusein')return;
  gt+=dt;layout();
  if(kx)tx=px+kx*80;
- px+=(tx-px)*Math.min(1,dt*(ship.slow?8:14));if(Math.abs(tx-px)<.4)px=tx;
+ if(shipFz>0)shipFz-=dt;else{px+=(tx-px)*Math.min(1,dt*(ship.slow?8:14));if(Math.abs(tx-px)<.4)px=tx}
  px=Math.max(P*6,Math.min(W-P*6,px));tx=Math.max(P*6,Math.min(W-P*6,tx));
  inv-=dt;fireT-=dt;
  if(fireT<=0&&en.length){fire(slots[qi%slots.length]);qi++;fireT=interval()}
  artTimers(dt);if(state!=='play'&&state!=='lvup'&&state!=='fusein')return;
  // aparición continua
- if(mode==='sector'){waveTick(dt);rockTick(dt);cloudTick(dt);if(state!=='play'&&state!=='lvup'&&state!=='fusein')return}
+ if(mode==='sector'){waveTick(dt);rockTick(dt);cloudTick(dt);windTick(dt);if(state!=='play'&&state!=='lvup'&&state!=='fusein')return}
  else{et=gt;
  const rate=R.rate(et)*[1,1.15,1.3,1.5][alv('avaricia')];
  spawnAcc=Math.min(spawnAcc+rate*dt,R.group(et)*2);
@@ -2444,7 +2486,7 @@ function update(rdt){
   if(b.dead)continue;
   for(let st=0;st<ns&&!b.dead;st++){
    steer(b,sdt);
-   b.cx+=b.vx*sdt;b.y+=b.vy*sdt;
+   b.cx+=b.vx*sdt+(windV&&b.rp!==2?windV*sdt:0);b.y+=b.vy*sdt;
    if(b.cx<2){b.cx=2;b.vx=Math.abs(b.vx)}if(b.cx>W-2){b.cx=W-2;b.vx=-Math.abs(b.vx)}
    if(b.snake&&!b.snakeOff){b.ph+=sdt*9;let amp=b.snake;const t=b.tg;if(b.hom&&t&&!t.dead)amp*=Math.min(1,Math.hypot(t.x-b.cx,t.y-b.y)/(P*60));b.x=Math.max(2,Math.min(W-2,b.cx+Math.sin(b.ph)*amp))}else b.x=b.cx;
    // el bumerán se recoge al volver
@@ -2489,7 +2531,7 @@ function update(rdt){
  // balas enemigas
  const hb=hitbox(),sat=alv('satelites'),gb=bullets.filter(b=>b.guard>0&&!b.dead);
  for(const q of ebs){
-  q.y+=q.vy*dt;if(q.vx)q.x+=q.vx*dt;
+  q.y+=q.vy*dt;if(q.vx)q.x+=q.vx*dt;if(windV)q.x+=windV*.8*dt;
   if(q.x<-20||q.x>W+20){q.dead=1;continue}
   // las rocas paran también las balas enemigas
   for(const r of en)if(r.rock&&!r.dead&&Math.abs(q.x-r.x)<r.hw&&Math.abs(q.y-r.y)<r.hh){q.dead=1;sparks(q.x,q.y,'#8a7a6a',4,80,5);break}
@@ -2556,7 +2598,7 @@ function drawRock(e){
 // cada parte de jefe con su dibujo; parpadea en blanco antes de atacar
 function drawBossPart(e,col){
  const spr=BOSS_SPR[e.kind],rows=spr.length,w=spr[0].length,s=Math.max(2,Math.round(Math.min(e.hw*2/w,e.hh*2/rows)));
- let c=e.kind==='espejo'?(e.mirror?'#e8fbff':'#7a4dff'):e.kind==='nodriza'?'#b06bff':e.kind==='capitan'?'#ff5c9a':e.kind==='head'?'#c8ff3d':'#7ccf3a';
+ let c=e.kind==='espejo'?(e.mirror?'#e8fbff':'#7a4dff'):e.kind==='nodriza'?'#b06bff':e.kind==='capitan'?'#ff5c9a':e.kind==='glaciar'?'#8ff0ff':e.kind==='head'?'#c8ff3d':'#7ccf3a';
  if(e.fz>0)c='#bff8ff';if(e.flash>0)c='#ffffff';if(e.tele>0&&Math.floor(tm*20)%2)c='#ffffff';
  drawSpr(ctx,spr,e.x,e.y,s,{X:c});
  if(e.kind==='espejo'&&e.mirror){ctx.globalAlpha=.35+.15*Math.sin(tm*10);ctx.drawImage(glowTex('#e8fbff'),e.x-e.hw*1.6,e.y-e.hh*1.6,e.hw*3.2,e.hh*3.2);ctx.globalAlpha=1}
@@ -2581,6 +2623,8 @@ function draw(){
   for(let x=Math.floor((tm*40)%(P*6))-P*6;x<W;x+=P*6)ctx.fillRect(x,by,P*4,Math.max(2,P-1));ctx.globalAlpha=1}
  // nave de escolta
  if(escort)drawSpr(ctx,['..1..','.111.','11211','1.1.1'],escort.x,py-P*28,P,{'1':'#3d7bff','2':'#ffffff'});
+ // nieve del Mundo helado
+ if(snow.length){ctx.fillStyle='#e8fbff';for(const f of snow){ctx.globalAlpha=.2+.45*f.z;const z=f.z>.7?P:Math.max(1,Math.round(P*.6));ctx.fillRect(Math.round(f.x),Math.round(f.y),z,z)}ctx.globalAlpha=1}
  // charcos
  for(const p of puddles){const k=Math.min(1,p.t/.4),x0=Math.round(p.x-p.w/2),y0=Math.round(p.y-p.h/2);
   ctx.globalAlpha=.28*k;ctx.fillStyle=p.c;ctx.fillRect(x0,y0,Math.round(p.w),Math.round(p.h));
@@ -2597,11 +2641,12 @@ function draw(){
   if(e.block){drawSpr(ctx,ESPR[e.type][0],e.x,e.y,EP,{X:e.flash>0?'#ffffff':'#e8fbff'});ctx.globalAlpha=.35;ctx.fillStyle='#8ff0ff';ctx.fillRect(e.x-EH()-EP,e.y-EH()-EP,EH()*2+EP*2,EH()*2+EP*2);ctx.globalAlpha=1;continue}
   const fogged=clouds.length&&!e.boss&&inFog(e);if(fogged)ctx.globalAlpha=.13;
   if(e.tp>0&&e.tpW&&Math.floor(tm*20)%2){ctx.globalAlpha=fogged?.05:.3}
-  let ec=e.army&&!(e.flash>0)?'#ffd0ec':e.tp>0&&!(e.flash>0)&&!(e.fz>0)?'#00e0c0':e.charm>0&&!(e.flash>0)?'#ff8fd0':e.arm>0&&!(e.flash>0)&&!(e.fz>0)?'#aab4c0':col;
+  let ec=e.army&&!(e.flash>0)?'#ffd0ec':e.tp>0&&!(e.flash>0)&&!(e.fz>0)?'#00e0c0':e.charm>0&&!(e.flash>0)?'#ff8fd0':e.arm>0&&!(e.flash>0)&&!(e.fz>0)?(e.iceA?'#d8f4ff':'#aab4c0'):col;
   if(e.aim>0&&!(e.flash>0))ec=Math.floor(tm*16)%2?'#ffffff':'#ff4d6d';
   // los efectos tiñen el alien entero; con varios, alterna entre sus colores
   const tint=(e.flash>0||e.charm>0||e.aim>0||e.army)?null:stTint(e,ec===col?ECOL[e.type]:ec);
   drawSpr(ctx,ESPR[e.type][e.anim||0],e.x,e.y-(e.hop>0?EP:0),EP,{X:tint||ec});
+  if(e.iceA&&e.arm>0&&!fogged){const w=EH()*2+EP*2,x0=Math.round(e.x-w/2),y0=Math.round(e.y-w/2);ctx.globalAlpha=.16+.06*e.arm;ctx.fillStyle='#8ff0ff';ctx.fillRect(x0,y0,w,w);ctx.globalAlpha=.9;ctx.fillStyle='#ffffff';ctx.fillRect(x0,y0,EP*2,EP);ctx.fillRect(x0,y0,EP,EP*2);ctx.fillRect(x0+w-EP*2,y0+w-EP,EP*2,EP);ctx.globalAlpha=1}
   if(e.charm>0)drawSpr(ctx,SPR.charm,e.x,e.y-EH()-EP*4,EP,{'1':'#ff8fd0','2':'#ffffff'});
   if(e.hp<e.max&&!fogged){const w=EP*8,x0=Math.round(e.x-w/2),y0=Math.round(e.y+EH()+EP);ctx.fillStyle='#222';ctx.fillRect(x0,y0,w,Math.max(2,P-1));ctx.fillStyle=ECOL[e.type];ctx.fillRect(x0,y0,Math.round(w*Math.max(0,e.hp/e.max)),Math.max(2,P-1))}
   ctx.globalAlpha=1;
@@ -2610,6 +2655,8 @@ function draw(){
  for(const c of clouds){for(let i=0;i<8;i++){const ox=Math.cos(c.ph*.7+i*1.3)*c.w*.28,oy=Math.sin(c.ph*.5+i*1.7)*c.h*.22,s=.8+.2*Math.sin(c.ph+i);ctx.globalAlpha=.7;ctx.drawImage(glowTex('#4a2275'),c.x+ox-c.w*.55*s,c.y+oy-c.h*.85*s,c.w*1.1*s,c.h*1.7*s)}
   ctx.globalAlpha=.35;ctx.drawImage(glowTex('#b06bff'),c.x-c.w*.45,c.y-c.h*.5,c.w*.9,c.h)}
  ctx.globalAlpha=1;
+ // aviso del rayo congelante del Glaciar: columna que parpadea
+ if(boss&&boss.beam){const bm=boss.beam,k=1-bm.t/1.1;ctx.globalAlpha=(.1+.22*k)*(Math.floor(tm*12)%2?1:.55);ctx.fillStyle='#8ff0ff';ctx.fillRect(Math.round(bm.x-P*9),0,P*18,H);ctx.globalAlpha=1}
  // balas (pixeladas)
  const bs=P+(alv('calibre')>=2?1:0);
  for(const b of bullets){
@@ -2624,7 +2671,8 @@ function draw(){
   if(!(inv>0&&Math.floor(tm*12)%2)){
    const nx=slots.length?colorOf(slots[qi%slots.length].id):'#fff';
    // con Nave pequeña la nave se dibuja más pequeña, igual que su zona de impacto
-   drawSpr(ctx,SHIP,px,py,alv('pequena')?Math.max(2,Math.round(P*hitbox())):P,{'1':ship.c,'2':nx});
+   drawSpr(ctx,SHIP,px,py,alv('pequena')?Math.max(2,Math.round(P*hitbox())):P,{'1':shipFz>0?'#bff8ff':ship.c,'2':nx});
+   if(shipFz>0){ctx.globalAlpha=.35;ctx.fillStyle='#bff8ff';ctx.fillRect(Math.round(px-P*6),Math.round(py-P*5),P*12,P*10);ctx.globalAlpha=1}
    if(ship.twin){ctx.globalAlpha=.65;drawSpr(ctx,SHIP,W-px,py,P,{'1':ship.c,'2':nx});ctx.globalAlpha=1}
   }
   for(let i=0;i<bloodSh;i++)ctx.fillStyle='#c8102e',ctx.fillRect(Math.round(px-P*5+i*P*4),Math.round(py+P*6),P*3,P*2);
@@ -2696,6 +2744,7 @@ function draw(){
   ctx.fillStyle='#2a0d14';ctx.fillRect(bx2,yb,bw2,P*2);ctx.fillStyle='#ff4d6d';ctx.fillRect(bx2,yb,Math.round(bw2*left/tot),P*2);
   ctx.fillStyle='#ff9aa8';fillTextA(BOSSES[boss.kind].n.toUpperCase(),bx2+bw2/2,yb+P*4);ctx.fillStyle='#8fa0a0'}
  if(SHOW_FPS){ctx.fillStyle='#5cff4a';ctx.fillText(fpsShow+' FPS',W/2,ty+P*5)}
+ if(snow.length&&windPh!=='calm'&&(windPh==='gust'||Math.floor(tm*6)%2)){ctx.fillStyle='#8ff0ff';ctx.textAlign='center';fillTextA('VENTISCA '+(windDir>0?'>>>':'<<<'),W/2,ty+P*(boss?16:8));ctx.fillStyle='#8fa0a0'}
  for(let i=0;i<Math.min(lives,5);i++)drawSpr(ctx,SHIP,W-P*6-i*P*8,ty+P*2,Math.max(1,Math.floor(P*.6)),{'1':'#ff4d6d','2':'#ff4d6d'});
  // disparos
  const n=slots.length,F=P*13,gap=P*4,yc=shotRowY(),x0=W/2-(n*F+(n-1)*gap)/2;
