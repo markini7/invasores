@@ -96,6 +96,59 @@ button.fc:active{transform:scale(.9)}
 .modal .panel{max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px}
 .help p{font-size:8px;line-height:2.1;color:var(--dim);margin:0}
 .help b{color:var(--txt);font-weight:normal}
+
+/* ---------- falso 3D y pulido visual ---------- */
+body{background:radial-gradient(ellipse at 50% 30%,#1c1626 0%,#0b0910 70%) fixed,#0b0910}
+canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.panel{border:none;background:linear-gradient(#ffffff08,#0000 40%),var(--panel);box-shadow:0 0 0 2px #000,0 0 0 5px #3a2e4a,0 0 0 7px #000,inset 0 2px 0 #ffffff12,inset 0 -3px 0 #0006}
+.btn{border:none;box-shadow:0 0 0 3px #000,inset 0 3px 0 #ffffff22,inset 0 -4px 0 #0008,0 6px 0 0 #000;background:linear-gradient(#3a2e4a,#241c30)}
+.btn:active{transform:translateY(4px);box-shadow:0 0 0 3px #000,inset 0 3px 0 #ffffff22,inset 0 -2px 0 #0008,0 2px 0 0 #000}
+.btn.pri{background:linear-gradient(#a03040,#6a1826);border:none;text-shadow:2px 2px 0 #000}
+.btn.gold{background:linear-gradient(#8a6a20,#4a3810);border:none}
+.btn.small{box-shadow:none;background:transparent;border:2px solid var(--line)}
+.btn.small:active{transform:none}
+.logo{font-size:26px;letter-spacing:1px;text-shadow:3px 3px 0 #7a2030,6px 6px 0 #000}
+.fig{position:relative;display:inline-block;isolation:isolate;animation:none}
+.fig::after{content:'';position:absolute;left:12%;right:12%;bottom:-5px;height:9px;background:#000a;border-radius:50%;z-index:-1}
+.fig img{animation:bob 1.4s steps(2) infinite;animation-delay:inherit}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.fig.hit img{animation:flash .32s steps(1)}
+@keyframes flash{0%{filter:brightness(0) invert(1)}35%{filter:brightness(0) invert(1) sepia(1) saturate(6) hue-rotate(-30deg)}70%{filter:none}}
+.fig.lungeL{animation:lungeL .36s steps(4)}
+@keyframes lungeL{45%{transform:translate(-22px,10px) scale(1.08)}}
+.fig.lungeR{animation:lungeR .36s steps(4)}
+@keyframes lungeR{45%{transform:translate(26px,-14px) scale(1.06)}}
+.pt{position:absolute;width:5px;height:5px;box-shadow:0 0 0 1px #000;animation:pt .5s steps(6) forwards;z-index:55}
+@keyframes pt{to{transform:translate(var(--dx),var(--dy));opacity:0}}
+.quake{animation:quake .3s steps(4)}
+@keyframes quake{25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,-2px)}}
+.fl{font-size:15px;text-shadow:2px 2px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000}
+/* arena 3D */
+.arena{position:relative;overflow:hidden;border:none;min-height:300px;justify-content:space-between;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;background:#000}
+.arena>canvas{position:absolute;left:0;top:0;z-index:0}
+.arena>.enemies,.arena>.herorow{position:relative;z-index:1}
+.enemies{padding-top:4px}
+.en{background:none}
+.en.tgt{border-color:transparent;background:radial-gradient(ellipse at 50% 70%,#f8d84a22,transparent 70%)}
+.en.tgt .nm{color:var(--gold)}
+.en.tgt .nm::before{content:'▶ ';}
+.en .nm,.herorow .hstat>div:first-child{text-shadow:2px 2px 0 #000}
+.herorow{padding:0 6px 4px}
+.hstat{background:#000a;padding:6px;box-shadow:0 0 0 2px #000}
+/* bandeja de dados */
+.trayw{position:relative;width:100%;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2016,0 0 0 8px #000;background:#000;cursor:pointer}
+.trayw .combo{position:absolute;left:0;right:0;top:8px;pointer-events:none;z-index:2}
+.tray-hint{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#f4f0e8;text-shadow:2px 2px 0 #000;pointer-events:none;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{opacity:.35}}
+.chips{display:flex;justify-content:center;gap:12px;font-size:7px;color:var(--dim)}
+.chips span{display:flex;align-items:center;gap:5px}
+.chips i{width:11px;height:11px;border:2px solid;display:block}
+/* pasillo */
+.view{position:relative;width:100%;height:220px;background:#000;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;cursor:pointer;overflow:hidden}
+.view canvas{position:absolute;left:0;top:0}
+.view-t{position:absolute;left:0;right:0;top:10px;text-align:center;font-size:10px;text-shadow:2px 2px 0 #000;z-index:1;pointer-events:none}
+#bgview{position:fixed;inset:0;z-index:-1;opacity:.55}
+.door{padding:10px 4px}
 </style>
 </head>
 <body>
@@ -403,6 +456,571 @@ function sp(name, px, swap, cls = '') {
   return `<img class="px ${cls}" src="${sprURL(name, swap)}" width="${w * px}" height="${g.length * px}" alt="">`;
 }
 
+// ====================================================================
+//  FALSO 3D EN PIXEL ART
+//  Todo lo 3D se dibuja en un lienzo pequeño (la mitad de la pantalla)
+//  y se amplía sin suavizar, así que queda pixelado. La luz se pinta
+//  con tramado (dither) y paletas cortas, como el pixel art a mano.
+// ====================================================================
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5].map(v => (v + .5) / 16);
+const hexRGB = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+const pack = (r, g, b) => ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+const rampOf = list => list.map(h => { const [r, g, b] = hexRGB(h); return pack(r, g, b); });
+const shadeC = (c, k) => pack(Math.min(255, (c & 255) * k) | 0, Math.min(255, ((c >> 8) & 255) * k) | 0, Math.min(255, ((c >> 16) & 255) * k) | 0);
+function hash2(x, y) { let h = (Math.imul(x | 0, 374761393) + Math.imul(y | 0, 668265263)) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
+function dith(ramp, v, x, y) {
+  const n = ramp.length - 1; const f = v * n;
+  if (f <= 0) return ramp[0]; if (f >= n) return ramp[n];
+  let i = f | 0; if (f - i > BAYER[(y & 3) * 4 + (x & 3)]) i++;
+  return ramp[i];
+}
+const V3 = {
+  add: (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]],
+  sub: (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]],
+  mul: (a, s) => [a[0] * s, a[1] * s, a[2] * s],
+  dot: (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2],
+  cross: (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]],
+  len: a => Math.hypot(a[0], a[1], a[2]),
+  norm: a => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; },
+};
+// cuaterniones [w, x, y, z]
+const Q4 = {
+  mul: (a, b) => [a[0] * b[0] - a[1] * b[1] - a[2] * b[2] - a[3] * b[3], a[0] * b[1] + a[1] * b[0] + a[2] * b[3] - a[3] * b[2], a[0] * b[2] - a[1] * b[3] + a[2] * b[0] + a[3] * b[1], a[0] * b[3] + a[1] * b[2] - a[2] * b[1] + a[3] * b[0]],
+  rot: (q, v) => {
+    const w = q[0], x = q[1], y = q[2], z = q[3];
+    const ix = w * v[0] + y * v[2] - z * v[1], iy = w * v[1] + z * v[0] - x * v[2], iz = w * v[2] + x * v[1] - y * v[0], iw = -x * v[0] - y * v[1] - z * v[2];
+    return [ix * w - iw * x - iy * z + iz * y, iy * w - iw * y - iz * x + ix * z, iz * w - iw * z - ix * y + iy * x];
+  },
+  norm: q => { const l = Math.hypot(q[0], q[1], q[2], q[3]) || 1; return [q[0] / l, q[1] / l, q[2] / l, q[3] / l]; },
+  axis: (ax, an) => { const s = Math.sin(an / 2); return [Math.cos(an / 2), ax[0] * s, ax[1] * s, ax[2] * s]; },
+  slerp: (a, b, t) => {
+    let d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+    if (d < 0) { b = b.map(c => -c); d = -d; }
+    if (d > .9995) return Q4.norm(a.map((c, i) => c + (b[i] - c) * t));
+    const th = Math.acos(d), s = Math.sin(th), k1 = Math.sin((1 - t) * th) / s, k2 = Math.sin(t * th) / s;
+    return a.map((c, i) => c * k1 + b[i] * k2);
+  },
+  rand: () => { const u1 = Math.random(), u2 = Math.random(), u3 = Math.random(); return [Math.sqrt(u1) * Math.cos(2 * Math.PI * u3), Math.sqrt(1 - u1) * Math.sin(2 * Math.PI * u2), Math.sqrt(1 - u1) * Math.cos(2 * Math.PI * u2), Math.sqrt(u1) * Math.sin(2 * Math.PI * u3)]; },
+};
+function makeCam(eye, target, focal, W, H) {
+  const f = V3.norm(V3.sub(target, eye)), r = V3.norm(V3.cross(f, [0, 1, 0])), u = V3.cross(r, f);
+  return { eye, f, r, u, focal, W, H };
+}
+function proj(c, p) {
+  const dx = p[0] - c.eye[0], dy = p[1] - c.eye[1], dz = p[2] - c.eye[2];
+  const z = dx * c.f[0] + dy * c.f[1] + dz * c.f[2];
+  return [c.W / 2 + (dx * c.r[0] + dy * c.r[1] + dz * c.r[2]) * c.focal / z, c.H / 2 - (dx * c.u[0] + dy * c.u[1] + dz * c.u[2]) * c.focal / z, z];
+}
+// lienzo de baja resolución que se amplía x2 (o lo que toque) sin suavizar
+function makeSurface(cls) {
+  const cv = document.createElement('canvas'); cv.className = 'px3d ' + (cls || '');
+  return { cv, ctx: cv.getContext('2d'), W: 0, H: 0, img: null, buf: null };
+}
+function sizeSurface(s, cssW, cssH, scale = 2) {
+  const W = Math.max(40, Math.floor(cssW / scale)), H = Math.max(30, Math.floor(cssH / scale));
+  if (W === s.W && H === s.H) return false;
+  s.W = W; s.H = H; s.cv.width = W; s.cv.height = H;
+  s.cv.style.width = cssW + 'px'; s.cv.style.height = cssH + 'px';
+  s.img = s.ctx.createImageData(W, H); s.buf = new Uint32Array(s.img.data.buffer);
+  return true;
+}
+const blit = s => s.ctx.putImageData(s.img, 0, 0);
+
+// ---------- texturas procedurales (valor 0..1)
+function brickTex(u, v) {
+  const bw = .5, bh = .25, row = Math.floor(v / bh), off = (row & 1) * bw * .5, col = Math.floor((u + off) / bw);
+  const fu = (u + off) / bw - col, fv = v / bh - row;
+  if (fu < .07 || fv < .13) return .16;
+  const h = hash2(col, row); let t = .6 + h * .32;
+  if (h > .94) t = .32;
+  if (fv > .8) t += .1;
+  if (fu > .9) t -= .1;
+  return t - hash2(col * 9 + Math.floor(fu * 6), row * 7 + Math.floor(fv * 3)) * .12;
+}
+function tileTex(u, v) {
+  const s = .8, cx = Math.floor(u / s), cz = Math.floor(v / s), fu = u / s - cx, fv = v / s - cz;
+  if (fu < .05 || fv < .05) return .12;
+  let t = .5 + hash2(cx + 99, cz + 7) * .32;
+  if (fu > .92 || fv > .92) t -= .12;
+  if (hash2(cx * 3 + Math.floor(fu * 7), cz * 5 + Math.floor(fv * 7)) > .95) t = .22;
+  return t;
+}
+function plankTex(u, v, n) { // tablones a lo largo de v
+  const p = Math.floor(u * n), fu = u * n - p;
+  if (fu < .09) return .18;
+  return .55 + hash2(p, 3) * .2 + Math.sin(v * 9 + p * 3 + Math.sin(v * 2.3 + p) * 2) * .06;
+}
+
+// ---------- temas de cada piso
+const THEMES = [
+  { wall: rampOf(['#050408', '#120f1a', '#211b2e', '#342b47', '#4d4166', '#6e5f8a', '#9a86a8']), floor: rampOf(['#040306', '#100d15', '#1d1824', '#2e2738', '#453b52', '#625470', '#86739a']), wood: rampOf(['#060403', '#170f09', '#2b1c10', '#43301c', '#5e4429', '#7f5d38']), sky: pack(4, 3, 6) },
+  { wall: rampOf(['#030504', '#0c140e', '#162418', '#233826', '#365236', '#4f714a', '#76955e']), floor: rampOf(['#040302', '#110d08', '#211a10', '#342919', '#4b3c25', '#685435', '#8c7350']), wood: rampOf(['#050302', '#160e08', '#291b0f', '#40301b', '#5a4428', '#7a5e38']), sky: pack(2, 4, 3) },
+  { wall: rampOf(['#060203', '#170709', '#2b0d10', '#441519', '#632024', '#8a3328', '#b85a32']), floor: rampOf(['#040202', '#120909', '#221212', '#361c19', '#4f2a22', '#6e3d2b', '#965637']), wood: rampOf(['#050202', '#170a08', '#2a120d', '#401c14', '#5a2a1c', '#7a3c24']), sky: pack(6, 2, 2) },
+];
+const FLAME = rampOf(['#7a1a10', '#d0401c', '#f08a2a', '#f8d84a', '#fff4c0']);
+
+// ---------- habitación/pasillo (caja vista desde dentro), con puertas en la pared del fondo
+// room: { CW (medio ancho), CH (alto), L (distancia a la pared del fondo), back (lo que hay detrás de la cámara), torches:[[x,y,z]], doors:[{x,w,h,ico,boss}], open:índice de puerta abierta }
+function renderRoom(s, cam, theme, room, time) {
+  const { W, H, buf } = s, { CW, CH, L } = room;
+  const ex = cam.eye[0], ey = cam.eye[1], ez = cam.eye[2];
+  const T = room.torches, fk = T.map((t, i) => .82 + .1 * Math.sin(time * 8.3 + i * 2.1) + .08 * Math.sin(time * 13.1 + i * 4.7));
+  const doors = room.doors || [];
+  for (let y = 0; y < H; y++) {
+    const sy = -(y + .5 - H / 2) / cam.focal;
+    for (let x = 0; x < W; x++) {
+      const sx = (x + .5 - W / 2) / cam.focal;
+      let dx = cam.r[0] * sx + cam.u[0] * sy + cam.f[0], dy = cam.r[1] * sx + cam.u[1] * sy + cam.f[1], dz = cam.r[2] * sx + cam.u[2] * sy + cam.f[2];
+      const dl = Math.sqrt(dx * dx + dy * dy + dz * dz); dx /= dl; dy /= dl; dz /= dl;
+      let t = 1e9, mat = 0, nx = 0, ny = 0, nz = 0, tt;
+      if (dy < 0) { tt = -ey / dy; if (tt < t) { t = tt; mat = 1; nx = 0; ny = 1; nz = 0; } }
+      else if (dy > 0) { tt = (CH - ey) / dy; if (tt < t) { t = tt; mat = 2; nx = 0; ny = -1; nz = 0; } }
+      if (dx < 0) { tt = (-CW - ex) / dx; if (tt < t) { t = tt; mat = 3; nx = 1; ny = 0; nz = 0; } }
+      else if (dx > 0) { tt = (CW - ex) / dx; if (tt < t) { t = tt; mat = 3; nx = -1; ny = 0; nz = 0; } }
+      if (dz < 0) { tt = (-L - ez) / dz; if (tt < t) { t = tt; mat = 4; nx = 0; ny = 0; nz = 1; } }
+      const px = ex + dx * t, py = ey + dy * t, pz = ez + dz * t;
+      let tex, ramp = theme.wall, direct = 0;
+      if (mat === 1) { tex = tileTex(px, pz); ramp = theme.floor; }
+      else if (mat === 2) { const fz = pz / 1.3 - Math.floor(pz / 1.3); if (fz < .28) { tex = plankTex(px * .3, pz, 1) * .9; ramp = theme.wood; } else tex = .3 + hash2(Math.floor(px * 3), Math.floor(pz * 3)) * .1; }
+      else if (mat === 3) tex = brickTex(pz, py);
+      else {
+        tex = brickTex(px, py);
+        for (let i = 0; i < doors.length; i++) {
+          const d = doors[i], hw = d.w / 2, ox = px - d.x, rh = d.h - hw;
+          const inFrame = Math.abs(ox) <= hw + .09 && (py <= rh || ox * ox + (py - rh) * (py - rh) <= (hw + .09) * (hw + .09));
+          if (!inFrame) continue;
+          const inDoor = Math.abs(ox) <= hw && (py <= rh || ox * ox + (py - rh) * (py - rh) <= hw * hw);
+          if (!inDoor) { tex = .85 - hash2(Math.floor(px * 12), Math.floor(py * 12)) * .15; break; }
+          if (room.open === i) { tex = 0; ramp = theme.wall; break; }
+          const lu = ox / d.w + .5, lv = py / d.h;
+          ramp = theme.wood; tex = plankTex(lu, lv, 5);
+          if ((lv > .2 && lv < .26) || (lv > .66 && lv < .72)) { tex = .42; ramp = theme.wall; if (hash2(Math.floor(lu * 9), Math.floor(lv * 40)) > .8) tex = .9; }
+          if (d.boss) { tex *= .8; }
+          // símbolo de la sala pintado en la puerta (brilla un poco)
+          if (d.ico) {
+            const sz = d.w * .56, cy = rh * .66, ix = Math.floor((ox / sz + .5) * 7), iy = Math.floor((.5 - (py - cy) / sz) * 7);
+            if (ix >= 0 && ix < 7 && iy >= 0 && iy < 7) { const g = ICO[d.ico]; const ch = g && g[iy] && g[iy][ix]; if (ch && PAL[ch]) direct = d.icoC[ch]; }
+          }
+          break;
+        }
+      }
+      // luz: ambiente + antorchas + la antorcha que lleva el héroe (cámara)
+      let b = .05;
+      for (let i = 0; i < T.length; i++) {
+        const lx = T[i][0] - px, ly = T[i][1] - py, lz = T[i][2] - pz, d2 = lx * lx + ly * ly + lz * lz;
+        const nd = (nx * lx + ny * ly + nz * lz) / Math.sqrt(d2);
+        if (nd > 0) b += fk[i] * 1.5 * nd / (1 + d2 * .8);
+      }
+      const nd0 = -(nx * dx + ny * dy + nz * dz);
+      if (nd0 > 0) b += (room.lamp || .8) * nd0 / (1 + t * t * .14);
+      const i = y * W + x;
+      if (direct) { buf[i] = b > .25 ? direct : shadeC(direct, .45 + b); continue; }
+      buf[i] = dith(ramp, b * tex * 1.25, x, y);
+    }
+  }
+  // fuego de las antorchas
+  for (let i = 0; i < T.length; i++) drawTorch(s, cam, T[i], time, i, fk[i]);
+}
+function drawTorch(s, cam, p, time, k, fk) {
+  const [sx, sy, z] = proj(cam, p); if (z < .2) return;
+  const size = Math.max(2, .32 * cam.focal / z), { W, H, buf } = s;
+  // soporte de hierro
+  const bw = Math.max(1, size * .25 | 0), bh = Math.max(2, size * .7 | 0);
+  for (let y = 0; y < bh; y++) for (let x = -bw; x <= bw; x++) { const X = sx + x | 0, Y = sy + y | 0; if (X >= 0 && X < W && Y >= 0 && Y < H) buf[Y * W + X] = pack(26, 16, 18); }
+  // llama
+  const fh = size * (1.25 + .15 * Math.sin(time * 11 + k)), fw = size * .55;
+  for (let y = 0; y < fh; y++) {
+    const ny = y / fh, sway = Math.sin(time * 9 + k * 3 + ny * 4) * ny * size * .18;
+    const half = fw * Math.sin((1 - ny) * Math.PI * .9) * (1 - ny * .4);
+    for (let x = -Math.ceil(half); x <= Math.ceil(half); x++) {
+      const X = Math.round(sx + x + sway), Y = Math.round(sy - y);
+      if (X < 0 || X >= W || Y < 0 || Y >= H) continue;
+      const e = Math.abs(x) / (half + .01);
+      buf[Y * W + X] = dith(FLAME, (1 - e * .8) * (1 - ny * .6) * fk + .1, X, Y);
+    }
+  }
+}
+
+// ---------- pasillo para elegir puerta (con paseo hacia la puerta elegida)
+const Corr = {
+  s: null, room: null, cam: null, anim: null, raf: 0, theme: null,
+  build(el, doorTypes, floor, opts = {}) {
+    const n = doorTypes.length, xs = n === 1 ? [0] : n === 2 ? [-.62, .62] : [-1.08, 0, 1.08];
+    const s = this.s = makeSurface(); el.innerHTML = ''; el.appendChild(s.cv);
+    sizeSurface(s, el.clientWidth, el.clientHeight, opts.title ? 3 : 2);
+    this.theme = THEMES[floor];
+    const CW = 1.65, L = opts.title ? 9 : 6;
+    this.room = {
+      CW, CH: 2.6, L, lamp: .9,
+      torches: opts.title ? [[-CW + .06, 1.6, -1], [CW - .06, 1.6, -3.5], [-CW + .06, 1.6, -6], [CW - .06, 1.6, -8.3]] : [[-CW + .06, 1.65, .6], [CW - .06, 1.65, -1.8], [-CW + .06, 1.65, -4.2], [CW - .06, 1.65, -5.5]],
+      doors: doorTypes.map((t, i) => {
+        const r = ROOMS[t], boss = t === 'jefe', ico = r.ico;
+        const icoC = {}; for (const ch in PAL) { const [R, G, B] = hexRGB(PAL[ch]); icoC[ch] = pack(R, G, B); }
+        return { t, x: xs[i], w: boss ? 1.15 : .8, h: boss ? 2.05 : 1.6, ico, icoC, boss };
+      }),
+      open: -1,
+    };
+    this.anim = { mode: opts.title ? 'title' : 'in', t0: performance.now(), from: [0, 1.15, 3], to: [0, 1.15, 1.6] };
+    this.title = !!opts.title;
+    s.cv.onclick = e => this.tap(e);
+    cancelAnimationFrame(this.raf);
+    const loop = () => { if (!s.cv.isConnected) return; this.frame(); this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+  },
+  camAt(now) {
+    const a = this.anim, t = now / 1000;
+    if (a.mode === 'title') { const z = 2 - ((t * .35) % 3); return { eye: [Math.sin(t * .3) * .15, 1.2 + Math.sin(t * 2.2) * .02, z], look: [0, 1.15, -9] }; }
+    const p = Math.min(1, (now - a.t0) / (a.mode === 'walk' ? 950 : 700));
+    const e = a.mode === 'walk' ? p * p * (3 - 2 * p) : 1 - Math.pow(1 - p, 3);
+    const eye = [a.from[0] + (a.to[0] - a.from[0]) * e, a.from[1] + Math.abs(Math.sin(e * Math.PI * 3)) * .05 * (p < 1 ? 1 : 0) + Math.sin(t * 1.6) * .012, a.from[2] + (a.to[2] - a.from[2]) * e];
+    return { eye, look: [eye[0] * .6, 1.08, eye[2] - 5], p };
+  },
+  frame() {
+    const s = this.s, now = performance.now(), c = this.camAt(now);
+    this.cam = makeCam(c.eye, c.look, Math.max(s.W * .62, s.H * .5), s.W, s.H);
+    const a = this.anim;
+    if (a.mode === 'walk') this.room.open = c.p > .55 ? a.door : -1;
+    renderRoom(s, this.cam, this.theme, this.room, now / 1000);
+    if (a.mode === 'walk' && c.p > .7) { const k = 1 - (c.p - .7) / .3; for (let i = 0; i < s.buf.length; i++) s.buf[i] = shadeC(s.buf[i], k); }
+    blit(s);
+    if (a.mode === 'walk' && c.p >= 1 && a.done) { const d = a.done; a.done = null; d(); }
+  },
+  walk(i, done) {
+    const c = this.camAt(performance.now()), d = this.room.doors[i];
+    this.anim = { mode: 'walk', t0: performance.now(), from: c.eye, to: [d.x * .95, 1.1, -this.room.L + .7], door: i, done };
+  },
+  tap(e) {
+    if (!this.cam || this.title) return;
+    const r = this.s.cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * this.s.W;
+    let best = -1, bd = 1e9;
+    this.room.doors.forEach((d, i) => { const p = proj(this.cam, [d.x, 1, -this.room.L]); const dd = Math.abs(p[0] - x); if (dd < bd) { bd = dd; best = i; } });
+    if (best >= 0) G.door(best);
+  },
+};
+
+// ---------- fondo de la sala de combate (con antorchas que parpadean)
+const Arena = {
+  s: makeSurface('arena-bg'), floor: -1, raf: 0, last: 0,
+  attach(slot, floor) {
+    const s = this.s; slot.appendChild(s.cv);
+    const ch = sizeSurface(s, slot.clientWidth, slot.clientHeight, 2);
+    if (ch || floor !== this.floor) { this.floor = floor; this.draw(performance.now()); }
+    if (!this.raf) { const loop = now => { if (!s.cv.isConnected) { this.raf = 0; return; } if (now - this.last > 90) { this.last = now; this.draw(now); } this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
+  },
+  draw(now) {
+    const s = this.s; if (!s.W) return;
+    const cam = makeCam([0, 2.5, 3.6], [0, .55, -2.2], s.W * .78, s.W, s.H);
+    const room = { CW: 3.4, CH: 3.4, L: 2.4, lamp: .55, torches: [[-1.9, 2.0, -2.34], [1.9, 2.0, -2.34], [-3.34, 1.9, .4], [3.34, 1.9, .4]], doors: [] };
+    renderRoom(s, cam, THEMES[this.floor], room, now / 1000);
+    blit(s);
+  },
+};
+
+// ---------- bandeja de dados con físicas
+const TD = { X: 2.7, Z: 1.35, D: .55 };   // medio ancho, medio fondo y hondo de la bandeja
+const CUBE_V = []; for (const a of [-.5, .5]) for (const b of [-.5, .5]) for (const c of [-.5, .5]) CUBE_V.push([a, b, c]);
+// caras del cubo: normal, eje "a" (derecha de la textura) y eje "b" (arriba de la textura), con a×b = normal
+const CUBE_F = [
+  { n: [1, 0, 0], a: [0, 0, -1], b: [0, 1, 0] }, { n: [-1, 0, 0], a: [0, 0, 1], b: [0, 1, 0] },
+  { n: [0, 1, 0], a: [1, 0, 0], b: [0, 0, -1] }, { n: [0, -1, 0], a: [1, 0, 0], b: [0, 0, 1] },
+  { n: [0, 0, 1], a: [1, 0, 0], b: [0, 1, 0] }, { n: [0, 0, -1], a: [-1, 0, 0], b: [0, 1, 0] }];
+const LIGHT = V3.norm([-.45, 1, .55]);
+const DIGITS = ['111101101101111', '010110010010111', '111001111100111', '111001111001111', '101101111001001', '111100111001111', '111100111101111', '111001010010010', '111101111101111', '111101111001111'];
+const texCache = {};
+function dieCols(d) {
+  if (d === 'atk') return ['#4a141c', '#e04848'];
+  if (d === 'def') return ['#132044', '#4a8ae8'];
+  const c = hexRGB(H().dc); return ['#' + c.map(v => Math.round(v * .3).toString(16).padStart(2, '0')).join(''), H().dc];
+}
+function faceTex(d, f, gold) {
+  const key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
+  if (texCache[key]) return texCache[key];
+  const [bodyH, rimH] = dieCols(d), body = hexRGB(bodyH), rim = hexRGB(rimH);
+  const px = Array.from({ length: 256 }, () => body.slice());
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
+    if (x === 0 || y === 0 || x === 15 || y === 15) px[y * 16 + x] = rim.map(v => v * .8);
+    else if (x === 1 || y === 1) px[y * 16 + x] = body.map(v => Math.min(255, v * 1.5 + 12));
+    else if (x === 14 || y === 14) px[y * 16 + x] = body.map(v => v * .6);
+  }
+  const put = (x, y, c) => { if (x >= 0 && x < 16 && y >= 0 && y < 16) px[y * 16 + x] = c; };
+  if (blankF(f)) { for (const [x, y] of [[7, 7], [8, 7], [7, 8], [8, 8]]) put(x, y, rim); }
+  else {
+    const kw = KW[f.k], g = ICO[kw.ico], num = f.k === 'doble' && !f.v ? '' : String(f.v);
+    const oy = num ? 2 : 4;
+    g.forEach((row, y) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (PAL[ch]) put(4 + x, oy + y, hexRGB(PAL[ch])); } });
+    if (num) {
+      const col = hexRGB(gold ? '#f8d84a' : kw.col), w = num.length * 4 - 1;
+      [...num].forEach((ch, k) => { const m = DIGITS[+ch]; for (let i = 0; i < 15; i++) if (m[i] === '1') { const x = 8 - Math.ceil(w / 2) + k * 4 + (i % 3), y = 10 + (i / 3 | 0); put(x + 1, y + 1, [10, 6, 8]); put(x, y, col); } });
+    }
+  }
+  return texCache[key] = [.5, .74, 1.02].map(k => Uint32Array.from(px, c => pack(Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0)));
+}
+function topFace(q) { let best = 0, bv = -2; CUBE_F.forEach((f, i) => { const n = Q4.rot(q, f.n); if (n[1] > bv) { bv = n[1]; best = i; } }); return best; }
+function settleQ(q, fi) {
+  const n = Q4.rot(q, CUBE_F[fi].n), ax = V3.cross(n, [0, 1, 0]), sl = V3.len(ax);
+  let q1 = sl > 1e-6 ? Q4.norm(Q4.mul(Q4.axis(V3.mul(ax, 1 / sl), Math.atan2(sl, n[1])), q)) : q;
+  if (sl <= 1e-6 && n[1] < 0) q1 = Q4.norm(Q4.mul(Q4.axis([1, 0, 0], Math.PI), q));
+  const b = Q4.rot(q1, CUBE_F[fi].b), al = Math.atan2(b[0], b[2]);
+  return Q4.norm(Q4.mul(Q4.axis([0, 1, 0], Math.PI - al), q1));
+}
+function simulate(bodies) {
+  const dt = 1 / 240, sub = 4, G = -30, invI = 6, frames = [], sounds = [];
+  const P = [[0, 1, 0, 0, .3], [1, 0, 0, TD.X, .45], [-1, 0, 0, TD.X, .45], [0, 0, 1, TD.Z, .45], [0, 0, -1, TD.Z, .45]];
+  for (let f = 0; f < 330; f++) {
+    for (let st = 0; st < sub; st++) {
+      for (const b of bodies) {
+        if (!b.dyn || b.sleep) continue;
+        b.vel[1] += G * dt;
+        b.pos = V3.add(b.pos, V3.mul(b.vel, dt));
+        const dq = Q4.mul([0, b.w[0], b.w[1], b.w[2]], b.q);
+        b.q = Q4.norm([b.q[0] + dq[0] * .5 * dt, b.q[1] + dq[1] * .5 * dt, b.q[2] + dq[2] * .5 * dt, b.q[3] + dq[3] * .5 * dt]);
+        let touch = false;
+        for (let it = 0; it < 2; it++) for (const v of CUBE_V) {
+          const r = Q4.rot(b.q, v), p = V3.add(b.pos, r);
+          for (const pl of P) {
+            const n = [pl[0], pl[1], pl[2]], dist = V3.dot(n, p) + pl[3];
+            if (dist >= 0) continue;
+            touch = true;
+            b.pos = V3.add(b.pos, V3.mul(n, -dist * .5));
+            const vp = V3.add(b.vel, V3.cross(b.w, r)), vn = V3.dot(vp, n);
+            if (vn >= 0) continue;
+            const rn = V3.cross(r, n), kn = 1 + invI * V3.dot(rn, rn);
+            const j = -(1 + (vn < -1.5 ? pl[4] : 0)) * vn / kn;
+            b.vel = V3.add(b.vel, V3.mul(n, j)); b.w = V3.add(b.w, V3.mul(rn, invI * j));
+            const vp2 = V3.add(b.vel, V3.cross(b.w, r)), vt = V3.sub(vp2, V3.mul(n, V3.dot(vp2, n))), vtl = V3.len(vt);
+            if (vtl > 1e-4) {
+              const tn = V3.mul(vt, 1 / vtl), rt = V3.cross(r, tn), kt = 1 + invI * V3.dot(rt, rt);
+              const jt = Math.max(-vtl / kt, -.5 * j);
+              b.vel = V3.add(b.vel, V3.mul(tn, jt)); b.w = V3.add(b.w, V3.mul(rt, invI * jt));
+            }
+            if (j > 1.6 && st === 0 && it === 0) sounds.push([f, Math.min(1, j / 7)]);
+          }
+        }
+        if (touch) { b.w = V3.mul(b.w, .993); b.vel[0] *= .997; b.vel[2] *= .997; }
+      }
+      // choques entre dados (como si fueran bolas: suficiente para que no se atraviesen)
+      for (let i = 0; i < bodies.length; i++) for (let k = i + 1; k < bodies.length; k++) {
+        const A = bodies[i], B = bodies[k];
+        const ma = A.dyn && !A.sleep ? 1 : 0, mb = B.dyn && !B.sleep ? 1 : 0, tot = ma + mb;
+        if (!tot) continue;
+        const d = V3.sub(B.pos, A.pos), dl = V3.len(d);
+        if (dl >= 1.28 || dl < 1e-4) continue;
+        const n = V3.mul(d, 1 / dl), pen = 1.28 - dl;
+        A.pos = V3.sub(A.pos, V3.mul(n, pen * ma / tot)); B.pos = V3.add(B.pos, V3.mul(n, pen * mb / tot));
+        const rv = V3.dot(V3.sub(B.vel, A.vel), n);
+        if (rv < 0) {
+          const jj = -1.35 * rv / tot;
+          A.vel = V3.sub(A.vel, V3.mul(n, jj * ma)); B.vel = V3.add(B.vel, V3.mul(n, jj * mb));
+          const sp = V3.mul(V3.cross(n, [0, 1, 0]), jj * 2);
+          A.w = V3.add(A.w, V3.mul(sp, ma)); B.w = V3.sub(B.w, V3.mul(sp, mb));
+          if (st === 0 && -rv > 1.5) sounds.push([f, Math.min(1, -rv / 6)]);
+        }
+      }
+    }
+    let all = true;
+    for (const b of bodies) if (b.dyn && !b.sleep) {
+      const still = V3.len(b.vel) < .14 && V3.len(b.w) < .3;
+      if (still && (b.pos[1] < .58 ? ++b.rest > 10 : ++b.rest > 35)) b.sleep = true;
+      else if (!still) b.rest = 0;
+      if (!b.sleep) all = false;
+    }
+    frames.push(bodies.map(b => ({ pos: b.pos.slice(), q: b.q.slice() })));
+    if (all) break;
+  }
+  const top = bodies.map(b => topFace(b.q)), tq = bodies.map((b, i) => b.dyn ? settleQ(b.q, top[i]) : b.q);
+  for (let k = 1; k <= 9; k++) {
+    const e = k / 9;
+    frames.push(bodies.map((b, i) => b.dyn ? { pos: [b.pos[0], b.pos[1] + (.5 - b.pos[1]) * e, b.pos[2]], q: Q4.slerp(b.q, tq[i], e) } : { pos: b.pos, q: b.q }));
+  }
+  return { frames, top, sounds };
+}
+const Tray = {
+  s: makeSurface('tray'), cam: null, bg: null, dice: [null, null, null], playing: false, raf: 0,
+  attach(slot) {
+    const s = this.s; slot.prepend(s.cv);
+    s.cv.onclick = e => this.tap(e);
+    const w = slot.clientWidth;
+    if (sizeSurface(s, w, Math.round(w * .5), 2)) this.setup();
+    this.draw();
+  },
+  setup() {
+    const s = this.s, W = s.W;
+    const eye = [0, 6.4, 4.7], tgt = [0, 0, .12], f = V3.norm(V3.sub(tgt, eye));
+    const corner = [TD.X + .45, TD.D, TD.Z + .2], depth = V3.dot(V3.sub(corner, eye), f);
+    this.cam = makeCam(eye, tgt, (W / 2 - 1) * depth / (TD.X + .45), W, s.H);
+    // fondo fijo: mesa de madera con un hueco forrado de fieltro
+    const cam = this.cam, wood = rampOf(['#0a0605', '#1c120b', '#301f12', '#47301c', '#634428', '#875d36', '#a87a48']), felt = rampOf(['#0b0406', '#1a080c', '#2c0e14', '#41151c', '#581f25', '#712c2e']);
+    this.bg = new Uint32Array(s.W * s.H);
+    const { X, Z, D } = TD, ex = eye[0], ey = eye[1], ez = eye[2];
+    for (let y = 0; y < s.H; y++) for (let x = 0; x < s.W; x++) {
+      const sx = (x + .5 - W / 2) / cam.focal, sy = -(y + .5 - s.H / 2) / cam.focal;
+      let dx = cam.r[0] * sx + cam.u[0] * sy + cam.f[0], dy = cam.r[1] * sx + cam.u[1] * sy + cam.f[1], dz = cam.r[2] * sx + cam.u[2] * sy + cam.f[2];
+      const dl = Math.hypot(dx, dy, dz); dx /= dl; dy /= dl; dz /= dl;
+      const t0 = (D - ey) / dy, qx = ex + dx * t0, qz = ez + dz * t0;
+      let ramp, tex, nx = 0, ny = 1, nz = 0, px = qx, py = D, pz = qz;
+      if (Math.abs(qx) <= X && Math.abs(qz) <= Z) {
+        let t = -ey / dy, m = 0, tt;
+        if (dx < 0) { tt = (-X - ex) / dx; if (tt < t) { t = tt; m = 1; nx = 1; ny = 0; nz = 0; } } else if (dx > 0) { tt = (X - ex) / dx; if (tt < t) { t = tt; m = 1; nx = -1; ny = 0; nz = 0; } }
+        if (dz < 0) { tt = (-Z - ez) / dz; if (tt < t) { t = tt; m = 1; nx = 0; ny = 0; nz = 1; } } else if (dz > 0) { tt = (Z - ez) / dz; if (tt < t) { t = tt; m = 1; nx = 0; ny = 0; nz = -1; } }
+        px = ex + dx * t; py = ey + dy * t; pz = ez + dz * t;
+        if (m === 0) { ramp = felt; tex = .66 + hash2(Math.floor(px * 22), Math.floor(pz * 22)) * .12; const ix = X - Math.abs(px), iz = Z - Math.abs(pz), edge = Math.min(ix, iz); if (edge > .17 && edge < .23 && ((Math.floor((ix < iz ? pz : px) * 8)) & 1)) tex = .95; }
+        else { ramp = wood; tex = plankTex(nx ? pz * .4 : px * .4, py * 4, 1) * .7; }
+      } else {
+        ramp = wood; tex = plankTex(qz * .9, qx, 1);
+        const rim = Math.max(Math.abs(qx) - X, Math.abs(qz) - Z);
+        if (rim < .16) tex = .95 - rim * 1.5;
+      }
+      let b = .28 + .62 * Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
+      b *= 1.05 - Math.min(.55, (px * px * .02 + pz * pz * .05));
+      this.bg[y * s.W + x] = dith(ramp, b * tex * 1.2, x, y);
+    }
+  },
+  hide() { this.dice = [null, null, null]; this.draw(); },
+  // dados: [{d,pos,q,map:[índice de cara del dado en cada cara del cubo],top,boost}]
+  async roll(idx, results) {
+    if (!this.s.W) return;
+    const bodies = [0, 1, 2].map(i => {
+      const o = this.dice[i];
+      return { pos: o ? o.pos.slice() : [50 + i * 5, .5, 0], q: o ? o.q.slice() : [1, 0, 0, 0], vel: [0, 0, 0], w: [0, 0, 0], dyn: idx.includes(i), rest: 0, sleep: false };
+    });
+    idx.forEach((i, k) => {
+      const b = bodies[i];
+      b.pos = [TD.X - .75, 1.5 + Math.random() * .7, idx.length === 1 ? (Math.random() - .5) * 1.4 : -.95 + k * .95 + (Math.random() - .5) * .2];
+      b.vel = [-(4.5 + k * 1.6 + Math.random() * 2.5), 1 + Math.random() * 2, (Math.random() - .5) * 3];
+      b.w = [(Math.random() - .5) * 26, (Math.random() - .5) * 26, (Math.random() - .5) * 26];
+      b.q = Q4.rand();
+    });
+    const sim = simulate(bodies);
+    const keys = ['atk', 'def', 'esp'];
+    idx.forEach(i => {
+      const d = keys[i], top = sim.top[i], fi = results[i].i, map = new Array(6);
+      map[top] = fi; let rest = [0, 1, 2, 3, 4, 5].filter(x => x !== fi);
+      for (let c = 0; c < 6; c++) if (c !== top) map[c] = rest.shift();
+      this.dice[i] = { d, pos: bodies[i].pos, q: bodies[i].q, map, top, boost: null };
+    });
+    await this.play(sim, idx);
+    sim.frames[sim.frames.length - 1].forEach((st, i) => { if (this.dice[i]) { this.dice[i].pos = st.pos; this.dice[i].q = st.q; } });
+    this.draw();
+  },
+  play(sim, idx) {
+    return new Promise(res => {
+      const t0 = performance.now(); let si = 0, lastF = -1;
+      const step = now => {
+        const f = Math.max(0, Math.min(sim.frames.length - 1, Math.floor((now - t0) / 16.67)));
+        if (f !== lastF) {
+          lastF = f;
+          sim.frames[f].forEach((st, i) => { if (idx.includes(i)) { this.dice[i].pos = st.pos; this.dice[i].q = st.q; } });
+          while (si < sim.sounds.length && sim.sounds[si][0] <= f) { Sfx.clack(sim.sounds[si][1]); si++; }
+          this.draw();
+        }
+        if (f >= sim.frames.length - 1) return res();
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  },
+  setBoost(effFs) { // el número de la cara de arriba en dorado si suma por pareja/trío
+    effFs.forEach((f, i) => { if (this.dice[i]) this.dice[i].boost = f.b ? f : null; });
+    this.draw();
+  },
+  draw() {
+    const s = this.s; if (!s.W || !this.bg) return;
+    const { W, H, buf } = s, cam = this.cam; buf.set(this.bg);
+    const idb = this.idb && this.idb.length === W * H ? this.idb.fill(0) : (this.idb = new Uint8Array(W * H));
+    const list = this.dice.map((d, i) => d && { d, i, z: proj(cam, d.pos)[2] }).filter(Boolean).sort((a, b) => b.z - a.z);
+    // sombras en el fieltro
+    for (const { d } of list) {
+      const h = Math.max(0, d.pos[1] - .5), r = .72 - Math.min(.3, h * .12), c = proj(cam, [d.pos[0] - h * .35, 0, d.pos[2] - h * .3]);
+      const rx = Math.abs(proj(cam, [d.pos[0] + r, 0, d.pos[2]])[0] - proj(cam, [d.pos[0] - r, 0, d.pos[2]])[0]) / 2;
+      const ry = Math.abs(proj(cam, [d.pos[0], 0, d.pos[2] + r])[1] - proj(cam, [d.pos[0], 0, d.pos[2] - r])[1]) / 2;
+      const k = .45 + Math.min(.35, h * .1);
+      for (let y = Math.floor(c[1] - ry); y <= c[1] + ry; y++) for (let x = Math.floor(c[0] - rx); x <= c[0] + rx; x++) {
+        if (x < 0 || y < 0 || x >= W || y >= H) continue;
+        const e = ((x + .5 - c[0]) / rx) ** 2 + ((y + .5 - c[1]) / ry) ** 2;
+        if (e <= 1 && (e < .65 || BAYER[(y & 3) * 4 + (x & 3)] > (e - .65) / .35)) buf[y * W + x] = shadeC(buf[y * W + x], k);
+      }
+    }
+    const outl = [];
+    for (const { d, i } of list) {
+      outl[i + 1] = d.boost ? pack(248, 216, 74) : pack(8, 5, 7);
+      const faces = run.dice[d.d];
+      for (let fi = 0; fi < 6; fi++) {
+        const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, .5));
+        if (V3.dot(n, V3.sub(cam.eye, c)) <= 0) continue;
+        const l = V3.dot(n, LIGHT), lvl = l > .72 ? 2 : l > .25 ? 1 : 0;
+        const face = fi === d.top && d.boost ? d.boost : faces[d.map[fi]];
+        const tex = faceTex(d.d, face, fi === d.top && !!d.boost)[lvl];
+        const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => proj(cam, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, .5), V3.add(V3.mul(F0.a, sa * .5), V3.mul(F0.b, sb * .5)))))));
+        const UV = [[0, 1], [1, 1], [1, 0], [0, 0]];
+        rasterTri(s, idb, P[0], P[1], P[2], UV[0], UV[1], UV[2], tex, i + 1);
+        rasterTri(s, idb, P[0], P[2], P[3], UV[0], UV[2], UV[3], tex, i + 1);
+      }
+    }
+    // contorno de cada dado (negro, o dorado si tiene bonus)
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (idb[i]) continue;
+      const n = (x > 0 && idb[i - 1]) || (x < W - 1 && idb[i + 1]) || (y > 0 && idb[i - W]) || (y < H - 1 && idb[i + W]);
+      if (n) buf[i] = outl[n];
+    }
+    blit(s);
+  },
+  hitTest(e) {
+    const r = this.s.cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * this.s.W, y = (e.clientY - r.top) / r.height * this.s.H;
+    let best = -1, bd = 1e9;
+    this.dice.forEach((d, i) => { if (!d) return; const p = proj(this.cam, d.pos), dd = Math.hypot(p[0] - x, p[1] - y); if (dd < bd) { bd = dd; best = i; } });
+    return bd < this.s.W * .14 ? best : -1;
+  },
+  tap(e) {
+    if (!C || S.scr !== 'combat') return;
+    if (!C.rolled) return G.roll();
+    const i = this.hitTest(e); if (i >= 0) G.rr(['atk', 'def', 'esp'][i]);
+  },
+};
+function rasterTri(s, idb, a, b, c, ua, ub, uc, tex, id) {
+  const { W, H, buf } = s;
+  if (a[2] < .1 || b[2] < .1 || c[2] < .1) return;
+  const area = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+  if (Math.abs(area) < 1e-6) return;
+  const minx = Math.max(0, Math.floor(Math.min(a[0], b[0], c[0]))), maxx = Math.min(W - 1, Math.ceil(Math.max(a[0], b[0], c[0])));
+  const miny = Math.max(0, Math.floor(Math.min(a[1], b[1], c[1]))), maxy = Math.min(H - 1, Math.ceil(Math.max(a[1], b[1], c[1])));
+  const wa = 1 / a[2], wb = 1 / b[2], wc = 1 / c[2];
+  for (let y = miny; y <= maxy; y++) for (let x = minx; x <= maxx; x++) {
+    const px = x + .5, py = y + .5;
+    const w0 = ((b[0] - px) * (c[1] - py) - (b[1] - py) * (c[0] - px)) / area;
+    const w1 = ((c[0] - px) * (a[1] - py) - (c[1] - py) * (a[0] - px)) / area;
+    const w2 = 1 - w0 - w1;
+    if (w0 < -1e-4 || w1 < -1e-4 || w2 < -1e-4) continue;
+    const iw = w0 * wa + w1 * wb + w2 * wc;
+    let u = (w0 * ua[0] * wa + w1 * ub[0] * wb + w2 * uc[0] * wc) / iw * 16 | 0, v = (w0 * ua[1] * wa + w1 * ub[1] * wb + w2 * uc[1] * wc) / iw * 16 | 0;
+    if (u < 0) u = 0; else if (u > 15) u = 15; if (v < 0) v = 0; else if (v > 15) v = 15;
+    buf[y * W + x] = tex[v * 16 + u]; idb[y * W + x] = id;
+  }
+}
+
+// ---------- sonido (clic de dados y golpes), muy flojito
+const Sfx = {
+  on: (() => { try { return localStorage.getItem('mazmorra_sfx') !== '0'; } catch (e) { return true; } })(), ctx: null,
+  init() { if (!this.ctx) try { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} },
+  toggle() { this.on = !this.on; try { localStorage.setItem('mazmorra_sfx', this.on ? '1' : '0'); } catch (e) {} },
+  noise(len, freq, q, vol) {
+    const c = this.ctx, n = Math.floor(c.sampleRate * len), buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / n, 3);
+    const s = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    s.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; f.Q.value = q; g.gain.value = vol;
+    s.connect(f); f.connect(g); g.connect(c.destination); s.start();
+  },
+  clack(v) { if (!this.on || !this.ctx || FAST) return; this.noise(.035, 1700 + Math.random() * 1500, 4, .35 * v + .05); },
+  hit(v = 1) {
+    if (!this.on || !this.ctx || FAST) return;
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(), t = c.currentTime;
+    o.type = 'square'; o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + .15);
+    g.gain.setValueAtTime(.08 * v, t); g.gain.exponentialRampToValueAtTime(.001, t + .16);
+    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + .17);
+    this.noise(.08, 600, 1, .12 * v);
+  },
+};
+document.addEventListener('pointerdown', () => Sfx.init(), { once: true });
+
 // ---------------------------------------------------------- caras
 const F = (k, v) => ({ k, v });
 const KW = {
@@ -598,14 +1216,22 @@ function modal(html) {
   document.body.appendChild(m);
 }
 let fxq = [];
-function fl(target, txt, col, shake) { fxq.push({ target, txt, col, shake }); }
+function fl(target, txt, col, shake, cls) { fxq.push({ target, txt, col, shake, cls }); }
 function flushFx() {
   for (const q of fxq) {
     let el = null;
     if (q.target === 'hero') el = $('#hero');
     else if (C) { const i = C.en.indexOf(q.target); if (i >= 0) el = $('#en' + i); }
     if (!el) continue;
-    if (q.shake) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+    const fig = el.querySelector('.fig') || el;
+    const re = c => { fig.classList.remove(c); void fig.offsetWidth; fig.classList.add(c); };
+    if (q.cls) re(q.cls);
+    if (q.shake) {
+      re('hit'); burst(fig, q.col);
+      const n = parseInt(String(q.txt).replace('-', '')) || 0;
+      Sfx.hit(Math.min(1, .4 + n / 8));
+      if (n >= 5) { app.classList.remove('quake'); void app.offsetWidth; app.classList.add('quake'); }
+    }
     if (q.txt) {
       const r = el.getBoundingClientRect(), d = document.createElement('div');
       d.className = 'fl'; d.textContent = q.txt; d.style.color = q.col || '#fff';
@@ -614,21 +1240,32 @@ function flushFx() {
     }
   }
   fxq = [];
-  if (navigator.vibrate && !FAST) { /* vibración opcional */ }
 }
+function burst(el, col) {
+  const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  for (let i = 0; i < 9; i++) {
+    const d = document.createElement('div'), a = Math.random() * Math.PI * 2, v = 18 + Math.random() * 26;
+    d.className = 'pt'; d.style.left = cx + 'px'; d.style.top = cy + 'px'; d.style.background = i % 3 ? (col || '#ff6a6a') : '#fff4c0';
+    d.style.setProperty('--dx', Math.cos(a) * v + 'px'); d.style.setProperty('--dy', Math.sin(a) * v - 10 + 'px');
+    fxl.appendChild(d); setTimeout(() => d.remove(), 520);
+  }
+}
+const fig = (html, extra = '') => `<div class="fig" style="animation-delay:-${(performance.now() % 1400) / 1000}s;${extra}">${html}</div>`;
 
 // ---------------------------------------------------------- pantallas
 function title() {
   S = { scr: 'title' }; C = null;
   const sv = load();
-  app.innerHTML = `<div class="center">
-    <h1>MAZMORRA<br>DE DADOS</h1>
-    <div class="trio">${sp('caballero', 5)}${sp('clerigo', 5)}${sp('picaro', 5)}${sp('piromante', 5)}</div>
+  app.innerHTML = `<div id="bgview"></div><div class="center">
+    <h1 class="logo">MAZMORRA<br>DE DADOS</h1>
+    <div class="trio">${['caballero', 'clerigo', 'picaro', 'piromante'].map(k => fig(sp(k, 5))).join('')}</div>
     <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
     <button class="btn" onclick="G.help()">Cómo se juega</button>
+    <button class="btn small" onclick="G.sfx()">Sonido: ${Sfx.on ? 'sí' : 'no'}</button>
   </div>`;
+  Corr.build($('#bgview'), ['jefe'], 0, { title: true });
 }
 function chooseHero() {
   S = { scr: 'choose' };
@@ -655,21 +1292,23 @@ function help() {
 function floorIntro() {
   S = { scr: 'floor' };
   const fl = FLOORS[run.floor], b = EN[fl.boss];
-  app.innerHTML = `<div class="center c" style="align-items:center">
-    <p class="t">PISO ${run.floor + 1} DE ${FLOORS.length}</p><h1>${fl.n}</h1>
+  app.innerHTML = `<div id="bgview"></div><div class="center c" style="align-items:center">
+    <p class="t">PISO ${run.floor + 1} DE ${FLOORS.length}</p><h1 class="logo" style="font-size:22px">${fl.n}</h1>
     ${sp(b.spr || fl.boss, 10, b.swap)}
     <p class="t">Al fondo te espera:<br><span style="color:var(--txt)">${b.n}</span></p>
     <button class="btn pri" onclick="G.map()">Entrar</button></div>`;
+  if (!FAST) Corr.build($('#bgview'), ['jefe'], run.floor, { title: true });
 }
 function map() {
   S = { scr: 'map' }; C = null;
   const dots = Array.from({ length: STEPS }, (_, i) => `<i class="${i < run.step ? 'done' : i === run.step ? 'now' : i === STEPS - 1 ? 'boss' : ''}"></i>`).join('');
   app.innerHTML = `${hud()}<div class="steps">${dots}</div>
-    <div class="panel row">${sp(H().spr, 5)}<div class="col" style="flex:1"><h3>${run.cls}</h3>${bar(run.hp, run.maxHp)}${relicsHTML()}</div></div>
+    <div class="view" id="view"><div class="view-t">${run.doors.length > 1 ? 'Elige una puerta' : run.doors[0] === 'jefe' ? 'El jefe te espera' : 'Sigue adelante'}</div></div>
+    <div class="doors">${run.doors.map((d, i) => `<button class="btn door" onclick="G.door(${i})">${sp(ROOMS[d].ico, 4)}<span>${ROOMS[d].n}</span><small>${ROOMS[d].d}</small></button>`).join('')}</div>
+    <div class="panel row">${fig(sp(H().spr, 5))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${bar(run.hp, run.maxHp)}${relicsHTML()}</div></div>
     <div class="panel">${diceRows()}</div>
-    <h2 class="c">${run.doors.length > 1 ? 'Elige una puerta' : 'Sigue adelante'}</h2>
-    <div class="doors">${run.doors.map((d, i) => `<button class="btn door" onclick="G.door(${i})">${sp(ROOMS[d].ico, 5)}<span>${ROOMS[d].n}</span><small>${ROOMS[d].d}</small></button>`).join('')}</div>
     <button class="btn small" onclick="G.title()">Guardar y salir</button>`;
+  if (!FAST) { const v = $('#view'), lab = v.firstChild; Corr.build(v, run.doors, run.floor); v.appendChild(lab); }
 }
 function nextRoom() {
   if (run.hp <= 0) return gameOver();
@@ -863,14 +1502,15 @@ function startCombat(kind) {
 }
 function startTurn() {
   C.turn++; C.block = has('escudo') ? 1 : 0; C.thorns = 0; C.rolled = null;
+  if (!FAST) Tray.hide();
   C.rerolls = 1 + (has('trebol') ? 1 : 0);
   for (const e of C.en) { e.intent = parseFace(pick(e.f)); e.block = e.intent.b; }
   if (C.target >= C.en.length) C.target = 0;
 }
 function rollDie(d) {
-  let f = pick(run.dice[d]);
-  if (has('cargado') && blankF(f)) f = pick(run.dice[d]);
-  return { ...f };
+  let i = R(0, 5);
+  if (has('cargado') && blankF(run.dice[d][i])) i = R(0, 5);
+  return { ...run.dice[d][i], i };
 }
 function effFaces() {
   const fs = ['atk', 'def', 'esp'].map(d => ({ ...C.rolled[d], d, b: 0 }));
@@ -911,30 +1551,24 @@ function cRender() {
   const fl = FLOORS[run.floor], eff = C.rolled ? effFaces() : null;
   const multi = C.en.length > 1;
   app.innerHTML = `${hud()}
-  <div class="arena" style="background:${fl.bg}">
+  <div class="arena" id="arena">
     <div class="enemies">${C.en.map((e, i) => `<div class="en ${multi && i === C.target ? 'tgt' : ''} ${e.hp <= 0 ? 'dead' : ''}" id="en${i}" onclick="G.tgt(${i})">
-      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${sp(e.spr, e.px, e.swap)}<div class="nm">${e.n}</div>${bar(e.hp, e.max)}
+      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${fig(sp(e.spr, e.px, e.swap))}<div class="nm">${e.n}</div>${bar(e.hp, e.max)}
       <div class="badges">${e.block ? badge('escudo', e.block, '#8ab8ff') : ''}${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`).join('')}</div>
-    <div class="herorow"><div id="hero">${sp(H().spr, 5)}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${bar(run.hp, run.maxHp)}
+    <div class="herorow"><div id="hero">${fig(sp(H().spr, 6))}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${bar(run.hp, run.maxHp)}
       <div class="badges" style="justify-content:flex-start">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div></div></div>
   </div>
-  <div class="combo">${eff && eff.combo ? eff.combo : ''}</div>
-  <div class="dice" id="dice">${diceBig(eff)}</div>
-  <div class="dlab">${['atk', 'def', 'esp'].map(d => `<span>${DN(d)}</span>`).join('')}</div>
+  <div class="trayw" id="tray"><div class="combo">${eff && eff.combo ? eff.combo : ''}</div>${!C.rolled && !C.busy ? '<div class="tray-hint">Toca para tirar</div>' : ''}</div>
+  <div class="chips">${['atk', 'def', 'esp'].map(d => `<span><i style="border-color:${dieCols(d)[1]};background:${dieCols(d)[0]}"></i>${DN(d)}</span>`).join('')}</div>
   <div class="ftxt">${eff ? faceTexts(eff) : C.busy ? '' : 'Mira qué va a hacer el enemigo<br>y tira tus dados.'}</div>
   <div class="acts">${C.busy ? '<button class="btn" disabled>...</button>' : !C.rolled
     ? `<button class="btn pri" onclick="G.roll()">TIRAR DADOS</button>`
-    : `<button class="btn pri" onclick="G.act()">¡ACTUAR!</button><p class="t c">${C.rerolls ? `Toca un dado para volver a tirarlo (${C.rerolls})` : 'Sin re-tiradas'}</p>`}
+    : `<button class="btn pri" onclick="G.act()">¡ACTUAR!</button><p class="t c">${C.rerolls ? `Toca un dado de la bandeja para volver a tirarlo (${C.rerolls})` : 'Sin re-tiradas'}</p>`}
     <button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
+  Arena.attach($('#arena'), run.floor);
+  Tray.attach($('#tray'));
+  if (eff) Tray.setBoost(eff.fs);
   flushFx();
-}
-function diceBig(eff) {
-  return ['atk', 'def', 'esp'].map((d, i) => {
-    if (!C.rolled) return `<div class="fc ${d} die q"><b>?</b></div>`;
-    const f = eff ? eff.fs[i] : C.rolled[d];
-    const can = !C.busy && C.rerolls > 0;
-    return faceHTML(f, d, { big: 1, cls: `die ${f.b ? 'boost' : ''} ${can ? 'can' : ''}`, click: can ? `G.rr('${d}')` : '' });
-  }).join('');
 }
 function faceTexts(eff) {
   const lines = [];
@@ -946,25 +1580,20 @@ function faceTexts(eff) {
   }
   return lines.join('<br>');
 }
-async function animRoll(keys) {
-  for (let n = 0; n < 7; n++) {
-    for (const d of keys) C.rolled[d] = { ...pick(run.dice[d]) };
-    const el = $('#dice'); if (el) el.innerHTML = diceBig(null);
-    await sleep(55);
-  }
-}
 async function doRoll() {
   if (C.busy || C.rolled) return;
-  C.busy = true; C.rolled = {};
-  await animRoll(['atk', 'def', 'esp']);
-  C.rolled = { atk: rollDie('atk'), def: rollDie('def'), esp: rollDie('esp') };
-  C.busy = false; cRender();
+  C.busy = true; cRender();
+  const res = { atk: rollDie('atk'), def: rollDie('def'), esp: rollDie('esp') };
+  if (!FAST) await Tray.roll([0, 1, 2], [res.atk, res.def, res.esp]);
+  C.rolled = res; C.busy = false; cRender();
 }
 async function reroll(d) {
   if (C.busy || !C.rolled || C.rerolls <= 0) return;
-  C.rerolls--; C.busy = true;
-  await animRoll([d]);
-  C.rolled[d] = rollDie(d); C.busy = false; cRender();
+  C.rerolls--; C.busy = true; cRender();
+  const i = ['atk', 'def', 'esp'].indexOf(d), r = rollDie(d), arr = [];
+  arr[i] = r;
+  if (!FAST) { Tray.dice[i] && (Tray.dice[i].boost = null); await Tray.roll([i], arr); }
+  C.rolled[d] = r; C.busy = false; cRender();
 }
 const alive = () => C.en.filter(e => e.hp > 0);
 function tgtEnemy() { let e = C.en[C.target]; if (!e || e.hp <= 0) { e = alive()[0]; C.target = C.en.indexOf(e); } return e; }
@@ -1010,6 +1639,7 @@ async function act() {
     for (let h = 0; h < eff.hits; h++) {
       if (!alive().length) break;
       const amt = f.v + eff.furia, targets = kw.all ? alive() : [tgtEnemy()];
+      fl('hero', '', null, false, 'lungeR');
       for (const e of targets) { const dealt = hitEnemy(e, amt, kw.pierce, f.k === 'fuego' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); } }
       await step();
     }
@@ -1028,7 +1658,7 @@ async function act() {
     if (it.a) {
       let dmg = it.a + e.rage; const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
       run.hp -= dmg; fl('hero', dmg > 0 ? '-' + dmg : 'BLOQUEO', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
-      fl(e, '', null, true);
+      fl(e, '', null, false, 'lungeL');
       if (C.thorns) hitEnemy(e, C.thorns, true, '#c0d0ff');
     }
     if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p, '#7aea7a'); }
@@ -1066,7 +1696,13 @@ const G = {
   title, choose: chooseHero, help, map,
   start: k => newRun(k),
   cont: () => { run = load(); if (!run) return title(); map(); },
-  door: i => enter(run.doors[i]),
+  door: i => {
+    if (S.walking) return;
+    if (FAST || !Corr.room || !$('#view')) return enter(run.doors[i]);
+    S.walking = 1; document.querySelectorAll('.door').forEach((b, k) => { if (k !== i) b.disabled = true; });
+    Corr.walk(i, () => enter(run.doors[i]));
+  },
+  sfx: () => { Sfx.toggle(); title(); },
   roll: () => doRoll(),
   rr: d => reroll(d),
   act: () => act(),
@@ -1116,6 +1752,13 @@ const G = {
   _fast: v => { FAST = v; },
 };
 window.G = G;
+// transición corta al cambiar de pantalla
+let lastScr = '';
+new MutationObserver(() => {
+  if (FAST || S.scr === lastScr) return;
+  lastScr = S.scr;
+  app.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'steps(5)' });
+}).observe(app, { childList: true });
 title();
 </script>
 </body>
