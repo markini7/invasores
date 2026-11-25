@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Mazmorra de Dados</title>
+<meta name="apple-mobile-web-app-title" content="Mazmorra">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#120e18">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#120e18;--panel:#1f1828;--line:#3a2e4a;--txt:#f4f0e8;--dim:#a597b8;--gold:#f8d84a;--red:#e04848;--blue:#4a8ae8;--green:#5ad05a;--dc:#f08a2a}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;color:var(--txt);font-family:'Press Start 2P',ui-monospace,monospace;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
+body{background-color:var(--bg);background-image:linear-gradient(#ffffff05 2px,transparent 2px),linear-gradient(90deg,#ffffff05 2px,transparent 2px);background-size:32px 16px}
+#app{max-width:460px;margin:0 auto;min-height:100vh;min-height:100dvh;padding:calc(env(safe-area-inset-top) + 12px) 12px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px}
+img.px{image-rendering:pixelated;image-rendering:crisp-edges;display:block;flex:none}
+.btn{font:inherit;font-size:10px;color:var(--txt);background:#2a2036;border:3px solid var(--txt);padding:13px 12px;cursor:pointer;box-shadow:0 4px 0 #000;text-align:center;line-height:1.6;width:100%}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #000}
+.btn.pri{background:#7a2030;border-color:#ff9a9a}
+.btn.gold{background:#5a4210;border-color:var(--gold)}
+.btn.small{font-size:8px;padding:9px;border-width:2px;color:var(--dim);border-color:var(--line);background:transparent;box-shadow:none}
+.btn:disabled{opacity:.35;pointer-events:none}
+.t{font-size:8px;line-height:2;color:var(--dim);margin:0}
+.c{text-align:center}
+h1{font-size:22px;line-height:1.5;margin:0;text-align:center;color:var(--gold);text-shadow:3px 3px 0 #7a2030}
+h2{font-size:12px;margin:0;line-height:1.6}
+h3{font-size:10px;margin:0;line-height:1.6;color:var(--gold)}
+.panel{background:var(--panel);border:3px solid var(--line);padding:12px}
+.center{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.row{display:flex;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column;gap:8px}
+.trio{display:flex;justify-content:center;gap:14px;align-items:flex-end}
+.hud{display:flex;justify-content:space-between;align-items:center;font-size:9px;gap:6px}
+.hud span{display:flex;align-items:center;gap:6px}
+.bar{height:12px;background:#000;border:2px solid #000;outline:2px solid #3a2e4a;position:relative;width:100%}
+.bar i{display:block;height:100%;background:var(--red)}
+.bar b{position:absolute;inset:0;font-size:7px;line-height:9px;text-align:center;font-weight:normal;text-shadow:1px 1px 0 #000}
+.steps{display:flex;gap:5px;justify-content:center}
+.steps i{width:22px;height:8px;background:#2a2036;border:2px solid #000}
+.steps i.done{background:#7a6a90}.steps i.now{background:var(--gold)}.steps i.boss{background:#7a2030}
+/* dados */
+.drow{display:flex;align-items:center;gap:4px}
+.drow .lb{width:62px;font-size:6px;color:var(--dim);line-height:1.5;flex:none}
+.fc{width:37px;height:37px;border:3px solid;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:9px;position:relative;flex:none;color:var(--txt);font-family:inherit;padding:0}
+.fc.atk{border-color:#e04848;background:#3a1218}.fc.def{border-color:#4a8ae8;background:#121e3a}.fc.esp{border-color:var(--dc);background:#2a2010}
+.fc.blank b{color:#5a5068}
+button.fc{cursor:pointer}
+button.fc:active{transform:scale(.9)}
+.pick .fc.off{opacity:.25;pointer-events:none}
+.die{width:86px;height:86px;font-size:18px;border-width:4px;box-shadow:0 5px 0 #000;gap:6px}
+.die.boost b{color:var(--gold)!important}
+.die.can{cursor:pointer}
+.die.q b{color:#5a5068}
+.dice{display:flex;justify-content:center;gap:14px}
+.dlab{display:flex;justify-content:center;gap:14px}
+.dlab span{width:86px;text-align:center;font-size:7px;color:var(--dim)}
+.combo{text-align:center;font-size:13px;color:var(--gold);text-shadow:2px 2px 0 #7a2030;min-height:16px}
+.ftxt{font-size:8px;line-height:2;color:var(--dim);min-height:48px;text-align:center}
+.ftxt em{font-style:normal;color:var(--txt)}
+/* combate */
+.arena{border:3px solid var(--line);padding:10px 8px;display:flex;flex-direction:column;gap:14px;position:relative}
+.enemies{display:flex;justify-content:center;align-items:flex-end;gap:8px;min-height:150px}
+.en{display:flex;flex-direction:column;align-items:center;gap:5px;width:31%;max-width:140px;cursor:pointer;padding:6px 2px;border:2px solid transparent}
+.en.tgt{border-color:var(--gold)}
+.en.dead{opacity:.2;filter:grayscale(1)}
+.en .nm{font-size:7px;text-align:center;line-height:1.4}
+.intent{display:flex;gap:6px;font-size:10px;min-height:16px;align-items:center;flex-wrap:wrap;justify-content:center}
+.intent span{display:flex;align-items:center;gap:2px}
+.badges{display:flex;gap:6px;font-size:8px;min-height:14px;flex-wrap:wrap;justify-content:center}
+.badges span{display:flex;align-items:center;gap:2px}
+.herorow{display:flex;align-items:center;gap:12px;padding:0 6px}
+.hstat{flex:1;display:flex;flex-direction:column;gap:6px}
+.acts{display:flex;flex-direction:column;gap:8px}
+/* puertas */
+.doors{display:flex;gap:8px}
+.door{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;font-size:9px}
+.door small{font-size:7px;color:var(--dim);line-height:1.6}
+.relics{display:flex;gap:6px;flex-wrap:wrap}
+.relics button{background:#0006;border:2px solid var(--line);padding:3px;cursor:pointer}
+.opt{display:flex;align-items:center;gap:12px;text-align:left}
+.opt small{display:block;font-size:7px;color:var(--dim);margin-top:4px}
+.opt .price{margin-left:auto;color:var(--gold);white-space:nowrap}
+.hero-card{display:flex;gap:12px;align-items:center;text-align:left}
+.hero-card .info{flex:1;display:flex;flex-direction:column;gap:6px}
+.hero-card small{font-size:7px;color:var(--dim);line-height:1.7}
+/* efectos */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:50}
+.fl{position:absolute;font-size:14px;text-shadow:2px 2px 0 #000;animation:up .9s steps(9) forwards;transform:translate(-50%,-50%);white-space:nowrap}
+@keyframes up{to{transform:translate(-50%,-220%);opacity:0}}
+.shake{animation:sh .3s steps(3)}
+@keyframes sh{33%{transform:translateX(-5px)}66%{transform:translateX(5px)}}
+.toast{position:fixed;left:50%;top:38%;transform:translate(-50%,-50%);font-size:16px;color:var(--gold);text-shadow:3px 3px 0 #7a2030;z-index:60;animation:pop 1s steps(5) forwards;pointer-events:none;white-space:nowrap}
+@keyframes pop{0%{transform:translate(-50%,-50%) scale(.6)}20%{transform:translate(-50%,-50%) scale(1.15)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-90%)}}
+.modal{position:fixed;inset:0;background:#000c;z-index:70;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal .panel{max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px}
+.help p{font-size:8px;line-height:2.1;color:var(--dim);margin:0}
+.help b{color:var(--txt);font-weight:normal}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="fx"></div>
+<script>
+'use strict';
+// ====================================================================
+//  MAZMORRA DE DADOS — prototipo (fase 1+2)
+//  Un héroe, tres dados (ataque, protección, especial). Avanza sala a
+//  sala, mejora las caras de tus dados y derrota a los jefes.
+// ====================================================================
+const app = document.getElementById('app'), fxl = document.getElementById('fx');
+let FAST = false; // lo usa el bot de pruebas para jugar sin esperas
+const sleep = ms => FAST ? Promise.resolve() : new Promise(r => setTimeout(r, ms));
+const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const clone = o => JSON.parse(JSON.stringify(o));
+const $ = s => document.querySelector(s);
+const SK = 'mazmorra_run', BK = 'mazmorra_best';
+
+// ---------------------------------------------------------- pixel art
+const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
+const SWAPS = {
+  rojo: { g: 'r', G: 'R', w: 'm' },
+  morado: { e: 'p', E: 'P', w: 'm' },
+  ogro: { e: 'n', E: 'N', y: 'r' },
+  oscuro: { g: 'G', G: 'k', b: 'P', y: 'r', w: 'R' },
+  agua: { e: 'b', E: 'B' },
+  piedra: { r: 'g', R: 'G', w: 'w' },
+};
+const SPR = {
+  caballero: [
+    '....bb......',
+    '...kggk.....',
+    '..kgggGk....',
+    '..kgkkgk...w',
+    '..kgyygk..wg',
+    '...kggk...wg',
+    '..kbggbk..wg',
+    '.kgbggbgk.n.',
+    '.kgbbbbgkyyy',
+    '..kgggGk..n.',
+    '..kgk.kgk...',
+    '..kGk.kGk...'],
+  clerigo: [
+    '...yyyy...y.',
+    '..ynnnny.yyy',
+    '..knssnk..y.',
+    '..kskssk..n.',
+    '..kssssk..n.',
+    '...kwwk...n.',
+    '..kwwwwk.sn.',
+    '.kwwywwwks..',
+    '.kwyyywwk.n.',
+    '.kwwywwwk.n.',
+    '.kwwwwwwk.n.',
+    '..kkkkkk....'],
+  picaro: [
+    '....kkkk....',
+    '...kPPPPk...',
+    '..kPPPPPPk..',
+    '..kPksskPk..',
+    '..kPseesPk..',
+    '...kssssk...',
+    '..kPPPPPPk..',
+    '.kPPnPPnPPkw',
+    '.ksPPPPPPskg',
+    '..kPPPPPPk..',
+    '..kNk..kNk..',
+    '..kkk..kkk..'],
+  piromante: [
+    '.....kk.....',
+    '....kRrk....',
+    '...kRrrrk...',
+    '..kRRyRRRk..',
+    '.kkkkkkkkkk.',
+    '...kssssk...',
+    '...kkskkk.o.',
+    '...kwwwwk.oy',
+    '..kRrrrrRkyo',
+    '.kRrrRrrrRkn',
+    '.kRrrRrrrRkn',
+    '.kkkkkkkkkk.'],
+  rata: [
+    '............',
+    '............',
+    '............',
+    '...kk.......',
+    '..kgGk..kkk.',
+    '.kgggGkk..k.',
+    'kgwgggggk.k.',
+    'krggggggGk..',
+    '.kgggggGGk..',
+    '..kGk.kGk...',
+    '..kk...kk...'],
+  murcielago: [
+    'k..........k',
+    'kk..k..k..kk',
+    'kPk.kkkk.kPk',
+    'kPPkPPPPkPPk',
+    'kPPPPrPrPPPk',
+    '.kPPPPPPPPk.',
+    '..kkPwwPkk..',
+    '....kPPk....',
+    '.....kk.....'],
+  esqueleto: [
+    '...kkkkk....',
+    '..kwwwwwk...',
+    '..kwkwkwk...',
+    '..kwwwwwk...',
+    '...kwkwk....',
+    '....kwk.....',
+    '..kwwwwwk.g.',
+    '.kw.kwk.wkg.',
+    '...kwwwk..g.',
+    '...kw.wk....',
+    '..kw...wk...',
+    '..kk...kk...'],
+  limo: [
+    '............',
+    '.....kk.....',
+    '....keek....',
+    '...keweek...',
+    '..keeeeeek..',
+    '.keekeekeek.',
+    '.keeeeeeeek.',
+    '.kEeeeeeeEk.',
+    '..kkkkkkkk..'],
+  goblin: [
+    '.k..kkkk..k.',
+    '.ekkeeeekke.',
+    '..keyeyeek..',
+    '...keeeek...',
+    '...kewwek...',
+    '..knnnnnnk..',
+    '.kenNnnNnek.',
+    '..knnnnnnk..',
+    '...kek.kek..',
+    '...kk...kk..'],
+  arana: [
+    '..k......k..',
+    '...k.kk.k...',
+    'k...kPPk...k',
+    '.kk.kPPk.kk.',
+    '...kPrPrPk..',
+    '.kkkPPPPkkk.',
+    'k..kPPPPk..k',
+    '..k.kkkk.k..',
+    '.k........k.'],
+  hongo: [
+    '...kkkkkk...',
+    '..krrwrrrk..',
+    '.krwrrrrwrk.',
+    '.krrrrwrrrk.',
+    '.kkkkkkkkkk.',
+    '...kwwwwk...',
+    '...kwkkwk...',
+    '...kwwwwk...',
+    '..kwwwwwwk..',
+    '..kkkkkkkk..'],
+  orco: [
+    '...kkkkkk...',
+    '..keeeeeek..',
+    '..keyeeyek..',
+    '..keeeeeek..',
+    '..kewkkwek..',
+    '...keeeek...',
+    '.kkNNNNNNkk.',
+    'keeNNNNNNeek',
+    'keekNNNNkeek',
+    '.kkNNNNNNkk.',
+    '..kNNk.kNNk.',
+    '..kkk...kkk.'],
+  diablillo: [
+    '.k........k.',
+    '.kk.kkkk.kk.',
+    '..kkrrrrkk..',
+    '..krykyrk...',
+    '..krrrrrrk..',
+    '...krwwrk...',
+    '..krrrrrrk.k',
+    '.krkrrrrkrkk',
+    '..k.krrk.k..',
+    '...krkkrk...',
+    '...kk..kk...'],
+  gargola: [
+    '.kk..kk..kk.',
+    'kGgk.kk.kgGk',
+    'kGggkggkggGk',
+    '.kGgggggggk.',
+    '..kgrgrggk..',
+    '..kgggggk...',
+    '..kgwkwggk..',
+    '...kggggk...',
+    '..kgk..kgk..',
+    '..kkk..kkk..'],
+  espectro: [
+    '....kkkk....',
+    '...kcccck...',
+    '..kccccccck.',
+    '..kckcckcck.',
+    '..kccccccck.',
+    '..kcckkccck.',
+    '..kccccccck.',
+    '..kccccccck.',
+    '..kcccccccck',
+    '.kcckccckcck',
+    '.kck.kck.kck',
+    '.kk..kk..kk.'],
+  cultista: [
+    '....kkkk....',
+    '...kPPPPk...',
+    '..kPPPPPPk..',
+    '..kPkrrkPk..',
+    '..kPkkkkPk..',
+    '...kPPPPk...',
+    '..kPPyyPPk..',
+    '.kPPPyyPPPk.',
+    '.ksPPPPPPsk.',
+    '.kPPPPPPPPk.',
+    '.kPPPPPPPPk.',
+    '.kkkkkkkkkk.'],
+  reycalavera: [
+    '..y.y.y.y...',
+    '..yyyyyyy...',
+    '..kwwwwwk...',
+    '.kwwwwwwwk..',
+    '.kwkkwkkwk..',
+    '.kwrkwrkwk..',
+    '.kwwwkwwwk..',
+    '..kwkwkwk...',
+    '.kPkwwwkPk..',
+    'kPPPkwkPPPk.',
+    'kPPPPPPPPPk.',
+    'kkkkkkkkkkk.'],
+  gusano: [
+    '....kkkk....',
+    '...kmmmmk...',
+    '..kmkmmkmk..',
+    '..kmwkkwmk..',
+    '..kmmmmmmk..',
+    '...kmmmmk...',
+    '.kk.kmmk....',
+    'kmmkkmmk....',
+    'kmmmmmmk....',
+    '.kmmmmk.....',
+    '..kkkk......'],
+  dragon: [
+    '.k......k...',
+    '.kk....kk...',
+    '.krk..krk...',
+    '..krrrrrk...',
+    '..kryrryk.k.',
+    '..krrrrrrkok',
+    '.krrwwwrrkyo',
+    'krrkwwwkrrk.',
+    'krrrkkkrrrk.',
+    '.krrrrrrrk..',
+    '..krk.krk...',
+    '..kkk.kkk...'],
+};
+const ICO = {
+  golpe: ['......w', '.....wg', '....wg.', '.k.wg..', '..kg...', '.nNk...', 'n..k...'],
+  barrido: ['..yyy..', '.y...y.', 'y.....w', '.....wg', '....wg.', '.nNwg..', 'n.Nk...'],
+  perforar: ['....www', '.....ww', '....g.w', '...g...', '..g....', '.n.....', 'n......'],
+  vampiro: ['rrrrrrr', 'rwrrrwr', '.w...w.', '.w...w.', '.r...r.', '.......', '.......'],
+  escudo: ['.bbbbb.', 'bcbbbbb', 'bcbbbbb', 'bcbbbbb', '.bbbbb.', '..bbb..', '...b...'],
+  espinas: ['y..y..y', 'yy.y.yy', 'bbbbbbb', 'bcbbbbb', '.bbbbb.', '..bbb..', '...b...'],
+  corazon: ['.rr.rr.', 'rwrrrrr', 'rrrrrrr', 'rrrrrrr', '.rrrrr.', '..rrr..', '...r...'],
+  luz: ['...y...', '.y.y.y.', '..yyy..', 'yyywyyy', '..yyy..', '.y.y.y.', '...y...'],
+  veneno: ['...e...', '..eee..', '.eewee.', '.eweee.', 'eeeeeee', '.eeeee.', '..eee..'],
+  nube: ['.......', '..eee..', '.eeeee.', 'eeweeee', 'eEeEeEe', '.e.e.e.', '.......'],
+  fuego: ['...o...', '..oo...', '.oyo.o.', '.oyyoo.', 'oyyyyoo', 'oyywyyo', '.oyyyo.'],
+  explosion: ['o..y..o', '.o.y.o.', '..oyo..', 'yyywyyy', '..oyo..', '.o.y.o.', 'o..y..o'],
+  furia: ['r.....r', 'rr...rr', 'rrrrrrr', 'ryrrryr', 'rrrrrrr', '.rrrrr.', '..r.r..'],
+  doble: ['....yy.', '...yy..', '..yy...', '.yyyyy.', '...yy..', '..yy...', '.yy....'],
+  moneda: ['.yyyyy.', 'yyYYYyy', 'yYyyyYy', 'yYyyyYy', 'yYyyyYy', 'yyYYYyy', '.yyyyy.'],
+  calavera: ['.wwwww.', 'wwwwwww', 'wkwwwkw', 'wkwwwkw', 'wwwkwww', '.wwwww.', '.wkwkw.'],
+  yunque: ['.......', 'ggggggg', '.gggggg', '...ggg.', '...ggg.', '..ggggg', '.GGGGGG'],
+  altar: ['...y...', '..yyy..', '...y...', '.ppppp.', '..ppp..', '..ppp..', '.PPPPP.'],
+  pregunta: ['.yyyyy.', 'yy...yy', '.....yy', '...yyy.', '...yy..', '.......', '...yy..'],
+  corona: ['y..y..y', 'yy.y.yy', 'yyyyyyy', 'yryyyry', 'yyyyyyy', 'yyyyyyy', '.......'],
+  trebol: ['..ee...', '.eeee..', 'eeEeee.', '.eeEee.', '..eeeee', '...n.e.', '..n....'],
+  dado: ['wwwwwww', 'wkwwwkw', 'wwwwwww', 'wwwkwww', 'wwwwwww', 'wkwwwkw', 'wwwwwww'],
+  seta: ['.rrrrr.', 'rwrrrwr', 'rrrwrrr', '.kwwwk.', '..www..', '..www..', '.wwwww.'],
+  cofre: ['.nnnnn.', 'nYYYYYn', 'nnnnnnn', 'nNNyNNn', 'nnnyynn', 'nnnnnnn', 'NNNNNNN'],
+  invoca: ['..p.p..', '.p.w.p.', 'p.www.p', '.wwwww.', 'p.www.p', '.p.w.p.', '..p.p..'],
+};
+const pxCache = {};
+function sprURL(name, swap) {
+  const key = name + '|' + (swap || '');
+  if (pxCache[key]) return pxCache[key];
+  const g = SPR[name] || ICO[name];
+  const w = Math.max(...g.map(r => r.length)), h = g.length;
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  const x = cv.getContext('2d'), sw = swap ? SWAPS[swap] : null;
+  g.forEach((row, y) => { for (let i = 0; i < row.length; i++) { let ch = row[i]; if (sw && sw[ch]) ch = sw[ch]; if (PAL[ch]) { x.fillStyle = PAL[ch]; x.fillRect(i, y, 1, 1); } } });
+  return pxCache[key] = cv.toDataURL();
+}
+function sp(name, px, swap, cls = '') {
+  const g = SPR[name] || ICO[name]; if (!g) return '';
+  const w = Math.max(...g.map(r => r.length));
+  return `<img class="px ${cls}" src="${sprURL(name, swap)}" width="${w * px}" height="${g.length * px}" alt="">`;
+}
+
+// ---------------------------------------------------------- caras
+const F = (k, v) => ({ k, v });
+const KW = {
+  golpe:     { n: 'Golpe',     ico: 'golpe',     col: '#ff8a8a', dmg: 1,                 x: v => `${v} de daño` },
+  barrido:   { n: 'Barrido',   ico: 'barrido',   col: '#ffb070', dmg: 1, all: 1,         x: v => `${v} de daño a todos` },
+  perforar:  { n: 'Perforar',  ico: 'perforar',  col: '#e0e0f0', dmg: 1, pierce: 1,      x: v => `${v} de daño que atraviesa protección` },
+  vampiro:   { n: 'Vampiro',   ico: 'vampiro',   col: '#ff6a8a', dmg: 1, vamp: 1,        x: v => `${v} de daño y te curas lo que hagas` },
+  fuego:     { n: 'Fuego',     ico: 'fuego',     col: '#ffb040', dmg: 1, pierce: 1,      x: v => `${v} de fuego (atraviesa protección)` },
+  explosion: { n: 'Explosión', ico: 'explosion', col: '#ffd040', dmg: 1, all: 1, pierce: 1, x: v => `${v} de fuego a todos` },
+  escudo:    { n: 'Escudo',    ico: 'escudo',    col: '#8ab8ff',                         x: v => `+${v} de protección` },
+  espinas:   { n: 'Espinas',   ico: 'espinas',   col: '#c0d0ff',                         x: v => `+${v} de protección y devuelves ${v} a quien te pegue` },
+  furia:     { n: 'Furia',     ico: 'furia',     col: '#ff7050',                         x: v => `+${v} a cada golpe este turno` },
+  doble:     { n: 'Doble',     ico: 'doble',     col: '#f8d84a',                         x: v => `tus golpes pegan 2 veces${v ? ` y +${v}` : ''}` },
+  luz:       { n: 'Luz',       ico: 'luz',       col: '#f8e88a',                         x: v => `te curas ${v} (lo que sobre es protección)` },
+  veneno:    { n: 'Veneno',    ico: 'veneno',    col: '#7aea7a',                         x: v => `${v} de veneno al objetivo` },
+  nube:      { n: 'Nube tóxica', ico: 'nube',    col: '#7aea7a',                         x: v => `${v} de veneno a todos` },
+};
+const blankF = f => f.v <= 0 && f.k !== 'doble';
+
+// ---------------------------------------------------------- héroes
+const plusAll = (d, n = 1) => r => r.dice[d].forEach(f => f.v += n);
+const lowIdx = (r, d, cnt) => r.dice[d].map((f, i) => [f.v, i]).sort((a, b) => a[0] - b[0]).slice(0, cnt).map(x => x[1]);
+const lowUp = (d, cnt) => r => lowIdx(r, d, cnt).forEach(i => r.dice[d][i].v++);
+const setLow = (d, cnt, k, v) => r => lowIdx(r, d, cnt).forEach(i => { r.dice[d][i] = F(k, Math.max(v, r.dice[d][i].v + 1)); });
+const hpUp = n => r => { r.maxHp += n; r.hp += n; };
+const all = (...fns) => r => fns.forEach(f => f(r));
+
+const HEROES = {
+  caballero: {
+    n: 'Caballero', spr: 'caballero', hp: 22, dc: '#f08a2a', espK: 'furia', espN: 'Furia',
+    d: 'Duro y directo. Su Furia suma daño a cada golpe y a veces pega dos veces.',
+    esp: [F('furia', 0), F('furia', 0), F('furia', 1), F('furia', 1), F('furia', 2), F('doble', 0)],
+    evo: [
+      [{ n: 'Paladín', d: 'Protección +1 en todas las caras, 2 caras de Luz y +4 de vida', a: all(plusAll('def'), setLow('esp', 2, 'luz', 2), hpUp(4)) },
+       { n: 'Bárbaro', d: 'Furia +1 en todas las caras y +1 a tus 2 peores caras de ataque', a: all(plusAll('esp'), lowUp('atk', 2)) }],
+      [{ n: 'Campeón', d: 'Ataque +1 en todas las caras y +6 de vida', a: all(plusAll('atk'), hpUp(6)) },
+       { n: 'Señor de la guerra', d: '2 caras de Barrido 3 en ataque y Furia +1', a: all(setLow('atk', 2, 'barrido', 3), plusAll('esp')) }]],
+  },
+  clerigo: {
+    n: 'Clériga', spr: 'clerigo', hp: 20, dc: '#f8d84a', espK: 'luz', espN: 'Luz',
+    d: 'Se cura casi cada turno y su maza pega algo más fuerte.',
+    esp: [F('luz', 0), F('luz', 1), F('luz', 1), F('luz', 2), F('luz', 2), F('luz', 3)], atk: [1, 1, 1, 2, 2, 2],
+    evo: [
+      [{ n: 'Sacerdotisa', d: 'Luz +1 en todas las caras y +4 de vida', a: all(plusAll('esp'), hpUp(4)) },
+       { n: 'Inquisidora', d: 'Ataque +1 en todas las caras y 2 caras de Fuego 2', a: all(plusAll('atk'), setLow('esp', 2, 'fuego', 2)) }],
+      [{ n: 'Santa', d: 'Protección +1 y Luz +1 en todas las caras', a: all(plusAll('def'), plusAll('esp')) },
+       { n: 'Martillo sagrado', d: '2 caras de Vampiro 4 en ataque', a: setLow('atk', 2, 'vampiro', 4) }]],
+  },
+  picaro: {
+    n: 'Pícara', spr: 'picaro', hp: 15, dc: '#5ad05a', espK: 'veneno', espN: 'Veneno',
+    d: 'Envenena: el veneno hace daño cada turno y se acumula.',
+    esp: [F('veneno', 0), F('veneno', 0), F('veneno', 1), F('veneno', 1), F('veneno', 1), F('veneno', 2)],
+    evo: [
+      [{ n: 'Asesina', d: '2 caras de Perforar 3 en ataque', a: setLow('atk', 2, 'perforar', 3) },
+       { n: 'Alquimista', d: 'Veneno +1 en todas las caras y 1 cara de Nube tóxica', a: all(plusAll('esp'), setLow('esp', 1, 'nube', 2)) }],
+      [{ n: 'Sombra', d: 'Ataque +1 y Protección +1 en todas las caras', a: all(plusAll('atk'), plusAll('def')) },
+       { n: 'Plaga', d: 'Veneno +1 en todas las caras y 2 caras de Nube tóxica 3', a: all(plusAll('esp'), setLow('esp', 2, 'nube', 3)) }]],
+  },
+  piromante: {
+    n: 'Piromante', spr: 'piromante', hp: 17, dc: '#ff6a3a', espK: 'fuego', espN: 'Fuego',
+    d: 'Su fuego atraviesa la protección. Frágil pero explosivo.',
+    esp: [F('fuego', 0), F('fuego', 0), F('fuego', 1), F('fuego', 1), F('fuego', 2), F('fuego', 3)],
+    evo: [
+      [{ n: 'Archimago', d: 'Fuego +1 en todas las caras y +3 de vida', a: all(plusAll('esp'), hpUp(3)) },
+       { n: 'Incendiario', d: '2 caras de Explosión 3 (fuego a todos)', a: setLow('esp', 2, 'explosion', 3) }],
+      [{ n: 'Tormenta', d: 'Ataque +1 en todas las caras y 1 cara Doble', a: all(plusAll('atk'), setLow('esp', 1, 'doble', 1)) },
+       { n: 'Fénix', d: '+8 de vida, Protección +1 y 1 cara de Luz 3', a: all(hpUp(8), plusAll('def'), setLow('esp', 1, 'luz', 3)) }]],
+  },
+};
+
+// ---------------------------------------------------------- enemigos
+// caras: a=ataque b=protección p=veneno h=cura a todos r=furia (+ataque para siempre) s:x=invoca
+const EN = {
+  rata:        { n: 'Rata', hp: 5, f: ['a1', 'a1', 'a2', 'a1', 'a2', 'b1'] },
+  murcielago:  { n: 'Murciélago', hp: 4, f: ['a1', 'a2', 'a1', 'a2', 'a3', 'a1'] },
+  esqueleto:   { n: 'Esqueleto', hp: 7, f: ['a2', 'a1', 'a2', 'b2', 'a1b1', 'a3'] },
+  limo:        { n: 'Limo', hp: 8, f: ['a1', 'p1', 'p1', 'a1', 'b1', 'a2'] },
+  ratagigante: { n: 'Rata gigante', spr: 'rata', swap: 'rojo', px: 7, hp: 16, f: ['a2', 'a3', 'a3', 'a2b2', 'r1', 'a4'] },
+  limogrande:  { n: 'Limo morado', spr: 'limo', swap: 'morado', px: 7, hp: 18, f: ['a2', 'p2', 'a1p1', 'b3', 'a3', 'p3'] },
+  reycalavera: { n: 'Rey Calavera', px: 8, hp: 26, f: ['a3', 'a2b2', 's:esqueleto', 'a4', 'b3', 'a2r1'] },
+  goblin:      { n: 'Goblin', hp: 10, f: ['a2', 'a3', 'a2', 'a1b2', 'a3', 'a4'] },
+  arana:       { n: 'Araña', hp: 9, f: ['a1p2', 'p2', 'a2', 'a1p1', 'a3', 'b2'] },
+  hongo:       { n: 'Hongo', hp: 10, f: ['h3', 'h2', 'b3', 'a1', 'p1', 'h2b1'] },
+  orco:        { n: 'Orco', hp: 15, f: ['a3', 'a4', 'b3', 'r1', 'a3', 'a5'] },
+  ogro:        { n: 'Ogro', spr: 'orco', swap: 'ogro', px: 7, hp: 32, f: ['a4', 'a5', 'b5', 'a3r1', 'a6', 'a4'] },
+  golem:       { n: 'Gólem de piedra', spr: 'gargola', px: 7, hp: 34, f: ['b6', 'a5', 'a4b4', 'a6', 'b8', 'a3r1'] },
+  gusano:      { n: 'Gusano gigante', px: 8, hp: 44, f: ['a4p1', 'a5', 'b5', 's:arana', 'a3p2', 'a5'] },
+  diablillo:   { n: 'Diablillo', hp: 11, f: ['a3', 'a4', 'a2p2', 'a3', 'a5', 'r1'] },
+  gargola:     { n: 'Gárgola', hp: 17, f: ['b5', 'a4', 'a2b4', 'a5', 'b6', 'a3'] },
+  espectro:    { n: 'Espectro', hp: 13, f: ['a4', 'a2p3', 'a5', 'a3', 'p4', 'a4'] },
+  cultista:    { n: 'Cultista', hp: 14, f: ['h4', 'r2', 'a3', 's:diablillo', 'a4', 'b3h2'] },
+  caballerooscuro: { n: 'Caballero oscuro', spr: 'caballero', swap: 'oscuro', px: 7, hp: 42, f: ['a5', 'a6', 'b6', 'a4b3', 'r2', 'a7'] },
+  dragon:      { n: 'Dragón', px: 8, hp: 70, f: ['a6', 'a4b4', 'a3p3', 'a7', 'b6r1', 'a5'] },
+};
+const FLOORS = [
+  { n: 'La Cripta', pool: ['rata', 'murcielago', 'esqueleto', 'limo'], elite: ['ratagigante', 'limogrande'], boss: 'reycalavera', bg: '#1e1a2c' },
+  { n: 'Las Cuevas', pool: ['goblin', 'arana', 'hongo', 'orco'], elite: ['ogro', 'golem'], boss: 'gusano', bg: '#14241c' },
+  { n: 'El Abismo', pool: ['diablillo', 'gargola', 'espectro', 'cultista'], elite: ['caballerooscuro'], boss: 'dragon', bg: '#2a1418' },
+];
+const STEPS = 8; // salas por piso; la última es el jefe
+
+// ---------------------------------------------------------- reliquias
+const RELICS = {
+  trebol:   { n: 'Trébol', ico: 'trebol', d: '+1 re-tirada en cada turno' },
+  corazon:  { n: 'Corazón de piedra', ico: 'corazon', sw: 'piedra', d: '+6 de vida máxima', on: r => { r.maxHp += 6; r.hp += 6; } },
+  colmillo: { n: 'Colmillo', ico: 'vampiro', d: 'Al ganar un combate te curas 4' },
+  gemelo:   { n: 'Amuleto gemelo', ico: 'dado', d: 'Las parejas dan +2 en vez de +1' },
+  escudo:   { n: 'Escudo viejo', ico: 'escudo', d: 'Empiezas cada turno con 1 de protección' },
+  bolsa:    { n: 'Bolsa de oro', ico: 'moneda', d: 'Ganas un 50% más de oro' },
+  brasa:    { n: 'Brasa eterna', ico: 'fuego', d: 'En el primer turno de cada combate, +2 a cada golpe' },
+  seta:     { n: 'Seta rara', ico: 'seta', d: 'El veneno que pones es +1' },
+  calavera: { n: 'Calavera', ico: 'calavera', d: 'Cuando muere un enemigo, los demás reciben 2 de daño' },
+  cargado:  { n: 'Dado cargado', ico: 'dado', sw: 'rojo', d: 'Si sacas una cara vacía, se vuelve a tirar sola' },
+};
+
+// ---------------------------------------------------------- salas
+const ROOMS = {
+  combate:  { n: 'Combate', ico: 'golpe', d: 'Oro y una mejora' },
+  elite:    { n: 'Élite', ico: 'calavera', d: 'Duro. Da reliquia' },
+  forja:    { n: 'Forja', ico: 'yunque', d: '+1 a dos caras' },
+  altar:    { n: 'Altar', ico: 'altar', d: 'Un dado entero +1' },
+  evento:   { n: '¿?', ico: 'pregunta', d: 'Algo pasa...' },
+  descanso: { n: 'Hoguera', ico: 'fuego', d: 'Cura o entrena' },
+  tienda:   { n: 'Tienda', ico: 'moneda', d: 'Caras y reliquias' },
+  jefe:     { n: 'Jefe', ico: 'corona', d: '¡Cuidado!' },
+};
+
+// ---------------------------------------------------------- estado
+let run = null, C = null, S = { scr: 'title' };
+const H = () => HEROES[run.hero];
+const has = k => run && run.relics.includes(k);
+const DN = d => d === 'atk' ? 'Ataque' : d === 'def' ? 'Protección' : H().espN;
+const heal = n => { const h = Math.max(0, Math.min(n, run.maxHp - run.hp)); run.hp += h; return h; };
+const hurt = n => { run.hp -= n; };
+function save() { try { localStorage.setItem(SK, JSON.stringify(run)); } catch (e) {} }
+function load() { try { return JSON.parse(localStorage.getItem(SK)); } catch (e) { return null; } }
+function clearSave() { try { localStorage.removeItem(SK); } catch (e) {} }
+function best() { try { return JSON.parse(localStorage.getItem(BK)) || {}; } catch (e) { return {}; } }
+function recordBest(win) {
+  const b = best(), p = run.floor * STEPS + run.step, o = b[run.hero] || { p: 0, w: 0 };
+  o.p = Math.max(o.p, p); if (win) o.w++;
+  b[run.hero] = o; try { localStorage.setItem(BK, JSON.stringify(b)); } catch (e) {}
+}
+
+function newRun(hero) {
+  const h = HEROES[hero];
+  run = {
+    hero, cls: h.n, hp: h.hp, maxHp: h.hp, gold: 0, floor: 0, step: 0, relics: [], seen: [],
+    dice: { atk: (h.atk || [1, 1, 1, 1, 2, 2]).map(v => F('golpe', v)), def: [0, 0, 0, 0, 1, 1].map(v => F('escudo', v)), esp: clone(h.esp) },
+  };
+  run.doors = genDoors(0); save(); floorIntro();
+}
+function wpick(w) { let t = 0; for (const k in w) t += w[k]; let x = Math.random() * t; for (const k in w) { x -= w[k]; if (x < 0) return k; } return Object.keys(w)[0]; }
+function genDoors(s) {
+  if (s === STEPS - 1) return ['jefe'];
+  if (s === 0) return ['combate'];
+  const w = { combate: 34, evento: 20, forja: 11, altar: 5, elite: s >= 2 ? 12 : 0, descanso: s >= 3 ? 9 : 0, tienda: s >= 2 ? 10 : 0 };
+  const n = Math.random() < .55 ? 3 : 2, out = [];
+  if (s === STEPS - 2) out.push('descanso');
+  while (out.length < n) { const t = wpick(w); if (!out.includes(t)) out.push(t); }
+  return shuffle(out);
+}
+
+// ---------------------------------------------------------- utilidades de interfaz
+function bar(v, m, col) { const p = Math.max(0, Math.min(100, v / m * 100)); return `<div class="bar"><i style="width:${p}%;${col ? 'background:' + col : ''}"></i><b>${Math.max(0, v)}/${m}</b></div>`; }
+function hud() {
+  return `<div class="hud"><span>${sp('corazon', 2)}${Math.max(0, run.hp)}/${run.maxHp}</span><span>${FLOORS[run.floor].n}</span><span>${sp('moneda', 2)}${run.gold}</span></div>`;
+}
+function faceHTML(f, d, opts = {}) {
+  const tag = opts.click ? 'button' : 'div';
+  const on = opts.click ? ` onclick="${opts.click}"` : '';
+  const cls = `fc ${d} ${blankF(f) ? 'blank' : ''} ${opts.cls || ''}`;
+  if (blankF(f)) return `<${tag} class="${cls}"${on}><b>·</b></${tag}>`;
+  const kw = KW[f.k], px = opts.big ? 4 : 2;
+  return `<${tag} class="${cls}"${on}>${sp(kw.ico, px)}<b style="color:${kw.col}">${f.k === 'doble' && !f.v ? '' : f.v}</b></${tag}>`;
+}
+function diceRows(opts = {}) {
+  return `<div class="col ${opts.pick ? 'pick' : ''}">${['atk', 'def', 'esp'].map(d => `<div class="drow"><div class="lb">${DN(d)}</div>${run.dice[d].map((f, i) => {
+    if (!opts.pick) return faceHTML(f, d);
+    const ok = opts.pick.includes(d);
+    return faceHTML(f, d, { click: ok ? `G.pf('${d}',${i})` : '', cls: ok ? '' : 'off' });
+  }).join('')}</div>`).join('')}</div>`;
+}
+function relicsHTML() {
+  if (!run.relics.length) return '<p class="t">Sin reliquias</p>';
+  return `<div class="relics">${run.relics.map(k => `<button onclick="G.relic('${k}')">${sp(RELICS[k].ico, 3, RELICS[k].sw)}</button>`).join('')}</div>`;
+}
+function toast(t) { if (FAST) return; const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
+function modal(html) {
+  const m = document.createElement('div'); m.className = 'modal';
+  m.innerHTML = `<div class="panel">${html}<button class="btn" onclick="this.closest('.modal').remove()">Cerrar</button></div>`;
+  m.onclick = e => { if (e.target === m) m.remove(); };
+  document.body.appendChild(m);
+}
+let fxq = [];
+function fl(target, txt, col, shake) { fxq.push({ target, txt, col, shake }); }
+function flushFx() {
+  for (const q of fxq) {
+    let el = null;
+    if (q.target === 'hero') el = $('#hero');
+    else if (C) { const i = C.en.indexOf(q.target); if (i >= 0) el = $('#en' + i); }
+    if (!el) continue;
+    if (q.shake) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+    if (q.txt) {
+      const r = el.getBoundingClientRect(), d = document.createElement('div');
+      d.className = 'fl'; d.textContent = q.txt; d.style.color = q.col || '#fff';
+      d.style.left = (r.left + r.width / 2 + R(-12, 12)) + 'px'; d.style.top = (r.top + r.height * .4) + 'px';
+      fxl.appendChild(d); setTimeout(() => d.remove(), 950);
+    }
+  }
+  fxq = [];
+  if (navigator.vibrate && !FAST) { /* vibración opcional */ }
+}
+
+// ---------------------------------------------------------- pantallas
+function title() {
+  S = { scr: 'title' }; C = null;
+  const sv = load();
+  app.innerHTML = `<div class="center">
+    <h1>MAZMORRA<br>DE DADOS</h1>
+    <div class="trio">${sp('caballero', 5)}${sp('clerigo', 5)}${sp('picaro', 5)}${sp('piromante', 5)}</div>
+    <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
+    ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
+    <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
+    <button class="btn" onclick="G.help()">Cómo se juega</button>
+  </div>`;
+}
+function chooseHero() {
+  S = { scr: 'choose' };
+  const b = best();
+  app.innerHTML = `<h2 class="c">Elige tu héroe</h2>${Object.entries(HEROES).map(([k, h]) => {
+    const rec = b[k] ? `Récord: piso ${Math.floor(b[k].p / STEPS) + 1}${b[k].w ? ` · ${b[k].w} victoria${b[k].w > 1 ? 's' : ''}` : ''}` : '';
+    return `<button class="btn hero-card" style="--dc:${h.dc}" onclick="G.start('${k}')">${sp(h.spr, 5)}<div class="info">
+      <h3>${h.n} <span style="color:var(--dim)">· ${h.hp} vida</span></h3>
+      <small>${h.d}</small>
+      <div class="drow">${h.esp.map(f => faceHTML(f, 'esp')).join('')}</div>
+      ${rec ? `<small style="color:var(--gold)">${rec}</small>` : ''}</div></button>`;
+  }).join('')}<button class="btn small" onclick="G.title()">Volver</button>`;
+}
+function help() {
+  modal(`<div class="help col"><h3>Cómo se juega</h3>
+  <p>Tienes <b>3 dados</b>: Ataque, Protección y Especial (cambia según el héroe). Cada turno los tiras todos a la vez.</p>
+  <p>Arriba de cada enemigo ves <b>lo que va a hacer</b>. Su protección frena tu daño, y la tuya frena el suyo.</p>
+  <p>Puedes <b>volver a tirar un dado</b> por turno: tócalo después de tirar.</p>
+  <p><b>Pareja</b>: si dos dados sacan el mismo número, los dos suman +1. <b>Trío</b>: si salen los tres iguales, todo vale el doble.</p>
+  <p>Con varios enemigos, <b>toca uno</b> para apuntarle. Tócalo otra vez para ver sus dados.</p>
+  <p>Entre combates eliges puerta: forjas, altares, tiendas y eventos <b>mejoran las caras</b> de tus dados. Al vencer a un jefe tu héroe <b>evoluciona</b>.</p>
+  <p>Si mueres, vuelves a empezar. ¡Suerte!</p></div>`);
+}
+function floorIntro() {
+  S = { scr: 'floor' };
+  const fl = FLOORS[run.floor], b = EN[fl.boss];
+  app.innerHTML = `<div class="center c" style="align-items:center">
+    <p class="t">PISO ${run.floor + 1} DE ${FLOORS.length}</p><h1>${fl.n}</h1>
+    ${sp(b.spr || fl.boss, 10, b.swap)}
+    <p class="t">Al fondo te espera:<br><span style="color:var(--txt)">${b.n}</span></p>
+    <button class="btn pri" onclick="G.map()">Entrar</button></div>`;
+}
+function map() {
+  S = { scr: 'map' }; C = null;
+  const dots = Array.from({ length: STEPS }, (_, i) => `<i class="${i < run.step ? 'done' : i === run.step ? 'now' : i === STEPS - 1 ? 'boss' : ''}"></i>`).join('');
+  app.innerHTML = `${hud()}<div class="steps">${dots}</div>
+    <div class="panel row">${sp(H().spr, 5)}<div class="col" style="flex:1"><h3>${run.cls}</h3>${bar(run.hp, run.maxHp)}${relicsHTML()}</div></div>
+    <div class="panel">${diceRows()}</div>
+    <h2 class="c">${run.doors.length > 1 ? 'Elige una puerta' : 'Sigue adelante'}</h2>
+    <div class="doors">${run.doors.map((d, i) => `<button class="btn door" onclick="G.door(${i})">${sp(ROOMS[d].ico, 5)}<span>${ROOMS[d].n}</span><small>${ROOMS[d].d}</small></button>`).join('')}</div>
+    <button class="btn small" onclick="G.title()">Guardar y salir</button>`;
+}
+function nextRoom() {
+  if (run.hp <= 0) return gameOver();
+  run.step++; run.doors = genDoors(run.step); save(); map();
+}
+function enter(t) {
+  if (t === 'combate' || t === 'elite' || t === 'jefe') return startCombat(t);
+  if (t === 'forja') return forge(2);
+  if (t === 'altar') return altar();
+  if (t === 'evento') return event();
+  if (t === 'descanso') return rest();
+  if (t === 'tienda') return shop();
+}
+
+// --- elegir cara (forja, entrenar, pegatinas)
+function pickFace(cfg) {
+  S = { scr: 'pick', pf: cfg };
+  app.innerHTML = `${hud()}<div class="panel c col">${cfg.ico ? `<div class="row" style="justify-content:center">${sp(cfg.ico, 6)}</div>` : ''}<h2>${cfg.title}</h2><p class="t">${cfg.sub}</p>
+    ${cfg.face ? `<div class="row" style="justify-content:center">${faceHTML(cfg.face, cfg.dice[0])}</div>` : ''}</div>
+    <div class="panel">${diceRows({ pick: cfg.dice })}</div>
+    ${cfg.cancel ? `<button class="btn small" onclick="G.pfCancel()">Cancelar</button>` : ''}`;
+}
+function forge(n) {
+  pickFace({ title: 'Forja', ico: 'yunque', sub: `El herrero sube +1 la cara que elijas.<br>Te queda${n > 1 ? 'n' : ''} ${n}.`, dice: ['atk', 'def', 'esp'],
+    on: (d, i) => { run.dice[d][i].v++; toast('+1'); n > 1 ? forge(n - 1) : nextRoom(); } });
+}
+function altar(fromEvent) {
+  S = { scr: 'altar' };
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('altar', 6)}</div><h2>Altar de los dados</h2><p class="t">Elige un dado: todas sus caras suben +1.</p></div>
+    ${['atk', 'def', 'esp'].map(d => `<button class="btn" onclick="G.altar('${d}')"><div class="drow"><div class="lb">${DN(d)}</div>${run.dice[d].map(f => faceHTML(f, d)).join('')}</div></button>`).join('')}`;
+}
+function rest() {
+  S = { scr: 'rest' };
+  const n = Math.max(5, Math.round(run.maxHp * .35));
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('fuego', 6)}</div><h2>Hoguera</h2><p class="t">Un buen sitio para recuperar fuerzas.</p></div>
+    <button class="btn opt" onclick="G.rest(0)">${sp('corazon', 4)}<span>Dormir<small>Te curas ${n} de vida</small></span></button>
+    <button class="btn opt" onclick="G.rest(1)">${sp('yunque', 4)}<span>Entrenar<small>+1 a una cara que elijas</small></span></button>`;
+  S.heal = n;
+}
+function stickers() {
+  const v = run.floor + 2, h = H();
+  return [F('barrido', v - 1), F('perforar', v), F('vampiro', v - 1), F('golpe', v + 1)].map(f => ({ d: 'atk', f }))
+    .concat([F('espinas', v - 1), F('escudo', v + 1)].map(f => ({ d: 'def', f })), [{ d: 'esp', f: F(h.espK, v + 1) }]);
+}
+function stickerFlow(st, after, cancel) {
+  pickFace({ title: 'Nueva cara', sub: `Elige qué cara de ${DN(st.d)} se cambia por esta:`, face: st.f, dice: [st.d], cancel,
+    on: (d, i) => { run.dice[d][i] = clone(st.f); toast('¡Nueva cara!'); after(); } });
+}
+function shop() {
+  if (!S.shop) {
+    const st = shuffle(stickers()).slice(0, 2), rel = shuffle(Object.keys(RELICS).filter(k => !has(k)))[0];
+    S = { scr: 'shop', shop: [
+      ...st.map(s => ({ t: 'st', s, p: 18 + run.floor * 6 })),
+      { t: 'up', p: 14 + run.floor * 4 },
+      { t: 'heal', n: 8 + run.floor * 3, p: 12 },
+      ...(rel ? [{ t: 'relic', k: rel, p: 45 + run.floor * 10 }] : [])] };
+  }
+  S.scr = 'shop';
+  const lbl = it => it.t === 'st' ? [faceHTML(it.s.f, it.s.d), `Cara de ${DN(it.s.d)}`, `${KW[it.s.f.k].n} ${it.s.f.v}: ${KW[it.s.f.k].x(it.s.f.v)}`]
+    : it.t === 'up' ? [sp('yunque', 4), 'Mejora', '+1 a una cara que elijas']
+    : it.t === 'heal' ? [sp('corazon', 4), 'Poción', `Te curas ${it.n}`]
+    : [sp(RELICS[it.k].ico, 4, RELICS[it.k].sw), RELICS[it.k].n, RELICS[it.k].d];
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('moneda', 6)}</div><h2>Tienda</h2><p class="t">Un mercader encapuchado te enseña sus cosas.</p></div>
+    ${S.shop.map((it, i) => { const [ic, n, d] = lbl(it); return `<button class="btn opt" ${it.sold || run.gold < it.p ? 'disabled' : ''} onclick="G.buy(${i})">${ic}<span>${n}<small>${d}</small></span><span class="price">${it.sold ? 'VENDIDO' : it.p}</span></button>`; }).join('')}
+    <button class="btn" onclick="G.leaveShop()">Salir</button>`;
+}
+function event() {
+  let pool = EVENTS.filter(e => !run.seen.includes(e.id));
+  if (!pool.length) { run.seen = []; pool = EVENTS; }
+  const ev = pick(pool); run.seen.push(ev.id);
+  S = { scr: 'event', ev };
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp(ev.ico, 6, ev.sw)}</div><h2>${ev.t}</h2><p class="t">${ev.x}</p></div>
+    ${ev.o.map((o, i) => `<button class="btn" ${o.req && !o.req(run) ? 'disabled' : ''} onclick="G.evo(${i})">${o.t}</button>`).join('')}`;
+}
+function evResult(msg, next) {
+  S = { scr: 'evres', next };
+  app.innerHTML = `${hud()}<div class="panel c col"><p class="t" style="color:var(--txt)">${msg}</p></div>
+    ${run.hp <= 0 ? '<button class="btn pri" onclick="G.over()">...</button>' : `<button class="btn pri" onclick="G.evnext()">Seguir</button>`}`;
+}
+function upRandom(n) {
+  const d = pick(['atk', 'def', 'esp']), f = pick(run.dice[d]); f.v += n;
+  return `Una cara de tu dado de ${DN(d)} sube a ${f.v}.`;
+}
+function curse() {
+  const opts = []; ['atk', 'def', 'esp'].forEach(d => run.dice[d].forEach(f => { if (f.v > 0) opts.push([d, f]); }));
+  if (!opts.length) return 'Sabe raro, pero no pasa nada.';
+  const [d, f] = pick(opts); f.v--;
+  return `Sabe raro... una cara de tu dado de ${DN(d)} baja a ${f.v}.`;
+}
+const EVENTS = [
+  { id: 'cofre', t: 'Cofre polvoriento', ico: 'cofre', x: 'En una esquina hay un cofre lleno de telarañas.', o: [
+    { t: 'Abrirlo', f: r => Math.random() < .6 ? (r.gold += 25, '¡Monedas! +25 de oro.') : (hurt(5), '¡Era una trampa! Pierdes 5 de vida.') },
+    { t: 'Dejarlo', f: () => 'Mejor no tocar nada.' }] },
+  { id: 'fuente', t: 'Fuente azul', ico: 'veneno', sw: 'agua', x: 'Un agua azul brilla en una fuente de piedra.', o: [
+    { t: 'Beber', f: () => Math.random() < .7 ? `Te sientes mejor. +${heal(8)} de vida.` : curse() },
+    { t: 'Seguir', f: () => 'Sigues tu camino.' }] },
+  { id: 'sangre', t: 'Altar de sangre', ico: 'altar', x: 'Un altar rojo susurra: "Dame tu vida y te daré poder".', o: [
+    { t: 'Ofrecer 6 de vida máxima', req: r => r.maxHp > 10, f: r => { r.maxHp -= 6; r.hp = Math.min(r.hp, r.maxHp); return { msg: 'El altar acepta tu ofrenda. Elige un dado para mejorar.', next: () => altar(true) }; } },
+    { t: 'Irse', f: () => 'Te alejas del altar.' }] },
+  { id: 'apuesta', t: 'Apuesta del goblin', ico: 'dado', x: 'Un goblin te reta: "Tira tu dado de ataque. Si sacas 2 o más te doy 20 de oro. Si no, me das 10".', o: [
+    { t: 'Tirar el dado', f: r => { const f = pick(r.dice.atk); if (f.v >= 2) { r.gold += 20; return `¡Sacas un ${f.v}! El goblin te paga 20 de oro.`; } r.gold = Math.max(0, r.gold - 10); return `Sacas un ${f.v}... pierdes 10 de oro.`; } },
+    { t: 'No apostar', f: () => 'El goblin se ríe de ti.' }] },
+  { id: 'estatua', t: 'Estatua del dado', ico: 'dado', sw: 'rojo', x: 'Una estatua antigua sostiene un dado de piedra.', o: [
+    { t: 'Rezar', f: () => upRandom(2) },
+    { t: 'Romperla (pelea dura, da reliquia)', f: () => ({ msg: '¡La estatua cobra vida y te ataca!', next: () => startCombat('elite') }) }] },
+  { id: 'herido', t: 'Aventurero herido', ico: 'corazon', x: 'Un aventurero herido te pide ayuda.', o: [
+    { t: 'Darle 15 de oro', req: r => r.gold >= 15, f: r => { r.gold -= 15; return { msg: 'Agradecido, te deja elegir algo de su bolsa.', next: () => relicChoice('Regalo', nextRoom) }; } },
+    { t: 'Curarle (pierdes 4 de vida)', req: r => r.hp > 4, f: () => { hurt(4); return 'Te enseña un truco. ' + upRandom(1); } },
+    { t: 'Ignorarle', f: () => 'Sigues sin mirar atrás.' }] },
+  { id: 'herrero', t: 'Herrero fantasma', ico: 'yunque', x: 'Un herrero fantasma golpea un yunque invisible: "20 monedas y te mejoro una cara".', o: [
+    { t: 'Pagar 20 de oro', req: r => r.gold >= 20, f: r => { r.gold -= 20; return { msg: 'El fantasma se pone a trabajar.', next: () => forge(1) }; } },
+    { t: 'Irse', f: () => 'El fantasma sigue martillando.' }] },
+  { id: 'setas', t: 'Setas brillantes', ico: 'seta', x: 'Unas setas brillan en el suelo. Huelen... raro.', o: [
+    { t: 'Comerlas', f: r => Math.random() < .5 ? (r.maxHp += 4, r.hp += 4, '¡Deliciosas! +4 de vida máxima.') : (hurt(4), 'Te sientan fatal. Pierdes 4 de vida.') },
+    { t: 'Dejarlas', f: () => 'Mejor no.' }] },
+];
+
+// --- premios
+function genOffers() {
+  const ds = shuffle(['atk', 'def', 'esp']), o = [{ t: 'up', d: ds[0] }, { t: 'up', d: ds[1] }], x = Math.random();
+  if (x < .5) o.push({ t: 'st', s: pick(stickers()) });
+  else if (x < .75) o.push({ t: 'heal', n: 6 + run.floor * 3 });
+  else o.push({ t: 'max', n: 4 });
+  return o;
+}
+function reward(gold) {
+  S = { scr: 'reward', offers: genOffers() };
+  const lbl = o => o.t === 'up' ? [sp(KW[run.dice[o.d][0].k].ico, 4), `Mejorar ${DN(o.d)}`, '+1 a una cara que elijas']
+    : o.t === 'st' ? [faceHTML(o.s.f, o.s.d), `Cara de ${DN(o.s.d)}`, `${KW[o.s.f.k].n} ${o.s.f.v}: ${KW[o.s.f.k].x(o.s.f.v)}`]
+    : o.t === 'heal' ? [sp('corazon', 4), 'Curarte', `Recuperas ${o.n} de vida`]
+    : [sp('corazon', 4, 'piedra'), 'Más vida', `+${o.n} de vida máxima`];
+  app.innerHTML = `${hud()}<div class="panel c col"><h1 style="font-size:16px">¡VICTORIA!</h1><p class="t">+${gold} de oro. Elige una mejora:</p></div>
+    ${S.offers.map((o, i) => { const [ic, n, d] = lbl(o); return `<button class="btn opt" onclick="G.offer(${i})">${ic}<span>${n}<small>${d}</small></span></button>`; }).join('')}`;
+}
+function relicChoice(title, after) {
+  const opts = shuffle(Object.keys(RELICS).filter(k => !has(k))).slice(0, 3);
+  if (!opts.length) { run.gold += 30; return after(); }
+  S = { scr: 'relic', opts, after };
+  app.innerHTML = `${hud()}<div class="panel c col"><h2>${title}</h2><p class="t">Elige una reliquia. Te ayuda toda la partida.</p></div>
+    ${opts.map(k => `<button class="btn opt" onclick="G.takeRelic('${k}')">${sp(RELICS[k].ico, 5, RELICS[k].sw)}<span>${RELICS[k].n}<small>${RELICS[k].d}</small></span></button>`).join('')}`;
+}
+function evolve(after) {
+  const opts = H().evo[run.floor];
+  S = { scr: 'evolve', opts, after };
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp(H().spr, 7)}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
+    ${opts.map((o, i) => `<button class="btn opt" onclick="G.evolve(${i})">${sp('corona', 4)}<span>${o.n}<small>${o.d}</small></span></button>`).join('')}`;
+}
+function nextFloor() {
+  run.floor++; run.step = 0; run.doors = genDoors(0); save(); floorIntro();
+}
+function gameOver() {
+  recordBest(false); clearSave();
+  S = { scr: 'over' };
+  app.innerHTML = `<div class="center c" style="align-items:center"><h1>Has caído</h1>${sp('calavera', 12)}
+    <p class="t">${run.cls} cayó en ${FLOORS[run.floor].n},<br>sala ${run.step + 1} de ${STEPS}.</p>
+    <div class="panel" style="width:100%">${diceRows()}</div>
+    <button class="btn pri" onclick="G.choose()">Otra partida</button><button class="btn small" onclick="G.title()">Menú</button></div>`;
+}
+function victory() {
+  run.step = STEPS; recordBest(true); clearSave();
+  S = { scr: 'win' };
+  app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${sp(H().spr, 10)}${sp('corona', 6)}
+    <p class="t">${run.cls} ha vencido al Dragón y sale de la mazmorra con ${run.gold} de oro.</p>
+    <div class="panel" style="width:100%">${diceRows()}</div>
+    <button class="btn pri" onclick="G.choose()">Jugar otra vez</button></div>`;
+}
+
+// ---------------------------------------------------------- combate
+function parseFace(s) {
+  const o = { a: 0, b: 0, p: 0, h: 0, r: 0, s: null };
+  const m = s.match(/s:(\w+)/); if (m) o.s = m[1];
+  s.replace(/s:\w+/, '').replace(/([abphr])(\d+)/g, (_, k, n) => { o[k] += +n; });
+  return o;
+}
+function makeEnemy(key) {
+  const d = EN[key];
+  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp: d.hp, max: d.hp, block: 0, poison: 0, rage: 0, intent: null, f: d.f };
+}
+function startCombat(kind) {
+  const fl = FLOORS[run.floor];
+  let list;
+  if (kind === 'jefe') list = [fl.boss];
+  else if (kind === 'elite') list = [pick(fl.elite)];
+  else {
+    let n = run.step < 2 ? 1 : Math.random() < (run.floor ? .65 : .5) ? 2 : 1;
+    if (run.floor > 0 && run.step >= 2 && Math.random() < .3) n++;
+    list = Array.from({ length: n }, () => pick(fl.pool));
+  }
+  C = { kind, en: list.map(makeEnemy), turn: 0, block: 0, thorns: 0, ppoison: 0, rolled: null, rerolls: 0, target: 0, busy: false };
+  startTurn(); cRender();
+}
+function startTurn() {
+  C.turn++; C.block = has('escudo') ? 1 : 0; C.thorns = 0; C.rolled = null;
+  C.rerolls = 1 + (has('trebol') ? 1 : 0);
+  for (const e of C.en) { e.intent = parseFace(pick(e.f)); e.block = e.intent.b; }
+  if (C.target >= C.en.length) C.target = 0;
+}
+function rollDie(d) {
+  let f = pick(run.dice[d]);
+  if (has('cargado') && blankF(f)) f = pick(run.dice[d]);
+  return { ...f };
+}
+function effFaces() {
+  const fs = ['atk', 'def', 'esp'].map(d => ({ ...C.rolled[d], d, b: 0 }));
+  let combo = '';
+  const v = fs.map(f => f.v);
+  if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { fs.forEach(f => { f.b = f.v; f.v *= 2; }); combo = '¡Trío! ×2'; }
+  else {
+    const b = has('gemelo') ? 2 : 1;
+    outer: for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
+      if (fs[i].v > 0 && fs[i].v === fs[j].v) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; combo = `¡Pareja! +${b}`; break outer; }
+  }
+  let furia = 0, hits = 1;
+  for (const f of fs) { if (f.k === 'furia') furia += f.v; if (f.k === 'doble') { furia += f.v; hits = 2; } }
+  if (C.turn === 1 && has('brasa')) furia += 2;
+  return { fs, combo, furia, hits };
+}
+function intentHTML(e) {
+  const it = e.intent; if (!it) return '';
+  const p = [];
+  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a + e.rage}</span>`);
+  if (it.b) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${it.b}</span>`);
+  if (it.p) p.push(`<span style="color:#7aea7a">${sp('veneno', 2)}${it.p}</span>`);
+  if (it.h) p.push(`<span style="color:#ff8a8a">${sp('corazon', 2)}+${it.h}</span>`);
+  if (it.r) p.push(`<span style="color:#ff7050">${sp('furia', 2)}+${it.r}</span>`);
+  if (it.s) p.push(`<span style="color:#d0a0ff">${sp('invoca', 2)}</span>`);
+  return p.join('');
+}
+function intentText(it, e) {
+  const p = [];
+  if (it.a) p.push(`ataca ${it.a + (e ? e.rage : 0)}`); if (it.b) p.push(`se protege ${it.b}`); if (it.p) p.push(`envenena ${it.p}`);
+  if (it.h) p.push(`cura ${it.h} a todos`); if (it.r) p.push(`se enfurece +${it.r}`); if (it.s) p.push(`invoca: ${EN[it.s].n}`);
+  return p.join(', ') || 'nada';
+}
+function badge(ico, v, col) { return `<span style="color:${col}">${sp(ico, 2)}${v}</span>`; }
+function cRender() {
+  S.scr = 'combat';
+  if (FAST) { fxq = []; return; }
+  const fl = FLOORS[run.floor], eff = C.rolled ? effFaces() : null;
+  const multi = C.en.length > 1;
+  app.innerHTML = `${hud()}
+  <div class="arena" style="background:${fl.bg}">
+    <div class="enemies">${C.en.map((e, i) => `<div class="en ${multi && i === C.target ? 'tgt' : ''} ${e.hp <= 0 ? 'dead' : ''}" id="en${i}" onclick="G.tgt(${i})">
+      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${sp(e.spr, e.px, e.swap)}<div class="nm">${e.n}</div>${bar(e.hp, e.max)}
+      <div class="badges">${e.block ? badge('escudo', e.block, '#8ab8ff') : ''}${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`).join('')}</div>
+    <div class="herorow"><div id="hero">${sp(H().spr, 5)}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${bar(run.hp, run.maxHp)}
+      <div class="badges" style="justify-content:flex-start">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div></div></div>
+  </div>
+  <div class="combo">${eff && eff.combo ? eff.combo : ''}</div>
+  <div class="dice" id="dice">${diceBig(eff)}</div>
+  <div class="dlab">${['atk', 'def', 'esp'].map(d => `<span>${DN(d)}</span>`).join('')}</div>
+  <div class="ftxt">${eff ? faceTexts(eff) : C.busy ? '' : 'Mira qué va a hacer el enemigo<br>y tira tus dados.'}</div>
+  <div class="acts">${C.busy ? '<button class="btn" disabled>...</button>' : !C.rolled
+    ? `<button class="btn pri" onclick="G.roll()">TIRAR DADOS</button>`
+    : `<button class="btn pri" onclick="G.act()">¡ACTUAR!</button><p class="t c">${C.rerolls ? `Toca un dado para volver a tirarlo (${C.rerolls})` : 'Sin re-tiradas'}</p>`}
+    <button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
+  flushFx();
+}
+function diceBig(eff) {
+  return ['atk', 'def', 'esp'].map((d, i) => {
+    if (!C.rolled) return `<div class="fc ${d} die q"><b>?</b></div>`;
+    const f = eff ? eff.fs[i] : C.rolled[d];
+    const can = !C.busy && C.rerolls > 0;
+    return faceHTML(f, d, { big: 1, cls: `die ${f.b ? 'boost' : ''} ${can ? 'can' : ''}`, click: can ? `G.rr('${d}')` : '' });
+  }).join('');
+}
+function faceTexts(eff) {
+  const lines = [];
+  for (const f of eff.fs) {
+    if (blankF(f)) { lines.push(`${DN(f.d)}: <em>nada</em>`); continue; }
+    let t = KW[f.k].x(f.v);
+    if (KW[f.k].dmg && (eff.furia || eff.hits > 1)) t = KW[f.k].x(f.v + eff.furia) + (eff.hits > 1 ? ' ×2' : '');
+    lines.push(`${DN(f.d)}: <em>${t}</em>`);
+  }
+  return lines.join('<br>');
+}
+async function animRoll(keys) {
+  for (let n = 0; n < 7; n++) {
+    for (const d of keys) C.rolled[d] = { ...pick(run.dice[d]) };
+    const el = $('#dice'); if (el) el.innerHTML = diceBig(null);
+    await sleep(55);
+  }
+}
+async function doRoll() {
+  if (C.busy || C.rolled) return;
+  C.busy = true; C.rolled = {};
+  await animRoll(['atk', 'def', 'esp']);
+  C.rolled = { atk: rollDie('atk'), def: rollDie('def'), esp: rollDie('esp') };
+  C.busy = false; cRender();
+}
+async function reroll(d) {
+  if (C.busy || !C.rolled || C.rerolls <= 0) return;
+  C.rerolls--; C.busy = true;
+  await animRoll([d]);
+  C.rolled[d] = rollDie(d); C.busy = false; cRender();
+}
+const alive = () => C.en.filter(e => e.hp > 0);
+function tgtEnemy() { let e = C.en[C.target]; if (!e || e.hp <= 0) { e = alive()[0]; C.target = C.en.indexOf(e); } return e; }
+function hitEnemy(e, amt, pierce, col) {
+  if (!pierce) { const ab = Math.min(e.block, amt); e.block -= ab; amt -= ab; }
+  amt = Math.min(amt, Math.max(0, e.hp));
+  e.hp -= amt;
+  fl(e, amt > 0 ? '-' + amt : '0', col || '#ff6a6a', amt > 0);
+  return amt;
+}
+async function cleanup() {
+  let dead = C.en.filter(e => e.hp <= 0);
+  while (dead.length) {
+    C.en = C.en.filter(e => e.hp > 0);
+    if (has('calavera') && C.en.length) {
+      for (let k = 0; k < dead.length; k++) for (const e of C.en) hitEnemy(e, 2, true, '#e0e0f0');
+      cRender(); await sleep(350);
+    }
+    dead = C.en.filter(e => e.hp <= 0);
+  }
+  if (C.target >= C.en.length) C.target = 0;
+  return C.en.length === 0;
+}
+async function act() {
+  if (C.busy || !C.rolled) return;
+  C.busy = true;
+  const eff = effFaces();
+  if (eff.combo) toast(eff.combo);
+  const step = async (ms = 330) => { cRender(); await sleep(ms); };
+  // 1) protección, cura y veneno
+  for (const f of eff.fs) {
+    if (blankF(f)) continue;
+    if (f.k === 'escudo' || f.k === 'espinas') { C.block += f.v; if (f.k === 'espinas') C.thorns += f.v; fl('hero', '+' + f.v, '#8ab8ff'); }
+    else if (f.k === 'luz') { const h = heal(f.v); if (h) fl('hero', '+' + h, '#7aea7a'); if (f.v > h) { C.block += f.v - h; fl('hero', '+' + (f.v - h), '#8ab8ff'); } }
+    else if (f.k === 'veneno') { const e = tgtEnemy(); e.poison += f.v + (has('seta') ? 1 : 0); fl(e, '+' + (f.v + (has('seta') ? 1 : 0)), '#7aea7a'); }
+    else if (f.k === 'nube') { for (const e of alive()) { e.poison += f.v + (has('seta') ? 1 : 0); fl(e, '+' + (f.v + (has('seta') ? 1 : 0)), '#7aea7a'); } }
+  }
+  if (fxq.length) await step();
+  // 2) daño
+  for (const f of eff.fs) {
+    const kw = KW[f.k];
+    if (!kw.dmg || f.v <= 0) continue;
+    for (let h = 0; h < eff.hits; h++) {
+      if (!alive().length) break;
+      const amt = f.v + eff.furia, targets = kw.all ? alive() : [tgtEnemy()];
+      for (const e of targets) { const dealt = hitEnemy(e, amt, kw.pierce, f.k === 'fuego' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); } }
+      await step();
+    }
+  }
+  if (await cleanup()) return winCombat();
+  // 3) el veneno hace daño
+  let pz = false;
+  for (const e of alive()) if (e.poison > 0) { hitEnemy(e, e.poison, true, '#7aea7a'); e.poison--; pz = true; }
+  if (pz) await step();
+  if (await cleanup()) return winCombat();
+  // 4) turno de los enemigos
+  await sleep(200);
+  for (const e of [...C.en]) {
+    if (e.hp <= 0) continue;
+    const it = e.intent;
+    if (it.a) {
+      let dmg = it.a + e.rage; const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
+      run.hp -= dmg; fl('hero', dmg > 0 ? '-' + dmg : 'BLOQUEO', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
+      fl(e, '', null, true);
+      if (C.thorns) hitEnemy(e, C.thorns, true, '#c0d0ff');
+    }
+    if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p, '#7aea7a'); }
+    if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
+    if (it.r) { e.rage += it.r; fl(e, 'FURIA', '#ff7050'); }
+    if (it.s && alive().length < 3) { const m = makeEnemy(it.s); m.intent = parseFace('a0'); C.en.push(m); fl(m, '¡!', '#d0a0ff'); }
+    await step(380);
+    if (run.hp <= 0) return lose();
+  }
+  if (await cleanup()) return winCombat();
+  // 5) tu veneno
+  if (C.ppoison > 0) { run.hp -= C.ppoison; fl('hero', '-' + C.ppoison, '#7aea7a', true); C.ppoison--; await step(); if (run.hp <= 0) return lose(); }
+  startTurn(); C.busy = false; cRender();
+}
+async function winCombat() {
+  await sleep(350);
+  const kind = C.kind;
+  let g = kind === 'jefe' ? 40 + run.floor * 10 : kind === 'elite' ? 20 + run.floor * 5 : R(6, 10) + run.floor * 3;
+  if (has('bolsa')) g = Math.round(g * 1.5);
+  run.gold += g;
+  if (has('colmillo')) heal(4);
+  C = null;
+  if (kind === 'jefe') {
+    run.hp = run.maxHp;
+    if (run.floor >= FLOORS.length - 1) return victory();
+    return evolve(() => relicChoice('Tesoro del jefe', nextFloor));
+  }
+  if (kind === 'elite') return relicChoice(`¡Élite vencido! +${g} de oro`, nextRoom);
+  reward(g);
+}
+async function lose() { await sleep(500); C = null; gameOver(); }
+
+// ---------------------------------------------------------- acciones (botones)
+const G = {
+  title, choose: chooseHero, help, map,
+  start: k => newRun(k),
+  cont: () => { run = load(); if (!run) return title(); map(); },
+  door: i => enter(run.doors[i]),
+  roll: () => doRoll(),
+  rr: d => reroll(d),
+  act: () => act(),
+  tgt: i => {
+    if (!C || !C.en[i] || C.en[i].hp <= 0) return;
+    if (C.target === i || C.en.length === 1) {
+      const e = C.en[i];
+      modal(`<h3>${e.n}</h3><p class="t">Vida ${e.hp}/${e.max}. Sus caras:</p><div class="col">${e.f.map(s => `<p class="t" style="color:var(--txt)">· ${intentText(parseFace(s), e)}</p>`).join('')}</div>`);
+    } else { C.target = i; cRender(); }
+  },
+  myDice: () => modal(`<h3>Tus dados</h3>${diceRows()}<p class="t">${run.dice.esp.concat(run.dice.atk, run.dice.def).filter(f => !blankF(f)).map(f => f.k).filter((k, i, a) => a.indexOf(k) === i).map(k => `<b style="color:${KW[k].col}">${KW[k].n}</b>: ${KW[k].x('N')}`).join('<br>')}</p>`),
+  relic: k => modal(`<div class="row">${sp(RELICS[k].ico, 5, RELICS[k].sw)}<h3>${RELICS[k].n}</h3></div><p class="t">${RELICS[k].d}</p>`),
+  pf: (d, i) => { const cfg = S.pf; if (cfg) cfg.on(d, i); },
+  pfCancel: () => { const cfg = S.pf; if (cfg && cfg.cancel) cfg.cancel(); },
+  altar: d => { run.dice[d].forEach(f => f.v++); toast(`¡${DN(d)} +1!`); nextRoom(); },
+  rest: i => { if (i === 0) { heal(S.heal); toast('Zzz...'); nextRoom(); } else pickFace({ title: 'Entrenar', ico: 'yunque', sub: '+1 a la cara que elijas.', dice: ['atk', 'def', 'esp'], on: (d, j) => { run.dice[d][j].v++; toast('+1'); nextRoom(); } }); },
+  buy: i => {
+    const sh = S.shop, it = sh[i]; if (!it || it.sold || run.gold < it.p) return;
+    const back = () => { S = { scr: 'shop', shop: sh }; shop(); };
+    if (it.t === 'st') return stickerFlow(it.s, () => { run.gold -= it.p; it.sold = 1; back(); }, back);
+    if (it.t === 'up') return pickFace({ title: 'Mejora', ico: 'yunque', sub: '+1 a la cara que elijas.', dice: ['atk', 'def', 'esp'], cancel: back, on: (d, j) => { run.dice[d][j].v++; run.gold -= it.p; it.sold = 1; toast('+1'); back(); } });
+    run.gold -= it.p; it.sold = 1;
+    if (it.t === 'heal') heal(it.n);
+    if (it.t === 'relic') { run.relics.push(it.k); RELICS[it.k].on && RELICS[it.k].on(run); }
+    shop();
+  },
+  leaveShop: () => nextRoom(),
+  evo: i => {
+    const o = S.ev.o[i]; if (o.req && !o.req(run)) return;
+    const res = o.f(run);
+    if (typeof res === 'string') evResult(res, null); else evResult(res.msg, res.next);
+  },
+  evnext: () => { const n = S.next; n ? n() : nextRoom(); },
+  over: () => gameOver(),
+  offer: i => {
+    const o = S.offers[i];
+    if (o.t === 'up') return pickFace({ title: `Mejorar ${DN(o.d)}`, ico: KW[run.dice[o.d][0].k].ico, sub: '+1 a la cara que elijas.', dice: [o.d], on: (d, j) => { run.dice[d][j].v++; toast('+1'); nextRoom(); } });
+    if (o.t === 'st') return stickerFlow(o.s, nextRoom);
+    if (o.t === 'heal') heal(o.n);
+    if (o.t === 'max') { run.maxHp += o.n; run.hp += o.n; }
+    nextRoom();
+  },
+  takeRelic: k => { const after = S.after; run.relics.push(k); RELICS[k].on && RELICS[k].on(run); toast(RELICS[k].n); after(); },
+  evolve: i => { const o = S.opts[i], after = S.after; o.a(run); run.cls = o.n; toast(`¡${o.n}!`); after(); },
+  // para el bot de pruebas
+  _s: () => ({ S, C, run }),
+  _fast: v => { FAST = v; },
+};
+window.G = G;
+title();
+</script>
+</body>
+</html>

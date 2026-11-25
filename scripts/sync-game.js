@@ -32,6 +32,22 @@ function buildWeb(html) {
   const prev2 = fs.existsSync(web) ? fs.readFileSync(web, 'utf8') : '';
   if (prev2 !== out2) fs.writeFileSync(web, out2);
   buildLab(out2);
+  buildMazmorra();
+}
+
+// Mazmorra de Dados (otro juego): mazmorra/index.html -> docs/mazmorra/index.html
+function buildMazmorra() {
+  const src2 = path.join(__dirname, '..', 'mazmorra', 'index.html');
+  if (!fs.existsSync(src2)) return;
+  const head = '<meta name="apple-mobile-web-app-title" content="Mazmorra">\n' +
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n' +
+    '<meta name="theme-color" content="#120e18">\n';
+  const out = fs.readFileSync(src2, 'utf8').replace('<title>Mazmorra de Dados</title>', '<title>Mazmorra de Dados</title>\n' + head);
+  const dir = path.join(__dirname, '..', 'docs', 'mazmorra');
+  fs.mkdirSync(dir, { recursive: true });
+  const dst = path.join(dir, 'index.html');
+  const prev = fs.existsSync(dst) ? fs.readFileSync(dst, 'utf8') : '';
+  if (prev !== out) fs.writeFileSync(dst, out);
 }
 
 // Laboratorio (docs/lab.html): el mismo juego con game/lab.js al final para probar disparos.
