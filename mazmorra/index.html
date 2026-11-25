@@ -154,6 +154,11 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .dl3 small{display:block;font-size:6px;line-height:1.5;color:var(--dim);margin-top:2px}
 .dl3.boss b{color:#ff8a8a}
 @keyframes glow{50%{box-shadow:0 0 0 2px #000,0 0 0 4px #f8d84a55}}
+
+.hearts{display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin:0 auto}
+.hearts img{filter:drop-shadow(1px 1px 0 #000)}
+.hstat .hearts,.panel .hearts,.hudhp .hearts,.hero-card .hearts{justify-content:flex-start;margin:0}
+.hudhp{margin-top:-4px}
 </style>
 </head>
 <body>
@@ -185,6 +190,7 @@ const SWAPS = {
   oscuro: { g: 'G', G: 'k', b: 'P', y: 'r', w: 'R' },
   agua: { e: 'b', E: 'B' },
   piedra: { r: 'g', R: 'G', w: 'w' },
+  hpE: { r: 'R', w: 'R', y: 'Y' },
 };
 const SPR = {
   caballero: [
@@ -442,6 +448,10 @@ const ICO = {
   dado: ['wwwwwww', 'wkwwwkw', 'wwwwwww', 'wwwkwww', 'wwwwwww', 'wkwwwkw', 'wwwwwww'],
   seta: ['.rrrrr.', 'rwrrrwr', 'rrrwrrr', '.kwwwk.', '..www..', '..www..', '.wwwww.'],
   cofre: ['.nnnnn.', 'nYYYYYn', 'nnnnnnn', 'nNNyNNn', 'nnnyynn', 'nnnnnnn', 'NNNNNNN'],
+  hp1: ['.r.r.', 'rrrrr', 'rrrrr', '.rrr.', '..r..'],
+  hp1h: ['.r.R.', 'rrRRR', 'rrRRR', '.rRR.', '..R..'],
+  hp5: ['.yy.yy.', 'yrryrry', 'yrwrrry', 'yrrrrry', '.yrrry.', '..yry..', '...y...'],
+  hp5h: ['.yy.yy.', 'yrryRRy', 'yrwRRRy', 'yrrRRRy', '.yrRRy.', '..yRy..', '...y...'],
   invoca: ['..p.p..', '.p.w.p.', 'p.www.p', '.wwwww.', 'p.www.p', '.p.w.p.', '..p.p..'],
 };
 const pxCache = {};
@@ -1015,66 +1025,341 @@ function rasterTri(s, idb, a, b, c, ua, ub, uc, tex, id) {
 }
 
 
-// ---------- personajes en 3D: cada dibujo se convierte en un modelo de vóxeles
-// (más grueso por el centro, fino en los bordes) y se dibuja con luz y tramado
+// ---------- personajes en 3D: figuras de vóxeles hechas con piezas (cajas, bolas, cápsulas, conos)
+// ejes: x izquierda→derecha, y abajo→arriba, z fondo→frente (la cara mira hacia +z)
+function vmodel(W, H, D, fn, swap) {
+  const vox = new Uint32Array(W * H * D), sw = swap ? SWAPS[swap] : null, cc = {};
+  const col = ch => { if (!ch || ch === '.') return 0; if (sw && sw[ch]) ch = sw[ch]; if (cc[ch] === undefined) { const [r, g, b] = hexRGB(PAL[ch]); cc[ch] = pack(r, g, b); } return cc[ch]; };
+  const put = (x, y, z, c) => { if (x >= 0 && y >= 0 && z >= 0 && x < W && y < H && z < D) vox[(z * H + y) * W + x] = c; };
+  const each = (x0, y0, z0, x1, y1, z1, test, ch) => {
+    const c = col(ch);
+    for (let z = Math.max(0, Math.floor(z0)); z <= Math.min(D - 1, Math.ceil(z1)); z++)
+      for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(H - 1, Math.ceil(y1)); y++)
+        for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(W - 1, Math.ceil(x1)); x++)
+          if (test(x + .5, y + .5, z + .5)) put(x, y, z, c);
+  };
+  const M = {
+    W, H, D,
+    box: (x0, y0, z0, x1, y1, z1, ch) => { const c = col(ch); for (let z = z0; z <= z1; z++) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) put(x, y, z, c); },
+    ell: (cx, cy, cz, rx, ry, rz, ch, cut) => each(cx - rx - 1, cy - ry - 1, cz - rz - 1, cx + rx, cy + ry, cz + rz, (x, y, z) => ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 + ((z - cz) / rz) ** 2 <= 1 && (!cut || cut(x, y, z)), ch),
+    cap: (ax, ay, az, bx, by, bz, r, ch) => {
+      const dx = bx - ax, dy = by - ay, dz = bz - az, l2 = dx * dx + dy * dy + dz * dz || 1;
+      each(Math.min(ax, bx) - r - 1, Math.min(ay, by) - r - 1, Math.min(az, bz) - r - 1, Math.max(ax, bx) + r, Math.max(ay, by) + r, Math.max(az, bz) + r, (x, y, z) => {
+        let t = ((x - ax) * dx + (y - ay) * dy + (z - az) * dz) / l2; t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const qx = ax + dx * t - x, qy = ay + dy * t - y, qz = az + dz * t - z; return qx * qx + qy * qy + qz * qz <= r * r;
+      }, ch);
+    },
+    cone: (cx, cz, y0, y1, r0, r1, ch) => { const m = Math.max(r0, r1); each(cx - m - 1, y0, cz - m - 1, cx + m, y1, cz + m, (x, y, z) => { const t = (y - y0) / (y1 - y0 + 1), r = r0 + (r1 - r0) * t; return (x - cx) ** 2 + (z - cz) ** 2 <= r * r; }, ch); },
+    ring: (cx, cy, cz, R, t, ch) => each(cx - R - t - 1, cy - t - 1, cz - R - t - 1, cx + R + t, cy + t, cz + R + t, (x, y, z) => { const d = Math.hypot(x - cx, z - cz) - R; return d * d + (y - cy) ** 2 <= t * t; }, ch),
+    px: (x, y, z, ch) => put(x, y, z, col(ch)),
+  };
+  fn(M);
+  return { W, H, D, vox };
+}
+const mirror = (cx, f) => { f(1, x => x); f(-1, x => 2 * cx - x); };
+
+// --- héroes
+function mKnight(M, o = {}) {
+  const ar = o.dark ? 'G' : 'g', ad = o.dark ? 'k' : 'G', tb = o.dark ? 'R' : 'b', bl = o.dark ? 'R' : 'w';
+  if (o.dark) M.box(5, 4, 2, 10, 13, 3, 'R');                       // capa
+  M.box(5, 0, 5, 6, 5, 7, ad); M.box(9, 0, 5, 10, 5, 7, ad);         // piernas
+  M.box(5, 0, 7, 6, 1, 8, ar); M.box(9, 0, 7, 10, 1, 8, ar);         // botas
+  M.ell(8, 9.5, 6, 3.6, 3.5, 2.7, ar);                               // coraza
+  M.box(6, 5, 8, 9, 11, 8, tb);                                      // sobreveste
+  M.box(5, 6, 4, 10, 6, 8, 'n'); M.px(7, 6, 8, 'y'); M.px(8, 6, 8, 'y');
+  M.ell(4.4, 12.2, 6, 1.8, 1.5, 1.9, ar); M.ell(11.6, 12.2, 6, 1.8, 1.5, 1.9, ar);   // hombreras
+  if (o.dark) { M.px(4, 14, 6, 'k'); M.px(11, 14, 6, 'k'); M.px(3, 13, 6, 'k'); M.px(12, 13, 6, 'k'); }
+  M.cap(4.2, 11, 6, 3.8, 7.5, 7.6, 1.1, ad); M.cap(11.8, 11, 6, 12.2, 8.5, 7.8, 1.1, ad);  // brazos
+  M.ell(3.8, 7.3, 7.6, 1.2, 1.2, 1.2, ar); M.ell(12.2, 8.3, 7.8, 1.2, 1.2, 1.2, ar);        // guanteletes
+  M.ell(8, 15.3, 6, 2.7, 2.9, 2.7, ar);                              // yelmo
+  M.box(6, 15, 8, 9, 15, 8, 'k');                                    // ranura
+  if (o.dark) { M.px(6, 15, 8, 'r'); M.px(9, 15, 8, 'r'); }
+  M.box(7, 16, 8, 8, 17, 8, ad);
+  M.ell(8, 19, 5.4, .9, 1.6, 2.3, tb);                               // penacho
+  M.box(12, 9, 9, 12, o.dark ? 20 : 18, 9, bl); M.px(12, o.dark ? 21 : 19, 9, bl);      // espada
+  M.box(11, 9, 9, 13, 9, 9, 'y'); M.box(12, 6, 9, 12, 8, 9, 'n'); M.px(12, 5, 9, 'y');
+}
+function mCleric(M) {
+  M.cone(8, 6, 0, 10, 3.9, 2.5, 'w'); M.cone(8, 6, 0, 0, 4, 4, 'y');
+  M.ell(8, 11.2, 6, 2.7, 2.4, 2.1, 'w');
+  M.ring(8, 8.6, 6, 2.9, .6, 'y');
+  M.box(7, 9, 8, 8, 12, 8, 'y'); M.box(6, 11, 8, 9, 11, 8, 'y');    // símbolo
+  M.cap(5.3, 11.6, 6, 4.6, 8.2, 7.6, 1, 'w'); M.ell(4.6, 7.7, 7.8, .9, .9, .9, 's');
+  M.cap(10.7, 11.6, 6, 11.8, 9, 7.6, 1, 'w'); M.ell(11.8, 8.6, 7.8, .9, .9, .9, 's');
+  M.ell(8, 14.8, 6, 2.8, 2.5, 2.5, 's');                             // cabeza
+  M.ell(8, 15.6, 5.5, 3, 2.6, 2.7, 'n', (x, y, z) => z < 6.4 || y > 16.2);   // pelo
+  M.cap(5.4, 15, 5, 5.2, 11.5, 5, .9, 'n'); M.cap(10.6, 15, 5, 10.8, 11.5, 5, .9, 'n');
+  M.px(6, 15, 8, 'k'); M.px(9, 15, 8, 'k'); M.px(7, 13, 8, 'S'); M.px(8, 13, 8, 'S');
+  M.ring(8, 18.8, 5.6, 2.5, .5, 'y');                                // aureola
+  M.cap(11.8, 5, 7.8, 11.8, 13, 7.8, .5, 'n');                       // maza
+  M.ell(11.8, 14.2, 7.8, 1.5, 1.5, 1.5, 'g');
+  M.px(13, 14, 7, 'G'); M.px(10, 14, 8, 'G'); M.px(11, 16, 7, 'G'); M.px(12, 14, 9, 'G');
+}
+function mRogue(M) {
+  M.box(6, 0, 5, 7, 3, 7, 'N'); M.box(8, 0, 5, 9, 3, 7, 'N'); M.box(6, 0, 7, 7, 0, 8, 'k'); M.box(8, 0, 7, 9, 0, 8, 'k');
+  M.cone(8, 6, 2, 11, 3.7, 2.6, 'P');                                // capa
+  M.box(7, 4, 8, 8, 10, 8, 'N'); M.box(5, 6, 4, 10, 6, 8, 'n'); M.px(6, 5, 8, 'e'); M.px(9, 5, 8, 'e');
+  M.cap(5.2, 11, 6, 3.8, 8.2, 8, 1, 'P'); M.cap(10.8, 11, 6, 12.2, 8.2, 8, 1, 'P');
+  M.ell(3.7, 8, 8.2, .8, .8, .8, 's'); M.ell(12.3, 8, 8.2, .8, .8, .8, 's');
+  M.cap(3.6, 7.8, 8.8, 2.4, 4.2, 10.8, .45, 'w'); M.cap(12.4, 7.8, 8.8, 13.6, 4.2, 10.8, .45, 'w');   // dagas
+  M.px(2, 3, 11, 'e'); M.px(13, 3, 11, 'e');
+  M.ell(8, 14.2, 6, 3, 3.1, 3, 'P');                                 // capucha
+  M.ell(8, 13.8, 8, 2, 1.8, 1.3, 's');
+  M.box(6, 15, 9, 9, 15, 9, 'P'); M.box(6, 14, 9, 9, 14, 9, 'k'); M.px(6, 14, 9, 'e'); M.px(9, 14, 9, 'e');
+  M.ell(8, 16.6, 4.6, 1.3, 1.6, 1.4, 'P'); M.ell(8, 17.4, 3.6, .8, 1, 1, 'P');
+}
+function mPyro(M) {
+  M.cone(8, 6, 0, 10, 3.9, 2.6, 'r'); M.cone(8, 6, 0, 1, 4, 3.8, 'R');
+  M.ell(8, 11.2, 6, 2.7, 2.3, 2.1, 'r'); M.ring(8, 9, 6, 2.8, .55, 'y');
+  M.cap(5.3, 11.6, 6, 4.4, 8.2, 7.6, 1, 'r'); M.ell(4.4, 7.8, 7.8, .9, .9, .9, 's');
+  M.cap(10.7, 11.6, 6, 12, 9.6, 7.6, 1, 'r'); M.ell(12.1, 9.4, 7.8, .9, .9, .9, 's');
+  M.ell(8, 14.2, 6, 2.6, 2.3, 2.3, 's');
+  M.ell(8, 12.2, 7.6, 2, 2.5, 1.2, 'w');                             // barba
+  M.px(6, 14, 8, 'k'); M.px(9, 14, 8, 'k'); M.box(6, 15, 8, 9, 15, 8, 'g');
+  M.ell(8, 15.9, 6, 4, .7, 4, 'R');                                  // ala del sombrero
+  M.cone(8, 6, 16, 21, 2.7, .6, 'R'); M.ring(8, 16.6, 6, 2.5, .5, 'y');
+  M.cap(8, 21, 6, 9.6, 22.4, 4.6, .6, 'R');
+  M.cap(12.1, 0, 7.8, 12.1, 15, 7.8, .5, 'n');                       // bastón
+  M.ell(12.1, 17, 7.8, 1.3, 2.1, 1.3, 'o'); M.ell(12.1, 16.6, 7.8, .7, 1.1, .7, 'y');
+}
+// --- enemigos
+function mRat(M, o = {}) {
+  M.ell(6, 3.8, 8, 3.2, 2.8, 5, 'g'); M.ell(6, 5.3, 7.4, 2.2, 1.4, 4, 'G');
+  M.ell(6, 4.4, 13.4, 2.4, 2.2, 2.8, 'g'); M.ell(6, 3.8, 15.8, 1.4, 1.2, 1.4, 'g');
+  M.box(5, 4, 17, 6, 4, 17, 'm'); M.px(4, 5, 15, 'r'); M.px(7, 5, 15, 'r');
+  M.box(5, 2, 16, 6, 2, 16, 'y');
+  M.ell(3.8, 6.8, 12.6, 1.1, 1.3, .6, 'm'); M.ell(8.2, 6.8, 12.6, 1.1, 1.3, .6, 'm');
+  M.box(3, 0, 5, 4, 1, 6, 'G'); M.box(7, 0, 5, 8, 1, 6, 'G'); M.box(3, 0, 11, 4, 1, 12, 'G'); M.box(7, 0, 11, 8, 1, 12, 'G');
+  const tails = o.tails || 1;
+  for (let k = 0; k < tails; k++) { const dx = (k - (tails - 1) / 2) * 2.4; M.cap(6, 3, 3.4, 6 + dx, 1.6, .5, .55, 'm'); }
+  if (o.crown) { M.ring(6, 7, 13.2, 1.7, .5, 'w'); for (const [x, z] of [[4, 13], [7, 13], [6, 15], [5, 11]]) M.px(x, 8, z, 'w'); }
+}
+function mBat(M) {
+  M.ell(10, 6, 4, 2, 2.6, 1.8, 'P'); M.ell(10, 9.4, 4.4, 2.1, 1.9, 1.9, 'P');
+  M.cap(8.6, 10.5, 4.4, 8, 12.6, 4.4, .55, 'P'); M.cap(11.4, 10.5, 4.4, 12, 12.6, 4.4, .55, 'P');
+  M.px(8, 10, 6, 'r'); M.px(11, 10, 6, 'r'); M.px(9, 8, 6, 'w'); M.px(10, 8, 6, 'w');
+  mirror(10, (s, X) => {
+    M.ell(X(4.4), 7.6, 4, 4.3, 3.4, .6, 'P', (x, y) => y > 4.6 + (Math.floor(x) % 3 === 0 ? 1.4 : 0));
+    M.cap(X(8), 8.6, 4, X(1.2), 10.6, 4, .45, 'k'); M.cap(X(5), 9.6, 4.2, X(4), 4.5, 4.2, .35, 'k');
+  });
+  M.cap(9, 3.6, 4, 8.6, 1.6, 4.6, .4, 'k'); M.cap(11, 3.6, 4, 11.4, 1.6, 4.6, .4, 'k');
+}
+function mSkeleton(M) {
+  M.cap(7, 6, 6, 6.6, .6, 6.6, .6, 'w'); M.cap(9, 6, 6, 9.4, .6, 6.6, .6, 'w');
+  M.box(5, 0, 6, 7, 0, 8, 'w'); M.box(9, 0, 6, 11, 0, 8, 'w');
+  M.box(6, 6, 5, 9, 7, 7, 'w'); M.box(7, 7, 5, 8, 13, 5, 'w');
+  for (const y of [9, 11, 13]) M.ring(8, y + .5, 6, 1.9, .5, 'w');
+  M.box(7, 9, 7, 8, 13, 7, 'w'); M.box(5, 13, 5, 10, 13, 6, 'w');
+  M.cap(5, 13, 6, 3.8, 8, 7.6, .55, 'w'); M.cap(11, 13, 6, 12.2, 9, 7.8, .55, 'w');
+  M.ell(11.6, 13.4, 6, 1.3, 1, 1.3, 'G');
+  M.ell(8, 16.2, 6, 2.6, 2.5, 2.5, 'w'); M.box(6, 14, 6, 9, 14, 8, 'w');
+  M.px(6, 16, 8, 'c'); M.px(9, 16, 8, 'c'); M.px(7, 15, 8, 'k'); M.px(7, 14, 8, 'k'); M.px(9, 14, 8, 'k');
+  M.box(12, 9, 9, 12, 17, 9, 'g'); M.px(12, 13, 9, 'G'); M.box(11, 9, 9, 13, 9, 9, 'n'); M.box(12, 7, 9, 12, 8, 9, 'n');
+}
+function mSkullKing(M) {
+  M.cone(9, 7, 0, 13, 4.8, 3, 'P'); M.cone(9, 7, 0, 0, 4.9, 4.9, 'y'); M.box(8, 1, 11, 9, 12, 11, 'y');
+  M.ell(9, 13.6, 7, 3.4, 2.4, 2.6, 'P');
+  for (const y of [11, 12.6]) M.ring(9, y, 7, 2.2, .5, 'w');
+  M.ell(5, 14, 7, 1.8, 1.4, 1.8, 'P'); M.ell(13, 14, 7, 1.8, 1.4, 1.8, 'P');
+  M.cap(5, 13, 7, 3.6, 8.5, 9, .6, 'w'); M.cap(13, 13, 7, 14.4, 9.4, 9, .6, 'w');
+  M.ell(9, 18, 7, 3, 3, 2.9, 'w'); M.box(7, 15, 7, 11, 15, 9, 'w');
+  M.box(7, 18, 9, 7, 18, 9, 'r'); M.box(11, 18, 9, 11, 18, 9, 'r'); M.px(6, 18, 9, 'k'); M.px(10, 18, 9, 'k'); M.px(9, 17, 9, 'k');
+  M.px(8, 15, 9, 'k'); M.px(10, 15, 9, 'k');
+  M.ring(9, 20.6, 7, 2.7, .6, 'y'); for (const [x, z] of [[9, 10], [6, 8], [12, 8], [7, 5], [11, 5]]) { M.px(x, 21, z, 'y'); M.px(x, 22, z, 'y'); }
+  M.px(9, 21, 10, 'r');
+  M.cap(14.6, 0, 9.2, 14.6, 18, 9.2, .5, 'y'); M.ell(14.6, 19.6, 9.2, 1.5, 1.5, 1.5, 'w'); M.px(14, 20, 10, 'k'); M.px(15, 20, 10, 'k');
+}
+function mSlime(M, o = {}) {
+  M.ell(8, 4.2, 8, 6.6, 5, 6.6, 'e'); M.ell(8, .8, 8, 6.9, 1.4, 6.9, 'E');
+  M.ell(5.2, 7.6, 7, 1.3, .7, 1.3, 'w');
+  M.ell(5.6, 5.8, 13.4, 1.3, 1.4, 1, 'w'); M.ell(10.4, 5.8, 13.4, 1.3, 1.4, 1, 'w');
+  M.px(6, 5, 14, 'k'); M.px(10, 5, 14, 'k');
+  M.box(7, 3, 14, 9, 3, 14, 'E');
+  M.cap(4, 7, 6, 2.4, 11.4, 5, .45, 'g'); M.px(2, 11, 5, 'g'); M.box(3, 7, 6, 5, 7, 6, 'n');
+  const sk = o.skulls || 1;
+  for (let k = 0; k < sk; k++) { const [x, y, z] = [[11, 3.2, 13.4], [3.6, 3, 12.4], [9, 8.4, 11.6]][k]; M.ell(x, y, z, 1.4, 1.4, 1.4, 'w'); M.px(Math.floor(x) - 1, Math.floor(y), Math.floor(z) + 1, 'k'); M.px(Math.floor(x), Math.floor(y), Math.floor(z) + 1, 'k'); }
+  for (const [x, z] of [[2, 6], [13, 10], [4, 13]]) M.ell(x, .6, z, .8, 1, .8, 'E');
+}
+function mGoblin(M) {
+  M.box(6, 0, 4, 6, 3, 5, 'e'); M.box(9, 0, 4, 9, 3, 5, 'e'); M.box(5, 0, 5, 6, 0, 6, 'N'); M.box(9, 0, 5, 10, 0, 6, 'N');
+  M.ell(8, 6, 5, 2.7, 2.7, 2.1, 'n'); M.ell(8, 5.6, 6.6, 1.4, 1.6, .8, 'e'); M.box(5, 4, 3, 10, 4, 7, 'N');
+  M.cap(5.6, 7.5, 5, 4.2, 4.6, 6.6, .8, 'e'); M.cap(10.4, 7.5, 5, 12, 5.6, 6.6, .8, 'e');
+  M.ell(8, 10.6, 5.2, 2.9, 2.5, 2.5, 'e');
+  M.cap(5.4, 11, 5, 1.8, 13, 4.6, .65, 'e'); M.cap(10.6, 11, 5, 14.2, 13, 4.6, .65, 'e');
+  M.px(6, 11, 7, 'y'); M.px(9, 11, 7, 'y'); M.box(7, 9, 7, 8, 9, 7, 'k'); M.px(7, 9, 7, 'w');
+  M.ell(8, 10.4, 7.6, .7, .8, .6, 'E');
+  M.box(12, 4, 7, 12, 6, 7, 'n'); M.box(12, 7, 6, 13, 11, 8, 'g'); M.box(13, 7, 6, 13, 11, 8, 'G');
+}
+function mSpider(M) {
+  M.ell(10, 4.8, 5.4, 4, 3.4, 4.4, 'P'); M.box(9, 8, 4, 10, 8, 6, 'r'); M.px(9, 7, 7, 'r'); M.px(10, 7, 7, 'r');
+  M.ell(10, 3.8, 11.4, 2.7, 2.2, 2.7, 'P');
+  for (const [x, y] of [[8, 5], [9, 5], [10, 5], [11, 5], [9, 4], [10, 4]]) M.px(x, y, 13, 'r');
+  M.box(9, 1, 13, 9, 2, 14, 'w'); M.box(10, 1, 13, 10, 2, 14, 'w'); M.px(9, 0, 14, 'e');
+  mirror(10, (s, X) => {
+    for (let k = 0; k < 4; k++) {
+      const bz = 9.4 + k * 1.2 - .6, kz = 6 + k * 2.8, fz = 2 + k * 4.2;
+      M.cap(X(11.6), 4, bz, X(16.4), 8, kz, .6, 'P'); M.cap(X(16.4), 8, kz, X(19), 0, fz, .5, 'k');
+    }
+  });
+}
+function mMushroom(M) {
+  M.cone(8, 8, 0, 10, 2.9, 2.3, 'w');
+  M.ell(5.8, .6, 9.4, 1.4, .8, 1.4, 'n'); M.ell(10.2, .6, 9.4, 1.4, .8, 1.4, 'n');
+  M.ell(8, 10, 8, 6.5, 4.8, 6.5, 'r', (x, y) => y >= 9.6); M.ell(8, 9.8, 8, 6.2, .7, 6.2, 'm');
+  for (const [x, y, z] of [[8, 14.6, 8], [4, 12.6, 10.6], [12, 12.6, 10.6], [8, 12.4, 13.8], [3.4, 11.6, 5], [12.6, 11.6, 5], [6, 13.8, 4.2], [11, 13.6, 7]]) M.ell(x, y, z, 1, .7, 1, 'w');
+  M.px(6, 6, 10, 'k'); M.px(9, 6, 10, 'k'); M.box(7, 4, 10, 8, 4, 10, 'k'); M.px(6, 5, 10, 'm'); M.px(9, 5, 10, 'm');
+}
+function mOrc(M) {
+  M.cap(7.4, 6, 6, 7, .6, 6.6, 1.2, 'N'); M.cap(10.6, 6, 6, 11, .6, 6.6, 1.2, 'N');
+  M.box(5, 0, 6, 8, 0, 8, 'G'); M.box(10, 0, 6, 13, 0, 8, 'G');
+  M.ell(9, 10.2, 6, 4.3, 4.1, 3.1, 'e'); M.ell(9, 9.6, 6.2, 4.4, 3.2, 3.2, 'N', (x, y) => y < 11.6);
+  M.box(5, 7, 3, 13, 7, 9, 'n'); M.box(8, 7, 9, 9, 7, 9, 'g');
+  M.ell(4.5, 13, 6, 2, 1.5, 2.1, 'G'); M.ell(13.5, 13, 6, 2, 1.5, 2.1, 'G');
+  for (const x of [3, 5, 13, 15]) { M.px(x, 14, 6, 'w'); M.px(x, 15, 6, 'w'); }
+  M.cap(4.4, 12, 6, 3.4, 6.6, 7.6, 1.25, 'e'); M.cap(13.6, 12, 6, 14.6, 7.6, 8, 1.25, 'e');
+  M.ell(9, 16.2, 6.4, 2.9, 2.7, 2.7, 'e'); M.box(7, 14, 7, 11, 14, 9, 'e');
+  M.box(7, 15, 9, 7, 16, 9, 'w'); M.box(10, 15, 9, 10, 16, 9, 'w');
+  M.px(7, 17, 8, 'y'); M.px(10, 17, 8, 'y'); M.box(6, 18, 8, 11, 18, 8, 'E');
+  M.cap(15, 7, 8.6, 15.6, 14, 9.2, .6, 'n'); M.ell(15.8, 16.2, 9.4, 1.9, 2.4, 1.9, 'G');
+  M.px(15, 17, 11, 'g'); M.px(17, 15, 10, 'g'); M.px(14, 16, 10, 'g');
+}
+function mOgre(M) {
+  M.cap(7.6, 7, 7, 7.2, .6, 7.4, 1.7, 'n'); M.cap(12.4, 7, 7, 12.8, .6, 7.4, 1.7, 'n');
+  M.ell(10, 11, 7.4, 5.2, 5, 4.6, 'n'); M.ell(10, 14.6, 7, 4.6, 3, 3.6, 'n');
+  M.box(5, 5, 3, 14, 8, 11, 'N'); M.ell(10, 10.6, 11.4, 1, 1, .6, 'S');
+  M.cap(5, 15, 7, 3.2, 7.4, 8.6, 1.7, 'n'); M.cap(15, 15, 7, 16.8, 8.2, 9, 1.7, 'n');
+  M.ring(3.6, 10, 8.2, 1.8, .45, 'G'); M.ring(16.6, 10.8, 8.8, 1.8, .45, 'G');
+  M.ell(10, 19.4, 7.8, 2.7, 2.6, 2.6, 'n');
+  M.px(8, 20, 10, 'y'); M.box(11, 20, 10, 11, 20, 10, 'R'); M.box(9, 18, 10, 11, 18, 10, 'k'); M.px(9, 17, 10, 'w'); M.px(11, 17, 10, 'w');
+  M.ell(10, 19, 10.4, .8, .8, .6, 'S');
+  M.cap(17.2, 5, 9.6, 18.2, 17, 10.4, 1.1, 'N'); for (const y of [12, 14, 16]) M.px(19, y, 10, 'g');
+  M.ell(6, 6, 9, .8, .8, .6, 'w'); M.ell(13, 6.4, 9.6, .8, .8, .6, 'w');
+}
+function mGolem(M) {
+  M.box(6, 0, 4, 8, 7, 8, 'G'); M.box(12, 0, 4, 14, 7, 8, 'G');
+  M.box(4, 8, 3, 15, 17, 9, 'g');
+  for (const y of [10, 13, 16]) M.box(4, y, 9, 15, y, 9, 'G');
+  for (const [x, y] of [[7, 11], [12, 11], [9, 14], [6, 15], [13, 15], [10, 9]]) M.box(x, y, 9, x, y + 1, 9, 'G');
+  M.box(9, 12, 9, 10, 15, 9, 'o'); M.box(8, 13, 9, 11, 13, 9, 'o');
+  M.box(4, 17, 3, 7, 17, 8, 'E'); M.box(12, 17, 3, 15, 17, 8, 'E'); M.px(5, 16, 9, 'E'); M.px(14, 16, 9, 'E');
+  M.box(1, 8, 4, 3, 16, 8, 'g'); M.box(16, 8, 4, 18, 16, 8, 'g');
+  M.box(0, 4, 4, 3, 7, 9, 'G'); M.box(16, 4, 4, 19, 7, 9, 'G');
+  M.box(7, 18, 4, 12, 21, 8, 'g'); M.px(8, 20, 8, 'o'); M.px(11, 20, 8, 'o'); M.box(7, 21, 8, 12, 21, 8, 'G');
+}
+function mWorm(M) {
+  M.ell(8, 0, 8, 6.4, 1.6, 6.4, 'N');
+  for (let t = 0; t <= 1.0001; t += .05) {
+    const x = 8 + Math.sin(t * 3) * 1.6, y = 1 + t * 17, z = 7 - Math.sin(t * 2.6) * 2.2, r = 3.4 - t * .5;
+    M.ell(x, y, z, r, 1.4, r, Math.round(t * 20) % 4 === 0 ? 'R' : 'm');
+  }
+  M.ell(8.4, 19.6, 7.6, 3.4, 3.2, 3.4, 'm');
+  M.ell(8.4, 19.6, 10.6, 2.1, 2.1, 1.2, 'k');
+  for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; M.px(Math.floor(8.4 + Math.cos(a) * 2.2), Math.floor(19.6 + Math.sin(a) * 2.2), 11, 'w'); }
+  M.px(8, 17, 11, 'e'); M.px(8, 16, 11, 'e');
+  M.ell(5, 21, 6, .7, .7, .7, 'R'); M.ell(11.6, 21.4, 6.6, .7, .7, .7, 'R');
+}
+function mImp(M) {
+  M.cap(7, 4, 5, 6.5, .5, 5.5, .6, 'r'); M.cap(9, 4, 5, 9.5, .5, 5.5, .6, 'r'); M.px(6, 0, 6, 'k'); M.px(9, 0, 6, 'k');
+  M.ell(8, 6.4, 5, 2.2, 2.6, 1.8, 'r'); M.ell(8, 10.5, 5.4, 2.5, 2.2, 2.2, 'r');
+  M.cap(6.4, 12, 5, 4.8, 14.6, 4.2, .5, 'w'); M.cap(9.6, 12, 5, 11.2, 14.6, 4.2, .5, 'w');
+  M.px(6, 11, 7, 'y'); M.px(9, 11, 7, 'y'); M.box(7, 9, 7, 8, 9, 7, 'w');
+  mirror(8, (s, X) => { M.ell(X(3.6), 9.4, 3, 3, 2.5, .5, 'R', (x, y) => y > 7.4 + (Math.floor(x) % 2 ? .8 : 0)); M.cap(X(6), 9, 3, X(.8), 11.6, 3, .35, 'k'); });
+  M.cap(8, 5, 3, 8, 2, .5, .4, 'r'); M.px(8, 2, 0, 'R'); M.px(7, 3, 0, 'R');
+  M.cap(5.8, 8, 5.4, 4.6, 6.4, 6.8, .6, 'r'); M.cap(10.2, 8, 5.4, 12, 7, 6.6, .6, 'r');
+  M.cap(12, 2, 6.6, 12, 13, 6.6, .4, 'y'); M.box(11, 13, 6, 11, 14, 6, 'y'); M.box(13, 13, 6, 13, 14, 6, 'y'); M.px(12, 14, 6, 'y');
+  M.ell(8, 0, 6, 1.6, .8, 1.6, 'o');
+}
+function mGargoyle(M) {
+  M.ell(6.2, 3, 6, 2.3, 2.6, 3, 'g'); M.ell(11.8, 3, 6, 2.3, 2.6, 3, 'g');
+  M.ell(9, 7.2, 7, 3.5, 3.6, 3.2, 'g');
+  M.cap(6.6, 7, 9, 6, .6, 10.6, 1, 'G'); M.cap(11.4, 7, 9, 12, .6, 10.6, 1, 'G');
+  for (const x of [5, 6, 7, 11, 12, 13]) M.px(x, 0, 11, 'w');
+  mirror(9, (s, X) => M.ell(X(4), 11.2, 4, 2.7, 5.4, .8, 'G', (x, y) => y > 6.8));
+  M.ell(9, 11.6, 9, 2.7, 2.3, 2.4, 'g'); M.ell(9, 10.8, 11, 1.3, 1, 1, 'G');
+  M.cap(7.4, 13, 8, 5.8, 15.8, 6.6, .5, 'G'); M.cap(10.6, 13, 8, 12.2, 15.8, 6.6, .5, 'G');
+  M.px(7, 12, 10, 'r'); M.px(10, 12, 10, 'r'); M.px(8, 10, 11, 'w'); M.px(9, 10, 11, 'w');
+  for (const [x, y, z] of [[8, 6, 10], [10, 8, 10], [6, 4, 8], [12, 3, 8]]) M.px(x, y, z, 'G');
+}
+function mSpecter(M) {
+  M.cone(9, 6, 3, 14, 1, 3.7, 'c');
+  M.cap(8, 3.4, 6, 7, .4, 6.4, .55, 'c'); M.cap(10, 4, 6, 11.2, 1, 6.4, .55, 'c'); M.cap(9, 4, 5, 9, .6, 4.4, .5, 'c');
+  for (const [x, y] of [[7, 7], [11, 9], [8, 11], [10, 5]]) M.px(x, y, 9, 'w');
+  M.ell(9, 16.6, 6, 2.9, 3.1, 2.7, 'c');
+  M.box(7, 17, 8, 7, 18, 8, 'k'); M.box(10, 17, 8, 10, 18, 8, 'k'); M.ell(9, 14.6, 8.2, 1, 1.4, .8, 'k');
+  M.cap(6, 13, 6, 2.4, 9, 9, .7, 'c'); M.cap(12, 13, 6, 15.6, 9, 9, .7, 'c');
+  for (const [x, y] of [[2, 8], [1, 9], [2, 7], [16, 8], [17, 9], [16, 7]]) M.px(x, y, 9, 'w');
+}
+function mCultist(M) {
+  M.cone(8, 6, 0, 11, 4.1, 2.4, 'P'); M.cone(8, 6, 0, 0, 4.2, 4.2, 'p');
+  M.cap(5.4, 11.5, 6, 4.4, 8, 8, 1, 'P'); M.cap(10.6, 11.5, 6, 11.6, 8.6, 8, 1, 'P');
+  M.ell(4.4, 7.8, 8.2, .8, .8, .8, 's'); M.ell(11.6, 8.4, 8.2, .8, .8, .8, 's');
+  M.ell(8, 14.4, 6, 2.9, 3, 2.9, 'P'); M.ell(8, 17, 5, 1.4, 1.4, 1.4, 'P');
+  M.ell(8, 14, 8.2, 1.9, 1.9, 1, 'k'); M.px(6, 14, 8, 'r'); M.px(9, 14, 8, 'r');
+  M.box(7, 8, 8, 8, 10, 8, 'y'); M.box(6, 9, 8, 9, 9, 8, 'y');
+  M.cap(4.4, 8, 8.8, 3.4, 4.8, 10, .4, 'g');
+  M.box(11, 9, 8, 12, 11, 9, 'k'); M.px(11, 12, 8, 'o'); M.px(12, 12, 9, 'o'); M.px(11, 13, 8, 'y');
+}
+function mDragon(M) {
+  M.ell(12, 8, 10, 5, 4.4, 6, 'r'); M.ell(12, 6.4, 11.6, 3.6, 3, 4.6, 'o');
+  for (const [x, z] of [[7.6, 7], [16.4, 7], [8, 14], [16, 14]]) { M.cap(x, 6, z, x + (x < 12 ? -.6 : .6), .6, z + .5, 1.6, 'R'); M.px(Math.floor(x), 0, Math.floor(z) + 2, 'w'); }
+  M.cap(12, 11, 14, 12, 15.4, 18.4, 2, 'r'); M.ell(12, 16.6, 19.4, 2.8, 2.4, 3, 'r'); M.ell(12, 16, 22, 1.9, 1.5, 1.7, 'r');
+  M.box(11, 14, 22, 12, 14, 23, 'o'); M.px(11, 15, 23, 'y'); M.px(12, 15, 23, 'y');
+  M.px(10, 17, 21, 'y'); M.px(13, 17, 21, 'y');
+  M.cap(10.4, 18.6, 18, 9, 21.4, 15.6, .5, 'w'); M.cap(13.6, 18.6, 18, 15, 21.4, 15.6, .5, 'w');
+  mirror(12, (s, X) => {
+    M.ell(X(4.4), 14.4, 9, 4.6, 5, .7, 'R', (x, y) => y > 10.6 + (Math.floor(x) % 3 === 0 ? 1.2 : 0));
+    M.cap(X(8.4), 12, 9, X(.8), 19, 9, .5, 'k'); M.cap(X(4.6), 16, 9, X(3), 10.6, 9, .35, 'k');
+  });
+  M.cap(12, 7, 4.4, 12, 4, 1.2, 1.6, 'r'); M.cap(12, 4, 1.2, 17, 2, .6, 1, 'r'); M.cap(17, 2, .6, 21, 1.4, 2.4, .6, 'r');
+  for (let z = 6; z <= 16; z += 2) M.px(12, z < 13 ? 12 : 14, z, 'o');
+}
+const MODEL_DEFS = {
+  caballero: [16, 22, 12, mKnight], clerigo: [16, 20, 12, mCleric], picaro: [16, 19, 12, mRogue], piromante: [16, 23, 12, mPyro],
+  rata: [12, 9, 18, mRat], ratagigante: [12, 9, 18, M => mRat(M, { crown: 1, tails: 3 }), 'rojo'],
+  murcielago: [20, 13, 8, mBat], esqueleto: [16, 19, 12, mSkeleton], limo: [16, 12, 16, mSlime],
+  limogrande: [16, 12, 16, M => mSlime(M, { skulls: 3 }), 'morado'], reycalavera: [18, 23, 14, mSkullKing],
+  goblin: [16, 15, 10, mGoblin], arana: [20, 10, 18, mSpider], hongo: [16, 16, 16, mMushroom], orco: [18, 20, 12, mOrc],
+  ogro: [20, 23, 14, mOgre], golem: [20, 22, 12, mGolem], gusano: [16, 24, 16, mWorm],
+  diablillo: [16, 16, 10, mImp], gargola: [18, 17, 14, mGargoyle], espectro: [18, 21, 12, mSpecter], cultista: [16, 19, 12, mCultist],
+  caballerooscuro: [16, 23, 12, M => mKnight(M, { dark: 1 })], dragon: [24, 22, 24, mDragon],
+};
 const V3D = {
-  models: {},
-  model(name, swap) {
-    const key = name + '|' + (swap || '');
-    if (this.models[key]) return this.models[key];
-    const g = SPR[name], W = Math.max(...g.map(r => r.length)), H = g.length, D = 6, sw = swap ? SWAPS[swap] : null;
-    const col = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return null; let ch = g[y][x]; if (!ch) return null; if (sw && sw[ch]) ch = sw[ch]; return PAL[ch] || null; };
-    const dist = new Array(W * H).fill(0);
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (col(x, y) && (!col(x - 1, y) || !col(x + 1, y) || !col(x, y - 1) || !col(x, y + 1))) dist[y * W + x] = 1;
-    for (let k = 1; k < 3; k++) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      if (!col(x, y) || dist[y * W + x]) continue;
-      if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => dist[(y + b) * W + x + a] === k)) dist[y * W + x] = k + 1;
-    }
-    const vox = new Uint32Array(W * H * D);
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const c = col(x, y); if (!c) continue;
-      const t = Math.min(3, dist[y * W + x] || 3), [r, gg, b] = hexRGB(c), p = pack(r, gg, b), yy = H - 1 - y;
-      for (let z = 3 - t; z < 3 + t; z++) vox[(z * H + yy) * W + x] = p;
-    }
-    return this.models[key] = { W, H, D, vox };
+  models: {}, frames: {},
+  model(name) {
+    if (this.models[name]) return this.models[name];
+    const d = MODEL_DEFS[name] || MODEL_DEFS.rata;
+    return this.models[name] = vmodel(d[0], d[1], d[2], d[3], d[4]);
   },
-  render(cv, time) {
-    if (!cv._s) {
-      const m = this.model(cv.dataset.n, cv.dataset.s);
-      const cw = Math.round(cv.offsetWidth / 2) || 30, ch = Math.round(cv.offsetHeight / 2) || 30;
-      cv.width = cw; cv.height = ch;
-      const ctx = cv.getContext('2d'), img = ctx.createImageData(cw, ch);
-      cv._s = { m, cw, ch, ctx, img, buf: new Uint32Array(img.data.buffer), px: +cv.dataset.px / 2, yaw: +cv.dataset.yaw, ph: +cv.dataset.ph };
-    }
-    const S0 = cv._s, { m, cw, ch, buf, px: scale } = S0;
-    const yaw = S0.yaw + Math.sin(time * .9 + S0.ph) * .3, pitch = .3;
+  // dibuja la figura girada `yaw` (vista ortográfica, un poco desde arriba) con luz por cara y tramado
+  frame(name, cw, ch, yawQ) {
+    const key = name + '|' + cw + 'x' + ch + '|' + yawQ;
+    if (this.frames[key]) return this.frames[key];
+    const m = this.model(name), { W, H, D, vox } = m, yaw = yawQ * .04, pitch = .32;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), spp = Math.sin(pitch);
-    // dirección del rayo en el espacio del modelo (igual para todos los píxeles: vista ortográfica)
+    const ext = Math.hypot(W, D), scale = Math.min((cw - 2) / ext, (ch - 3) / (H * cp + ext * spp));
+    const ax = cw / 2, ay = ch - 2 - ext / 2 * spp * scale;
     const dx = cp * sy, dy = -spp, dz = -cp * cy;
-    // luz fija en pantalla, pasada a cada una de las 6 normales del modelo
-    const L = V3.norm([-.55, .7, .6]);
+    const L = V3.norm([-.5, .75, .6]);
     const toView = n => { const x1 = n[0] * cy + n[2] * sy, z1 = -n[0] * sy + n[2] * cy, y1 = n[1]; return [x1, y1 * cp - z1 * spp, y1 * spp + z1 * cp]; };
-    const NL = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].map(n => .45 + .75 * Math.max(0, V3.dot(toView(n), L)));
-    const LV = [.5, .7, .88, 1.05, 1.2];
-    const ax = cw / 2, ay = ch - 4, W = m.W, H = m.H, D = m.D, vox = m.vox;
+    const NL = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].map(n => .4 + .8 * Math.max(0, V3.dot(toView(n), L)));
+    const LV = [.48, .68, .86, 1.02, 1.16];
     const sx = dx > 0 ? 1 : -1, syy = dy > 0 ? 1 : -1, sz = dz > 0 ? 1 : -1;
     const tdx = Math.abs(1 / (dx || 1e-9)), tdy = Math.abs(1 / (dy || 1e-9)), tdz = Math.abs(1 / (dz || 1e-9));
-    buf.fill(0);
+    const buf = new Uint32Array(cw * ch), maxN = W + H + D + 4;
     for (let py = 0; py < ch; py++) for (let qx = 0; qx < cw; qx++) {
-      const vx = (qx + .5 - ax) / scale, vy = (ay - (py + .5)) / scale, vz = 20;
-      // vista -> modelo: deshacer la inclinación y luego el giro
+      const vx = (qx + .5 - ax) / scale, vy = (ay - (py + .5)) / scale, vz = 60;
       const o1y = vy * cp + vz * spp, o1z = -vy * spp + vz * cp;
-      let ox = vx * cy - o1z * sy + W / 2, oy = o1y, oz = vx * sy + o1z * cy + D / 2;
-      // entrar en la caja del modelo
-      let t0 = 0, t1 = 1e9, ent = -1;
-      const slab = (o, d, lo, hi, ax2) => { if (Math.abs(d) < 1e-9) return o >= lo && o <= hi; let a = (lo - o) / d, b = (hi - o) / d; if (a > b) { const tt = a; a = b; b = tt; } if (a > t0) { t0 = a; ent = ax2; } if (b < t1) t1 = b; return t0 <= t1; };
-      if (!slab(ox, dx, 0, W, 0) || !slab(oy, dy, 0, H, 1) || !slab(oz, dz, 0, D, 2)) continue;
-      const e = t0 + 1e-4; let x = ox + dx * e, y = oy + dy * e, z = oz + dz * e;
+      const ox = vx * cy - o1z * sy + W / 2, oy = o1y, oz = vx * sy + o1z * cy + D / 2;
+      let t0 = -1e9, t1 = 1e9, ent = -1, a, b, tt;
+      if (Math.abs(dx) > 1e-9) { a = -ox / dx; b = (W - ox) / dx; if (a > b) { tt = a; a = b; b = tt; } if (a > t0) { t0 = a; ent = 0; } if (b < t1) t1 = b; } else if (ox < 0 || ox > W) continue;
+      a = -oy / dy; b = (H - oy) / dy; if (a > b) { tt = a; a = b; b = tt; } if (a > t0) { t0 = a; ent = 1; } if (b < t1) t1 = b;
+      a = -oz / dz; b = (D - oz) / dz; if (a > b) { tt = a; a = b; b = tt; } if (a > t0) { t0 = a; ent = 2; } if (b < t1) t1 = b;
+      if (t0 > t1) continue;
+      const e = t0 + 1e-4, x = ox + dx * e, y = oy + dy * e, z = oz + dz * e;
       let ix = Math.min(W - 1, Math.max(0, x | 0)), iy = Math.min(H - 1, Math.max(0, y | 0)), iz = Math.min(D - 1, Math.max(0, z | 0));
-      let tx = ((sx > 0 ? ix + 1 : ix) - x) / dx, ty = ((syy > 0 ? iy + 1 : iy) - y) / dy, tz = ((sz > 0 ? iz + 1 : iz) - z) / dz;
-      if (!isFinite(tx)) tx = 1e9; if (!isFinite(ty)) ty = 1e9; if (!isFinite(tz)) tz = 1e9;
+      let tx = Math.abs(dx) > 1e-9 ? ((sx > 0 ? ix + 1 : ix) - x) / dx : 1e9, ty = ((syy > 0 ? iy + 1 : iy) - y) / dy, tz = ((sz > 0 ? iz + 1 : iz) - z) / dz;
       let axis = ent, hit = 0;
-      for (let n = 0; n < 40; n++) {
+      for (let n = 0; n < maxN; n++) {
         const v = vox[(iz * H + iy) * W + ix];
         if (v) { hit = v; break; }
         if (tx < ty && tx < tz) { ix += sx; tx += tdx; axis = 0; if (ix < 0 || ix >= W) break; }
@@ -1083,21 +1368,35 @@ const V3D = {
       }
       if (!hit) continue;
       const ni = axis === 0 ? (sx > 0 ? 1 : 0) : axis === 1 ? (syy > 0 ? 3 : 2) : (sz > 0 ? 5 : 4);
-      const f = NL[ni] * 4 / 1.2, i0 = Math.min(3, f | 0), k = f - i0 > BAYER[(py & 3) * 4 + (qx & 3)] ? LV[Math.min(4, i0 + 1)] : LV[i0];
+      const f = NL[ni] * 3.4, i0 = Math.min(3, f | 0), k = f - i0 > BAYER[(py & 3) * 4 + (qx & 3)] ? LV[Math.min(4, i0 + 1)] : LV[i0];
       buf[py * cw + qx] = shadeC(hit, k);
     }
-    // contorno oscuro de pixel art
-    const ol = pack(8, 5, 10);
+    const ol = pack(8, 5, 10), out = buf.slice();
     for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
       const i = y * cw + x; if (buf[i]) continue;
-      if ((x > 0 && buf[i - 1] && buf[i - 1] !== ol) || (x < cw - 1 && buf[i + 1] && buf[i + 1] !== ol) || (y > 0 && buf[i - cw] && buf[i - cw] !== ol) || (y < ch - 1 && buf[i + cw] && buf[i + cw] !== ol)) buf[i] = ol;
+      if ((x > 0 && buf[i - 1]) || (x < cw - 1 && buf[i + 1]) || (y > 0 && buf[i - cw]) || (y < ch - 1 && buf[i + cw])) out[i] = ol;
     }
+    return this.frames[key] = out;
+  },
+  render(cv, time) {
+    if (!cv._s) {
+      const cw = Math.max(8, Math.round(cv.offsetWidth / 2)), ch = Math.max(8, Math.round(cv.offsetHeight / 2));
+      if (!cv.offsetWidth) return;
+      cv.width = cw; cv.height = ch;
+      const ctx = cv.getContext('2d'), img = ctx.createImageData(cw, ch);
+      cv._s = { cw, ch, ctx, img, buf: new Uint32Array(img.data.buffer), yaw: +cv.dataset.yaw, ph: +cv.dataset.ph, last: null };
+    }
+    const S0 = cv._s, yq = Math.round((S0.yaw + Math.sin(time * .8 + S0.ph) * .32) / .04);
+    if (yq === S0.last) return;
+    S0.last = yq;
+    S0.buf.set(this.frame(cv.dataset.n, S0.cw, S0.ch, yq));
     S0.ctx.putImageData(S0.img, 0, 0);
   },
 };
 function sp3(name, px, swap, yaw = 0) {
-  const g = SPR[name], w = Math.max(...g.map(r => r.length));
-  return `<canvas class="v3d px3d" data-n="${name}" data-s="${swap || ''}" data-px="${px}" data-yaw="${yaw}" data-ph="${(Math.random() * 6).toFixed(2)}" style="width:${Math.round(w * px * 1.35 / 2) * 2}px;height:${Math.round(g.length * px * 1.2 / 2) * 2}px"></canvas>`;
+  const d = MODEL_DEFS[name] || MODEL_DEFS.rata, ext = Math.hypot(d[0], d[2]), k = px * .88;
+  const w = Math.round(ext * k * .82 / 2) * 2, h = Math.round((d[1] * .95 + ext * .31) * k / 2) * 2;
+  return `<canvas class="v3d px3d" data-n="${name}" data-yaw="${yaw}" data-ph="${(Math.random() * 6).toFixed(2)}" style="width:${w}px;height:${h}px"></canvas>`;
 }
 let v3last = 0;
 (function v3loop(now) {
@@ -1295,9 +1594,17 @@ function genDoors(s) {
 }
 
 // ---------------------------------------------------------- utilidades de interfaz
+function hearts(hp, max, per = 12) {
+  hp = Math.max(0, hp);
+  const u = max <= per * 2 ? 1 : 5, n = Math.ceil(max / u), full = Math.floor(hp / u), part = hp - full * u, nm = u === 1 ? 'hp1' : 'hp5';
+  let h = '';
+  for (let i = 0; i < n; i++) h += i < full ? sp(nm, 2) : i === full && part > 0 ? sp(nm + 'h', 2) : sp(nm, 2, 'hpE');
+  const cell = u === 1 ? 12 : 16, row = u === 1 ? per : Math.max(4, Math.round(per * .75));
+  return `<div class="hearts ${u > 1 ? 'big' : ''}" style="max-width:${Math.min(n, row) * cell}px" title="${hp}/${max}">${h}</div>`;
+}
 function bar(v, m, col) { const p = Math.max(0, Math.min(100, v / m * 100)); return `<div class="bar"><i style="width:${p}%;${col ? 'background:' + col : ''}"></i><b>${Math.max(0, v)}/${m}</b></div>`; }
 function hud() {
-  return `<div class="hud"><span>${sp('corazon', 2)}${Math.max(0, run.hp)}/${run.maxHp}</span><span>${FLOORS[run.floor].n}</span><span>${sp('moneda', 2)}${run.gold}</span></div>`;
+  return `<div class="hud"><span>${FLOORS[run.floor].n}</span><span>${sp('moneda', 2)}${run.gold}</span></div>${S.scr === 'combat' || S.scr === 'map' ? '' : `<div class="hudhp">${hearts(run.hp, run.maxHp, 15)}</div>`}`;
 }
 function faceHTML(f, d, opts = {}) {
   const tag = opts.click ? 'button' : 'div';
@@ -1383,7 +1690,7 @@ function chooseHero() {
   app.innerHTML = `<h2 class="c">Elige tu héroe</h2>${Object.entries(HEROES).map(([k, h]) => {
     const rec = b[k] ? `Récord: piso ${Math.floor(b[k].p / STEPS) + 1}${b[k].w ? ` · ${b[k].w} victoria${b[k].w > 1 ? 's' : ''}` : ''}` : '';
     return `<button class="btn hero-card" style="--dc:${h.dc}" onclick="G.start('${k}')">${fig(sp3(h.spr, 5, '', .4))}<div class="info">
-      <h3>${h.n} <span style="color:var(--dim)">· ${h.hp} vida</span></h3>
+      <h3>${h.n}</h3>${hearts(h.hp, h.hp, 12)}
       <small>${h.d}</small>
       <div class="drow">${h.esp.map(f => faceHTML(f, 'esp')).join('')}</div>
       ${rec ? `<small style="color:var(--gold)">${rec}</small>` : ''}</div></button>`;
@@ -1392,6 +1699,7 @@ function chooseHero() {
 function help() {
   modal(`<div class="help col"><h3>Cómo se juega</h3>
   <p>Tienes <b>3 dados</b>: Ataque, Protección y Especial (cambia según el héroe). Cada turno los tiras todos a la vez.</p>
+  <p>La vida son <b>corazones</b>: cada uno es 1 de vida. Los de <b>borde dorado</b> (enemigos grandes) valen 5.</p>
   <p>Arriba de cada enemigo ves <b>lo que va a hacer</b>. Su protección frena tu daño, y la tuya frena el suyo.</p>
   <p>Puedes <b>volver a tirar un dado</b> por turno: tócalo después de tirar.</p>
   <p><b>Pareja</b>: si dos dados sacan el mismo número, los dos suman +1. <b>Trío</b>: si salen los tres iguales, todo vale el doble.</p>
@@ -1404,7 +1712,7 @@ function floorIntro() {
   const fl = FLOORS[run.floor], b = EN[fl.boss];
   app.innerHTML = `<div id="bgview"></div><div class="center c" style="align-items:center">
     <p class="t">PISO ${run.floor + 1} DE ${FLOORS.length}</p><h1 class="logo" style="font-size:22px">${fl.n}</h1>
-    ${fig(sp3(b.spr || fl.boss, 10, b.swap, -.4))}
+    ${fig(sp3(fl.boss, 9, '', -.4))}
     <p class="t">Al fondo te espera:<br><span style="color:var(--txt)">${b.n}</span></p>
     <button class="btn pri" onclick="G.map()">Entrar</button></div>`;
   if (!FAST) Corr.build($('#bgview'), ['jefe'], run.floor, { title: true });
@@ -1415,7 +1723,7 @@ function map() {
   app.innerHTML = `${hud()}<div class="steps">${dots}</div>
     <div class="view" id="view"><div class="view-t">${run.doors.length > 1 ? 'Toca una puerta' : run.doors[0] === 'jefe' ? 'El jefe te espera' : 'Toca la puerta'}</div>
       ${run.doors.map((d, i) => `<div class="dl3 ${d === 'jefe' ? 'boss' : ''}" onclick="G.door(${i})"><b>${ROOMS[d].n}</b>${run.doors.length < 3 ? `<small>${ROOMS[d].d}</small>` : ''}</div>`).join('')}</div>
-    <div class="panel row">${fig(sp3(H().spr, 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${bar(run.hp, run.maxHp)}${relicsHTML()}</div></div>
+    <div class="panel row">${fig(sp3(H().spr, 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${hearts(run.hp, run.maxHp, 15)}${relicsHTML()}</div></div>
     <div class="panel">${diceRows()}</div>
     <button class="btn small" onclick="G.title()">Guardar y salir</button>`;
   if (!FAST) Corr.build($('#view'), run.doors, run.floor);
@@ -1663,9 +1971,9 @@ function cRender() {
   app.innerHTML = `${hud()}
   <div class="arena" id="arena">
     <div class="enemies">${C.en.map((e, i) => `<div class="en ${multi && i === C.target ? 'tgt' : ''} ${e.hp <= 0 ? 'dead' : ''}" id="en${i}" onclick="G.tgt(${i})">
-      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${fig(sp3(e.spr, e.px, e.swap, -.45))}<div class="nm">${e.n}</div>${bar(e.hp, e.max)}
+      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${fig(sp3(MODEL_DEFS[e.key] ? e.key : e.spr, e.px >= 8 ? 6 : e.px >= 7 ? 5.6 : 5, '', -.5))}<div class="nm">${e.n}</div>${hearts(e.hp, e.max, 8)}
       <div class="badges">${e.block ? badge('escudo', e.block, '#8ab8ff') : ''}${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`).join('')}</div>
-    <div class="herorow"><div id="hero">${fig(sp3(H().spr, 6, '', .45))}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${bar(run.hp, run.maxHp)}
+    <div class="herorow"><div id="hero">${fig(sp3(H().spr, 5, '', .5))}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${hearts(run.hp, run.maxHp, 15)}
       <div class="badges" style="justify-content:flex-start">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div></div></div>
   </div>
   <div class="trayw" id="tray"><div class="combo">${eff && eff.combo ? eff.combo : ''}</div>${!C.rolled && !C.busy ? '<div class="tray-hint">Toca para tirar</div>' : ''}</div>
