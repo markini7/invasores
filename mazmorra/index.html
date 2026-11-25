@@ -110,9 +110,9 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .logo{font-size:26px;letter-spacing:1px;text-shadow:3px 3px 0 #7a2030,6px 6px 0 #000}
 .fig{position:relative;display:inline-block;isolation:isolate;animation:none}
 .fig::after{content:'';position:absolute;left:12%;right:12%;bottom:-5px;height:9px;background:#000a;border-radius:50%;z-index:-1}
-.fig img{animation:bob 1.4s steps(2) infinite;animation-delay:inherit}
+.fig>*{animation:bob 1.4s steps(2) infinite;animation-delay:inherit}
 @keyframes bob{50%{transform:translateY(-3px)}}
-.fig.hit img{animation:flash .32s steps(1)}
+.fig.hit>*{animation:flash .32s steps(1)}
 @keyframes flash{0%{filter:brightness(0) invert(1)}35%{filter:brightness(0) invert(1) sepia(1) saturate(6) hue-rotate(-30deg)}70%{filter:none}}
 .fig.lungeL{animation:lungeL .36s steps(4)}
 @keyframes lungeL{45%{transform:translate(-22px,10px) scale(1.08)}}
@@ -144,11 +144,16 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .chips span{display:flex;align-items:center;gap:5px}
 .chips i{width:11px;height:11px;border:2px solid;display:block}
 /* pasillo */
-.view{position:relative;width:100%;height:220px;background:#000;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;cursor:pointer;overflow:hidden}
+.view{position:relative;width:100%;height:340px;background:#000;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;cursor:pointer;overflow:hidden}
 .view canvas{position:absolute;left:0;top:0}
 .view-t{position:absolute;left:0;right:0;top:10px;text-align:center;font-size:10px;text-shadow:2px 2px 0 #000;z-index:1;pointer-events:none}
 #bgview{position:fixed;inset:0;z-index:-1;opacity:.55}
 .door{padding:10px 4px}
+
+.dl3{position:absolute;transform:translateX(-50%);text-align:center;font-size:7px;line-height:1.5;z-index:2;cursor:pointer;text-shadow:2px 2px 0 #000;max-width:110px;white-space:nowrap;padding:4px 5px;background:#000a;box-shadow:0 0 0 2px #000;animation:glow 1.6s steps(2) infinite}
+.dl3 small{display:block;font-size:6px;line-height:1.5;color:var(--dim);margin-top:2px}
+.dl3.boss b{color:#ff8a8a}
+@keyframes glow{50%{box-shadow:0 0 0 2px #000,0 0 0 4px #f8d84a55}}
 </style>
 </head>
 <body>
@@ -645,22 +650,23 @@ function drawTorch(s, cam, p, time, k, fk) {
 const Corr = {
   s: null, room: null, cam: null, anim: null, raf: 0, theme: null,
   build(el, doorTypes, floor, opts = {}) {
-    const n = doorTypes.length, xs = n === 1 ? [0] : n === 2 ? [-.62, .62] : [-1.08, 0, 1.08];
-    const s = this.s = makeSurface(); el.innerHTML = ''; el.appendChild(s.cv);
+    const n = doorTypes.length, xs = opts.title ? [0] : n === 1 ? [0] : n === 2 ? [-.75, .75] : [-1.36, 0, 1.36];
+    const s = this.s = makeSurface(); el.querySelectorAll('canvas').forEach(c => c.remove()); el.prepend(s.cv);
+    this.labels = [...el.querySelectorAll('.dl3')];
     sizeSurface(s, el.clientWidth, el.clientHeight, opts.title ? 3 : 2);
     this.theme = THEMES[floor];
-    const CW = 1.65, L = opts.title ? 9 : 6;
+    const CW = opts.title ? 1.65 : 2.1, L = opts.title ? 9 : 4.4;
     this.room = {
       CW, CH: 2.6, L, lamp: .9,
-      torches: opts.title ? [[-CW + .06, 1.6, -1], [CW - .06, 1.6, -3.5], [-CW + .06, 1.6, -6], [CW - .06, 1.6, -8.3]] : [[-CW + .06, 1.65, .6], [CW - .06, 1.65, -1.8], [-CW + .06, 1.65, -4.2], [CW - .06, 1.65, -5.5]],
+      torches: opts.title ? [[-CW + .06, 1.6, -1], [CW - .06, 1.6, -3.5], [-CW + .06, 1.6, -6], [CW - .06, 1.6, -8.3]] : [[-CW + .06, 1.75, .9], [CW - .06, 1.75, .9], [-CW + .06, 1.75, -2.6], [CW - .06, 1.75, -2.6]],
       doors: doorTypes.map((t, i) => {
         const r = ROOMS[t], boss = t === 'jefe', ico = r.ico;
         const icoC = {}; for (const ch in PAL) { const [R, G, B] = hexRGB(PAL[ch]); icoC[ch] = pack(R, G, B); }
-        return { t, x: xs[i], w: boss ? 1.15 : .8, h: boss ? 2.05 : 1.6, ico, icoC, boss };
+        return { t, x: xs[i], w: boss ? 1.25 : .98, h: boss ? 2.2 : 1.9, ico, icoC, boss };
       }),
       open: -1,
     };
-    this.anim = { mode: opts.title ? 'title' : 'in', t0: performance.now(), from: [0, 1.15, 3], to: [0, 1.15, 1.6] };
+    this.anim = { mode: opts.title ? 'title' : 'in', t0: performance.now(), from: [0, 1.15, 2.2], to: [0, 1.15, .45] };
     this.title = !!opts.title;
     s.cv.onclick = e => this.tap(e);
     cancelAnimationFrame(this.raf);
@@ -681,6 +687,14 @@ const Corr = {
     const a = this.anim;
     if (a.mode === 'walk') this.room.open = c.p > .55 ? a.door : -1;
     renderRoom(s, this.cam, this.theme, this.room, now / 1000);
+    // letreros pegados al pie de cada puerta
+    const sc = s.cv.offsetWidth / s.W;
+    this.labels.forEach((el, i) => {
+      const d = this.room.doors[i]; if (!d) return;
+      const p = proj(this.cam, [d.x, 0, -this.room.L]);
+      el.style.left = (p[0] * sc) + 'px'; el.style.top = (p[1] * sc + 6) + 'px';
+      el.style.opacity = a.mode === 'walk' ? (i === a.door ? Math.max(0, 1 - c.p * 2) : 0) : 1;
+    });
     if (a.mode === 'walk' && c.p > .7) { const k = 1 - (c.p - .7) / .3; for (let i = 0; i < s.buf.length; i++) s.buf[i] = shadeC(s.buf[i], k); }
     blit(s);
     if (a.mode === 'walk' && c.p >= 1 && a.done) { const d = a.done; a.done = null; d(); }
@@ -694,7 +708,8 @@ const Corr = {
     const r = this.s.cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * this.s.W;
     let best = -1, bd = 1e9;
     this.room.doors.forEach((d, i) => { const p = proj(this.cam, [d.x, 1, -this.room.L]); const dd = Math.abs(p[0] - x); if (dd < bd) { bd = dd; best = i; } });
-    if (best >= 0) G.door(best);
+    const n = this.room.doors.length, lim = this.s.W / (n === 1 ? 2 : n * 1.6);
+    if (best >= 0 && bd < lim) G.door(best);
   },
 };
 
@@ -718,7 +733,8 @@ const Arena = {
 
 // ---------- bandeja de dados con físicas
 const TD = { X: 2.7, Z: 1.35, D: .55 };   // medio ancho, medio fondo y hondo de la bandeja
-const CUBE_V = []; for (const a of [-.5, .5]) for (const b of [-.5, .5]) for (const c of [-.5, .5]) CUBE_V.push([a, b, c]);
+const DS = .42; // medio lado del dado
+const CUBE_V = []; for (const a of [-DS, DS]) for (const b of [-DS, DS]) for (const c of [-DS, DS]) CUBE_V.push([a, b, c]);
 // caras del cubo: normal, eje "a" (derecha de la textura) y eje "b" (arriba de la textura), con a×b = normal
 const CUBE_F = [
   { n: [1, 0, 0], a: [0, 0, -1], b: [0, 1, 0] }, { n: [-1, 0, 0], a: [0, 0, 1], b: [0, 1, 0] },
@@ -764,7 +780,7 @@ function settleQ(q, fi) {
   return Q4.norm(Q4.mul(Q4.axis([0, 1, 0], Math.PI - al), q1));
 }
 function simulate(bodies) {
-  const dt = 1 / 240, sub = 4, G = -30, invI = 6, frames = [], sounds = [];
+  const dt = 1 / 240, sub = 4, G = -30, invI = 1.5 / (DS * DS), frames = [], sounds = [];
   const P = [[0, 1, 0, 0, .3], [1, 0, 0, TD.X, .45], [-1, 0, 0, TD.X, .45], [0, 0, 1, TD.Z, .45], [0, 0, -1, TD.Z, .45]];
   for (let f = 0; f < 330; f++) {
     for (let st = 0; st < sub; st++) {
@@ -804,8 +820,9 @@ function simulate(bodies) {
         const ma = A.dyn && !A.sleep ? 1 : 0, mb = B.dyn && !B.sleep ? 1 : 0, tot = ma + mb;
         if (!tot) continue;
         const d = V3.sub(B.pos, A.pos), dl = V3.len(d);
-        if (dl >= 1.28 || dl < 1e-4) continue;
-        const n = V3.mul(d, 1 / dl), pen = 1.28 - dl;
+        const RR = 2.5 * DS;
+        if (dl >= RR || dl < 1e-4) continue;
+        const n = V3.mul(d, 1 / dl), pen = RR - dl;
         A.pos = V3.sub(A.pos, V3.mul(n, pen * ma / tot)); B.pos = V3.add(B.pos, V3.mul(n, pen * mb / tot));
         const rv = V3.dot(V3.sub(B.vel, A.vel), n);
         if (rv < 0) {
@@ -820,7 +837,7 @@ function simulate(bodies) {
     let all = true;
     for (const b of bodies) if (b.dyn && !b.sleep) {
       const still = V3.len(b.vel) < .14 && V3.len(b.w) < .3;
-      if (still && (b.pos[1] < .58 ? ++b.rest > 10 : ++b.rest > 35)) b.sleep = true;
+      if (still && (b.pos[1] < DS + .08 ? ++b.rest > 10 : ++b.rest > 35)) b.sleep = true;
       else if (!still) b.rest = 0;
       if (!b.sleep) all = false;
     }
@@ -830,7 +847,7 @@ function simulate(bodies) {
   const top = bodies.map(b => topFace(b.q)), tq = bodies.map((b, i) => b.dyn ? settleQ(b.q, top[i]) : b.q);
   for (let k = 1; k <= 9; k++) {
     const e = k / 9;
-    frames.push(bodies.map((b, i) => b.dyn ? { pos: [b.pos[0], b.pos[1] + (.5 - b.pos[1]) * e, b.pos[2]], q: Q4.slerp(b.q, tq[i], e) } : { pos: b.pos, q: b.q }));
+    frames.push(bodies.map((b, i) => b.dyn ? { pos: [b.pos[0], b.pos[1] + (DS - b.pos[1]) * e, b.pos[2]], q: Q4.slerp(b.q, tq[i], e) } : { pos: b.pos, q: b.q }));
   }
   return { frames, top, sounds };
 }
@@ -845,7 +862,7 @@ const Tray = {
   },
   setup() {
     const s = this.s, W = s.W;
-    const eye = [0, 6.4, 4.7], tgt = [0, 0, .12], f = V3.norm(V3.sub(tgt, eye));
+    const eye = [0, 7.6, 2.9], tgt = [0, 0, .05], f = V3.norm(V3.sub(tgt, eye));
     const corner = [TD.X + .45, TD.D, TD.Z + .2], depth = V3.dot(V3.sub(corner, eye), f);
     this.cam = makeCam(eye, tgt, (W / 2 - 1) * depth / (TD.X + .45), W, s.H);
     // fondo fijo: mesa de madera con un hueco forrado de fieltro
@@ -881,12 +898,12 @@ const Tray = {
     if (!this.s.W) return;
     const bodies = [0, 1, 2].map(i => {
       const o = this.dice[i];
-      return { pos: o ? o.pos.slice() : [50 + i * 5, .5, 0], q: o ? o.q.slice() : [1, 0, 0, 0], vel: [0, 0, 0], w: [0, 0, 0], dyn: idx.includes(i), rest: 0, sleep: false };
+      return { pos: o ? o.pos.slice() : [50 + i * 5, DS, 0], q: o ? o.q.slice() : [1, 0, 0, 0], vel: [0, 0, 0], w: [0, 0, 0], dyn: idx.includes(i), rest: 0, sleep: false };
     });
     idx.forEach((i, k) => {
       const b = bodies[i];
       b.pos = [TD.X - .75, 1.5 + Math.random() * .7, idx.length === 1 ? (Math.random() - .5) * 1.4 : -.95 + k * .95 + (Math.random() - .5) * .2];
-      b.vel = [-(4.5 + k * 1.6 + Math.random() * 2.5), 1 + Math.random() * 2, (Math.random() - .5) * 3];
+      b.vel = [-(4 + k * 1.5 + Math.random() * 2.5), 1 + Math.random() * 2, (Math.random() - .5) * 3];
       b.w = [(Math.random() - .5) * 26, (Math.random() - .5) * 26, (Math.random() - .5) * 26];
       b.q = Q4.rand();
     });
@@ -930,7 +947,7 @@ const Tray = {
     const list = this.dice.map((d, i) => d && { d, i, z: proj(cam, d.pos)[2] }).filter(Boolean).sort((a, b) => b.z - a.z);
     // sombras en el fieltro
     for (const { d } of list) {
-      const h = Math.max(0, d.pos[1] - .5), r = .72 - Math.min(.3, h * .12), c = proj(cam, [d.pos[0] - h * .35, 0, d.pos[2] - h * .3]);
+      const h = Math.max(0, d.pos[1] - DS), r = (.72 - Math.min(.3, h * .12)) * DS * 2, c = proj(cam, [d.pos[0] - h * .35, 0, d.pos[2] - h * .3]);
       const rx = Math.abs(proj(cam, [d.pos[0] + r, 0, d.pos[2]])[0] - proj(cam, [d.pos[0] - r, 0, d.pos[2]])[0]) / 2;
       const ry = Math.abs(proj(cam, [d.pos[0], 0, d.pos[2] + r])[1] - proj(cam, [d.pos[0], 0, d.pos[2] - r])[1]) / 2;
       const k = .45 + Math.min(.35, h * .1);
@@ -945,12 +962,12 @@ const Tray = {
       outl[i + 1] = d.boost ? pack(248, 216, 74) : pack(8, 5, 7);
       const faces = run.dice[d.d];
       for (let fi = 0; fi < 6; fi++) {
-        const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, .5));
+        const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, DS));
         if (V3.dot(n, V3.sub(cam.eye, c)) <= 0) continue;
         const l = V3.dot(n, LIGHT), lvl = l > .72 ? 2 : l > .25 ? 1 : 0;
         const face = fi === d.top && d.boost ? d.boost : faces[d.map[fi]];
         const tex = faceTex(d.d, face, fi === d.top && !!d.boost)[lvl];
-        const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => proj(cam, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, .5), V3.add(V3.mul(F0.a, sa * .5), V3.mul(F0.b, sb * .5)))))));
+        const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => proj(cam, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, DS), V3.add(V3.mul(F0.a, sa * DS), V3.mul(F0.b, sb * DS)))))));
         const UV = [[0, 1], [1, 1], [1, 0], [0, 0]];
         rasterTri(s, idb, P[0], P[1], P[2], UV[0], UV[1], UV[2], tex, i + 1);
         rasterTri(s, idb, P[0], P[2], P[3], UV[0], UV[2], UV[3], tex, i + 1);
@@ -996,6 +1013,99 @@ function rasterTri(s, idb, a, b, c, ua, ub, uc, tex, id) {
     buf[y * W + x] = tex[v * 16 + u]; idb[y * W + x] = id;
   }
 }
+
+
+// ---------- personajes en 3D: cada dibujo se convierte en un modelo de vóxeles
+// (más grueso por el centro, fino en los bordes) y se dibuja con luz y tramado
+const V3D = {
+  models: {},
+  model(name, swap) {
+    const key = name + '|' + (swap || '');
+    if (this.models[key]) return this.models[key];
+    const g = SPR[name], W = Math.max(...g.map(r => r.length)), H = g.length, D = 6, sw = swap ? SWAPS[swap] : null;
+    const col = (x, y) => { if (x < 0 || y < 0 || x >= W || y >= H) return null; let ch = g[y][x]; if (!ch) return null; if (sw && sw[ch]) ch = sw[ch]; return PAL[ch] || null; };
+    const dist = new Array(W * H).fill(0);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (col(x, y) && (!col(x - 1, y) || !col(x + 1, y) || !col(x, y - 1) || !col(x, y + 1))) dist[y * W + x] = 1;
+    for (let k = 1; k < 3; k++) for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (!col(x, y) || dist[y * W + x]) continue;
+      if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([a, b]) => dist[(y + b) * W + x + a] === k)) dist[y * W + x] = k + 1;
+    }
+    const vox = new Uint32Array(W * H * D);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const c = col(x, y); if (!c) continue;
+      const t = Math.min(3, dist[y * W + x] || 3), [r, gg, b] = hexRGB(c), p = pack(r, gg, b), yy = H - 1 - y;
+      for (let z = 3 - t; z < 3 + t; z++) vox[(z * H + yy) * W + x] = p;
+    }
+    return this.models[key] = { W, H, D, vox };
+  },
+  render(cv, time) {
+    if (!cv._s) {
+      const m = this.model(cv.dataset.n, cv.dataset.s);
+      const cw = Math.round(cv.offsetWidth / 2) || 30, ch = Math.round(cv.offsetHeight / 2) || 30;
+      cv.width = cw; cv.height = ch;
+      const ctx = cv.getContext('2d'), img = ctx.createImageData(cw, ch);
+      cv._s = { m, cw, ch, ctx, img, buf: new Uint32Array(img.data.buffer), px: +cv.dataset.px / 2, yaw: +cv.dataset.yaw, ph: +cv.dataset.ph };
+    }
+    const S0 = cv._s, { m, cw, ch, buf, px: scale } = S0;
+    const yaw = S0.yaw + Math.sin(time * .9 + S0.ph) * .3, pitch = .3;
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), spp = Math.sin(pitch);
+    // dirección del rayo en el espacio del modelo (igual para todos los píxeles: vista ortográfica)
+    const dx = cp * sy, dy = -spp, dz = -cp * cy;
+    // luz fija en pantalla, pasada a cada una de las 6 normales del modelo
+    const L = V3.norm([-.55, .7, .6]);
+    const toView = n => { const x1 = n[0] * cy + n[2] * sy, z1 = -n[0] * sy + n[2] * cy, y1 = n[1]; return [x1, y1 * cp - z1 * spp, y1 * spp + z1 * cp]; };
+    const NL = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].map(n => .45 + .75 * Math.max(0, V3.dot(toView(n), L)));
+    const LV = [.5, .7, .88, 1.05, 1.2];
+    const ax = cw / 2, ay = ch - 4, W = m.W, H = m.H, D = m.D, vox = m.vox;
+    const sx = dx > 0 ? 1 : -1, syy = dy > 0 ? 1 : -1, sz = dz > 0 ? 1 : -1;
+    const tdx = Math.abs(1 / (dx || 1e-9)), tdy = Math.abs(1 / (dy || 1e-9)), tdz = Math.abs(1 / (dz || 1e-9));
+    buf.fill(0);
+    for (let py = 0; py < ch; py++) for (let qx = 0; qx < cw; qx++) {
+      const vx = (qx + .5 - ax) / scale, vy = (ay - (py + .5)) / scale, vz = 20;
+      // vista -> modelo: deshacer la inclinación y luego el giro
+      const o1y = vy * cp + vz * spp, o1z = -vy * spp + vz * cp;
+      let ox = vx * cy - o1z * sy + W / 2, oy = o1y, oz = vx * sy + o1z * cy + D / 2;
+      // entrar en la caja del modelo
+      let t0 = 0, t1 = 1e9, ent = -1;
+      const slab = (o, d, lo, hi, ax2) => { if (Math.abs(d) < 1e-9) return o >= lo && o <= hi; let a = (lo - o) / d, b = (hi - o) / d; if (a > b) { const tt = a; a = b; b = tt; } if (a > t0) { t0 = a; ent = ax2; } if (b < t1) t1 = b; return t0 <= t1; };
+      if (!slab(ox, dx, 0, W, 0) || !slab(oy, dy, 0, H, 1) || !slab(oz, dz, 0, D, 2)) continue;
+      const e = t0 + 1e-4; let x = ox + dx * e, y = oy + dy * e, z = oz + dz * e;
+      let ix = Math.min(W - 1, Math.max(0, x | 0)), iy = Math.min(H - 1, Math.max(0, y | 0)), iz = Math.min(D - 1, Math.max(0, z | 0));
+      let tx = ((sx > 0 ? ix + 1 : ix) - x) / dx, ty = ((syy > 0 ? iy + 1 : iy) - y) / dy, tz = ((sz > 0 ? iz + 1 : iz) - z) / dz;
+      if (!isFinite(tx)) tx = 1e9; if (!isFinite(ty)) ty = 1e9; if (!isFinite(tz)) tz = 1e9;
+      let axis = ent, hit = 0;
+      for (let n = 0; n < 40; n++) {
+        const v = vox[(iz * H + iy) * W + ix];
+        if (v) { hit = v; break; }
+        if (tx < ty && tx < tz) { ix += sx; tx += tdx; axis = 0; if (ix < 0 || ix >= W) break; }
+        else if (ty < tz) { iy += syy; ty += tdy; axis = 1; if (iy < 0 || iy >= H) break; }
+        else { iz += sz; tz += tdz; axis = 2; if (iz < 0 || iz >= D) break; }
+      }
+      if (!hit) continue;
+      const ni = axis === 0 ? (sx > 0 ? 1 : 0) : axis === 1 ? (syy > 0 ? 3 : 2) : (sz > 0 ? 5 : 4);
+      const f = NL[ni] * 4 / 1.2, i0 = Math.min(3, f | 0), k = f - i0 > BAYER[(py & 3) * 4 + (qx & 3)] ? LV[Math.min(4, i0 + 1)] : LV[i0];
+      buf[py * cw + qx] = shadeC(hit, k);
+    }
+    // contorno oscuro de pixel art
+    const ol = pack(8, 5, 10);
+    for (let y = 0; y < ch; y++) for (let x = 0; x < cw; x++) {
+      const i = y * cw + x; if (buf[i]) continue;
+      if ((x > 0 && buf[i - 1] && buf[i - 1] !== ol) || (x < cw - 1 && buf[i + 1] && buf[i + 1] !== ol) || (y > 0 && buf[i - cw] && buf[i - cw] !== ol) || (y < ch - 1 && buf[i + cw] && buf[i + cw] !== ol)) buf[i] = ol;
+    }
+    S0.ctx.putImageData(S0.img, 0, 0);
+  },
+};
+function sp3(name, px, swap, yaw = 0) {
+  const g = SPR[name], w = Math.max(...g.map(r => r.length));
+  return `<canvas class="v3d px3d" data-n="${name}" data-s="${swap || ''}" data-px="${px}" data-yaw="${yaw}" data-ph="${(Math.random() * 6).toFixed(2)}" style="width:${Math.round(w * px * 1.35 / 2) * 2}px;height:${Math.round(g.length * px * 1.2 / 2) * 2}px"></canvas>`;
+}
+let v3last = 0;
+(function v3loop(now) {
+  requestAnimationFrame(v3loop);
+  if (FAST || now - v3last < 40) return;
+  v3last = now;
+  document.querySelectorAll('canvas.v3d').forEach(cv => V3D.render(cv, now / 1000));
+})(0);
 
 // ---------- sonido (clic de dados y golpes), muy flojito
 const Sfx = {
@@ -1258,7 +1368,7 @@ function title() {
   const sv = load();
   app.innerHTML = `<div id="bgview"></div><div class="center">
     <h1 class="logo">MAZMORRA<br>DE DADOS</h1>
-    <div class="trio">${['caballero', 'clerigo', 'picaro', 'piromante'].map(k => fig(sp(k, 5))).join('')}</div>
+    <div class="trio">${['caballero', 'clerigo', 'picaro', 'piromante'].map((k, i) => fig(sp3(k, 5, '', [.5, .2, -.2, -.5][i]))).join('')}</div>
     <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
@@ -1272,7 +1382,7 @@ function chooseHero() {
   const b = best();
   app.innerHTML = `<h2 class="c">Elige tu héroe</h2>${Object.entries(HEROES).map(([k, h]) => {
     const rec = b[k] ? `Récord: piso ${Math.floor(b[k].p / STEPS) + 1}${b[k].w ? ` · ${b[k].w} victoria${b[k].w > 1 ? 's' : ''}` : ''}` : '';
-    return `<button class="btn hero-card" style="--dc:${h.dc}" onclick="G.start('${k}')">${sp(h.spr, 5)}<div class="info">
+    return `<button class="btn hero-card" style="--dc:${h.dc}" onclick="G.start('${k}')">${fig(sp3(h.spr, 5, '', .4))}<div class="info">
       <h3>${h.n} <span style="color:var(--dim)">· ${h.hp} vida</span></h3>
       <small>${h.d}</small>
       <div class="drow">${h.esp.map(f => faceHTML(f, 'esp')).join('')}</div>
@@ -1294,7 +1404,7 @@ function floorIntro() {
   const fl = FLOORS[run.floor], b = EN[fl.boss];
   app.innerHTML = `<div id="bgview"></div><div class="center c" style="align-items:center">
     <p class="t">PISO ${run.floor + 1} DE ${FLOORS.length}</p><h1 class="logo" style="font-size:22px">${fl.n}</h1>
-    ${sp(b.spr || fl.boss, 10, b.swap)}
+    ${fig(sp3(b.spr || fl.boss, 10, b.swap, -.4))}
     <p class="t">Al fondo te espera:<br><span style="color:var(--txt)">${b.n}</span></p>
     <button class="btn pri" onclick="G.map()">Entrar</button></div>`;
   if (!FAST) Corr.build($('#bgview'), ['jefe'], run.floor, { title: true });
@@ -1303,12 +1413,12 @@ function map() {
   S = { scr: 'map' }; C = null;
   const dots = Array.from({ length: STEPS }, (_, i) => `<i class="${i < run.step ? 'done' : i === run.step ? 'now' : i === STEPS - 1 ? 'boss' : ''}"></i>`).join('');
   app.innerHTML = `${hud()}<div class="steps">${dots}</div>
-    <div class="view" id="view"><div class="view-t">${run.doors.length > 1 ? 'Elige una puerta' : run.doors[0] === 'jefe' ? 'El jefe te espera' : 'Sigue adelante'}</div></div>
-    <div class="doors">${run.doors.map((d, i) => `<button class="btn door" onclick="G.door(${i})">${sp(ROOMS[d].ico, 4)}<span>${ROOMS[d].n}</span><small>${ROOMS[d].d}</small></button>`).join('')}</div>
-    <div class="panel row">${fig(sp(H().spr, 5))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${bar(run.hp, run.maxHp)}${relicsHTML()}</div></div>
+    <div class="view" id="view"><div class="view-t">${run.doors.length > 1 ? 'Toca una puerta' : run.doors[0] === 'jefe' ? 'El jefe te espera' : 'Toca la puerta'}</div>
+      ${run.doors.map((d, i) => `<div class="dl3 ${d === 'jefe' ? 'boss' : ''}" onclick="G.door(${i})"><b>${ROOMS[d].n}</b>${run.doors.length < 3 ? `<small>${ROOMS[d].d}</small>` : ''}</div>`).join('')}</div>
+    <div class="panel row">${fig(sp3(H().spr, 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${bar(run.hp, run.maxHp)}${relicsHTML()}</div></div>
     <div class="panel">${diceRows()}</div>
     <button class="btn small" onclick="G.title()">Guardar y salir</button>`;
-  if (!FAST) { const v = $('#view'), lab = v.firstChild; Corr.build(v, run.doors, run.floor); v.appendChild(lab); }
+  if (!FAST) Corr.build($('#view'), run.doors, run.floor);
 }
 function nextRoom() {
   if (run.hp <= 0) return gameOver();
@@ -1453,7 +1563,7 @@ function relicChoice(title, after) {
 function evolve(after) {
   const opts = H().evo[run.floor];
   S = { scr: 'evolve', opts, after };
-  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp(H().spr, 7)}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${fig(sp3(H().spr, 7, '', .4))}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
     ${opts.map((o, i) => `<button class="btn opt" onclick="G.evolve(${i})">${sp('corona', 4)}<span>${o.n}<small>${o.d}</small></span></button>`).join('')}`;
 }
 function nextFloor() {
@@ -1470,7 +1580,7 @@ function gameOver() {
 function victory() {
   run.step = STEPS; recordBest(true); clearSave();
   S = { scr: 'win' };
-  app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${sp(H().spr, 10)}${sp('corona', 6)}
+  app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(H().spr, 10, '', .4))}${sp('corona', 6)}
     <p class="t">${run.cls} ha vencido al Dragón y sale de la mazmorra con ${run.gold} de oro.</p>
     <div class="panel" style="width:100%">${diceRows()}</div>
     <button class="btn pri" onclick="G.choose()">Jugar otra vez</button></div>`;
@@ -1553,9 +1663,9 @@ function cRender() {
   app.innerHTML = `${hud()}
   <div class="arena" id="arena">
     <div class="enemies">${C.en.map((e, i) => `<div class="en ${multi && i === C.target ? 'tgt' : ''} ${e.hp <= 0 ? 'dead' : ''}" id="en${i}" onclick="G.tgt(${i})">
-      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${fig(sp(e.spr, e.px, e.swap))}<div class="nm">${e.n}</div>${bar(e.hp, e.max)}
+      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${fig(sp3(e.spr, e.px, e.swap, -.45))}<div class="nm">${e.n}</div>${bar(e.hp, e.max)}
       <div class="badges">${e.block ? badge('escudo', e.block, '#8ab8ff') : ''}${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`).join('')}</div>
-    <div class="herorow"><div id="hero">${fig(sp(H().spr, 6))}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${bar(run.hp, run.maxHp)}
+    <div class="herorow"><div id="hero">${fig(sp3(H().spr, 6, '', .45))}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${bar(run.hp, run.maxHp)}
       <div class="badges" style="justify-content:flex-start">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div></div></div>
   </div>
   <div class="trayw" id="tray"><div class="combo">${eff && eff.combo ? eff.combo : ''}</div>${!C.rolled && !C.busy ? '<div class="tray-hint">Toca para tirar</div>' : ''}</div>
@@ -1699,7 +1809,8 @@ const G = {
   door: i => {
     if (S.walking) return;
     if (FAST || !Corr.room || !$('#view')) return enter(run.doors[i]);
-    S.walking = 1; document.querySelectorAll('.door').forEach((b, k) => { if (k !== i) b.disabled = true; });
+    Sfx.hit(.3);
+    S.walking = 1;
     Corr.walk(i, () => enter(run.doors[i]));
   },
   sfx: () => { Sfx.toggle(); title(); },
