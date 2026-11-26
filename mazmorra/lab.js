@@ -6,7 +6,7 @@
   EN.lab1 = { n: 'Muñeco', spr: 'esqueleto', hp: 99, f: ['a2b2', 'a3b2', 'a2', 'a3', 'a2b3', 'a3b3'] };
   EN.lab2 = { n: 'Muñeco', spr: 'orco', hp: 99, f: ['a3', 'a2', 'a2b2', 'a3b3', 'p2', 'b3'] };
   window.LAB_EN = ['lab1', 'lab2'];
-  ['legend', 'pareja', 'trio', 'eblock', 'poison', 'skull', 'cancel', 'rage'].forEach(t => Tips.seen.add(t));
+  ['legend', 'pareja', 'trio', 'eblock', 'poison', 'skull', 'cancel', 'rage', 'order'].forEach(t => Tips.seen.add(t));
   let nums = false;
   const css = document.createElement('style');
   css.textContent = `#labp{position:fixed;left:0;right:0;top:0;z-index:90;background:#2a1f10;box-shadow:0 3px 0 #000;padding:calc(env(safe-area-inset-top) + 6px) 10px 8px;font-size:7px;line-height:1.6;color:#f8d84a;display:flex;flex-direction:column;gap:5px}

@@ -962,9 +962,10 @@ function simulate(bodies) {
     if (all) break;
   }
   const top = bodies.map(b => topFace(b.q)), tq = bodies.map((b, i) => b.dyn ? settleQ(b.q, top[i]) : b.q);
-  for (let k = 1; k <= 9; k++) {
-    const e = k / 9;
-    frames.push(bodies.map((b, i) => b.dyn ? { pos: [b.pos[0], b.pos[1] + (DS - b.pos[1]) * e, b.pos[2]], q: Q4.slerp(b.q, tq[i], e) } : { pos: b.pos, q: b.q }));
+  const NS = 16;
+  for (let k = 1; k <= NS; k++) {
+    const t = k / NS, e = t * t * (3 - 2 * t), hop = Math.sin(t * Math.PI) * .3;
+    frames.push(bodies.map((b, i) => b.dyn ? { pos: [b.pos[0], b.pos[1] + (DS - b.pos[1]) * e + hop, b.pos[2]], q: Q4.slerp(b.q, tq[i], e) } : { pos: b.pos, q: b.q }));
   }
   return { frames, top, sounds };
 }
@@ -1710,7 +1711,10 @@ function projAff(cam, c0, p) {
 let DFLAT = true;
 function drawCube(s, idb, cam, d, texFn, id) {
   const pc = proj(cam, d.pos), c0 = { p: d.pos, sx: pc[0], sy: pc[1], z: pc[2] };
-  if (DFLAT && d.rest && !d.fly) return drawFlatDie(s, idb, cam, d, texFn, id, pc);
+  if (DFLAT && d.rest && !d.fly) {
+    const t = Math.min(1, (performance.now() - (d.restT || 0)) / 220);
+    return t >= 1 ? drawFlatDie(s, idb, cam, d, texFn, id, pc) : drawMorphDie(s, idb, cam, d, texFn, id, pc, c0, t * t * (3 - 2 * t));
+  }
   for (let fi = 0; fi < 6; fi++) {
     const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, DS));
     if (V3.dot(n, V3.sub(cam.eye, c)) <= 0) continue;
@@ -1719,6 +1723,26 @@ function drawCube(s, idb, cam, d, texFn, id) {
     rasterTri(s, idb, P[0], P[1], P[2], [0, 1], [1, 1], [1, 0], tex, id);
     rasterTri(s, idb, P[0], P[2], P[3], [0, 1], [1, 0], [0, 0], tex, id);
   }
+}
+// transición: las esquinas de la cara de arriba y del lateral van de su sitio en 3D a la cara recta
+function drawMorphDie(s, idb, cam, d, texFn, id, pc, c0, t) {
+  const side = 6, x0 = Math.round(pc[0] - TS / 2), y0 = Math.round(pc[1] - TS / 2 - side / 2);
+  let front = 4, bz = -2;
+  for (let fi = 0; fi < 6; fi++) { if (fi === d.top) continue; const n = Q4.rot(d.q, CUBE_F[fi].n); if (n[2] > bz) { bz = n[2]; front = fi; } }
+  const UV = [[0, 1], [1, 1], [1, 0], [0, 0]];
+  const quad = (fi, rect, lvl) => {
+    const F0 = CUBE_F[fi];
+    const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb], k) => ({ p: projAff(cam, c0, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, DS), V3.add(V3.mul(F0.a, sa * DS), V3.mul(F0.b, sb * DS)))))), uv: UV[k] }));
+    // cada esquina va a la esquina del rectángulo final que le toca por su posición en pantalla
+    const byY = [...P].sort((a, b) => a.p[1] - b.p[1]), topRow = byY.slice(0, 2).sort((a, b) => a.p[0] - b.p[0]), botRow = byY.slice(2).sort((a, b) => a.p[0] - b.p[0]);
+    const tgt = [[rect[0], rect[1]], [rect[2], rect[1]], [rect[0], rect[3]], [rect[2], rect[3]]];
+    [topRow[0], topRow[1], botRow[0], botRow[1]].forEach((c, k) => { c.q = [c.p[0] + (tgt[k][0] - c.p[0]) * t, c.p[1] + (tgt[k][1] - c.p[1]) * t, c0.z]; });
+    const tex = texFn(fi)[lvl];
+    rasterTri(s, idb, P[0].q, P[1].q, P[2].q, P[0].uv, P[1].uv, P[2].uv, tex, id);
+    rasterTri(s, idb, P[0].q, P[2].q, P[3].q, P[0].uv, P[2].uv, P[3].uv, tex, id);
+  };
+  quad(front, [x0, y0 + TS, x0 + TS, y0 + TS + side], 0);
+  quad(d.top, [x0, y0, x0 + TS, y0 + TS], 2);
 }
 // dado parado: la cara de arriba se pinta recta, píxel a píxel, y debajo su lateral
 function drawFlatDie(s, idb, cam, d, texFn, id, pc) {
@@ -1862,7 +1886,7 @@ const Scene = {
         const f = Math.max(0, Math.min(sim.frames.length - 1, Math.floor((now - t0) / 16.67)));
         sim.frames[f].forEach((st, i) => { if (bodies[i].dyn) { all[i].pos = st.pos; all[i].q = st.q; } });
         while (si < sim.sounds.length && sim.sounds[si][0] <= f) { Sfx.clack(sim.sounds[si][1]); si++; }
-        if (f >= sim.frames.length - 1) { list.forEach(d => { d.rest = true; }); return res(); }
+        if (f >= sim.frames.length - 1) { const t = performance.now(); list.forEach(d => { d.rest = true; d.restT = t; }); return res(); }
         requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
@@ -2126,22 +2150,30 @@ const Tuto = {
     this.on = true; this.step = 0;
     const atk = run.dice.atk, hi = atk.reduce((b, f, i) => f.v > atk[b].v ? i : b, 0), blank = d => Math.max(0, run.dice[d].findIndex(f => blankF(f)));
     this.rig = { atk: [hi], def: [blank('def'), run.dice.def.findIndex(f => f.v === 1)], esp: [blank('esp'), 5] };
+    this.build();
   },
-  steps: [
-    { el: '#ov-e0 .intent', t: 'Esta rata te va a pegar 2.' },
-    { el: '#hbar', t: 'Tu barra lo avisa: 2 puntitos en amarillo.' },
-    { el: '#btn-roll', t: 'Tira tus dados.', on: 'roll' },
-    { el: '.dchip[data-d="atk"]', t: 'Buen ataque. Tócalo para guardarlo.', on: 'lock:atk' },
-    { el: '#btn-rr', t: 'Vuelve a tirar los demás.', on: 'reroll' },
-    { el: '#btn-ready', t: '¡Mejor! Ahora, a usarlos.', on: 'ready' },
-    { el: '.dchip[data-d="def"]', t: 'Toca tu protección.', on: 'sel:def' },
-    { el: '#btn-self', t: 'Úsala en ti.', on: 'use:def' },
-    { el: '#hbar', t: 'Lo amarillo pasa a azul: ese golpe ya está parado.' },
-    { el: '.dchip[data-d="atk"]', t: 'Toca tu ataque.', on: 'sel:atk' },
-    { el: '#ov-e0', t: 'Y ahora toca a la rata.', on: 'use:atk' },
-    { el: '.dchip[data-d="esp"]', t: () => `Por último, tu dado de ${DN('esp')}.`, on: 'sel:esp' },
-    { el: () => targetType(effFaces().fs[2]) === 'self' ? '#btn-self' : '#ov-e0', t: () => targetType(effFaces().fs[2]) === 'self' ? 'Este es para ti.' : 'Úsalo en la rata.', on: 'use:esp' },
-  ],
+  steps: [],
+  build() {
+    const esp = run.dice.esp[this.rig.esp[1]] || run.dice.esp[5], k = esp.k, buff = k === 'furia' || k === 'doble';
+    const espName = k === 'doble' ? 'el rayo' : k === 'furia' ? 'tu furia' : `tu dado de ${DN('esp')}`;
+    const espSel = { el: '.dchip[data-d="esp"]', t: buff ? (k === 'doble' ? 'Primero el rayo: hará que tu ataque pegue 2 veces.' : 'Primero tu furia: sumará a tu ataque.') : `Por último, ${espName}.`, on: 'sel:esp' };
+    const espUse = { el: () => targetType(effFaces().fs[2]) === 'self' ? '#btn-self' : '#ov-e0', t: () => targetType(effFaces().fs[2]) === 'self' ? (buff ? 'Úsalo en ti.' : 'Este es para ti.') : 'Úsalo en la rata.', on: 'use:esp' };
+    const atk = [{ el: '.dchip[data-d="atk"]', t: buff ? (k === 'doble' ? 'Ahora sí: toca tu ataque. ¡Pegará 2 veces!' : 'Ahora sí: toca tu ataque, que vale más.') : 'Toca tu ataque.', on: 'sel:atk' },
+      { el: '#ov-e0', t: 'Y ahora toca a la rata.', on: 'use:atk' }];
+    this.steps = [
+      { el: '#ov-e0 .intent', t: 'Esta rata te va a pegar 2.' },
+      { el: '#hbar', t: 'Tu barra lo avisa: 2 puntitos en amarillo.' },
+      { el: '#btn-roll', t: 'Tira tus dados.', on: 'roll' },
+      { el: '.dchip[data-d="atk"]', t: 'Buen ataque. Tócalo para guardarlo.', on: 'lock:atk' },
+      { el: '#btn-rr', t: 'Vuelve a tirar los demás.', on: 'reroll' },
+      { el: '#btn-ready', t: '¡Mejor! Ahora, a usarlos.', on: 'ready' },
+      { el: '.dchip[data-d="def"]', t: 'Toca tu protección.', on: 'sel:def' },
+      { el: '#btn-self', t: 'Úsala en ti.', on: 'use:def' },
+      { el: '#hbar', t: 'Lo amarillo pasa a azul: ese golpe ya está parado.' },
+      ...(buff ? [espSel, espUse, ...atk] : [...atk, espSel, espUse]),
+    ];
+  },
+
   // ¿se permite esta acción ahora? (durante el tutorial solo la que toca)
   expect(ev) {
     if (!this.on) return true;
@@ -2240,7 +2272,7 @@ function title() {
     <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
-    <button class="btn" onclick="G.album()">Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
+    <button class="btn gold" onclick="G.album()">Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
     <button class="btn" onclick="G.help()">Cómo se juega</button>
     <button class="btn small" onclick="G.sfx()">Sonido: ${Sfx.on ? 'sí' : 'no'}</button>
   </div>`;
@@ -2779,6 +2811,7 @@ function cRender() {
   // pistas de la primera vez
   if (eff && eff.combo && (C.phase === 'reroll' || C.phase === 'use')) Tips.show(eff.combo === '¡Trío!' ? 'trio' : 'pareja', eff.combo === '¡Trío!' ? '¡Trío! Tres dados con el mismo número: los tres valen el doble.' : '¡Pareja! Dos dados con el mismo número: cada uno suma +1.', '.dchip.cb');
   if (C.phase === 'roll') { const i = C.en.findIndex(e => e.hp > 0 && e.intent && e.intent.b); if (i >= 0) Tips.show('eblock', 'Este enemigo se protege (azul): tu daño primero rompe esos cuadraditos.', '#ov-e' + i + ' .pipw'); }
+  if (C.phase === 'use' && C.sel === 'atk' && eff && eff.fs.some(f => (f.k === 'furia' || f.k === 'doble') && !C.used[f.d] && !blankF(f))) Tips.show('order', 'Consejo: usa antes la furia o el rayo, y así este ataque valdrá más. Toca "Cancelar" si quieres cambiar.', '.dchip[data-d="esp"]');
   if (C.phase === 'roll' && inc.poi) Tips.show('poison', 'Lo verde es veneno: te quita vida al final del turno y la protección no lo para.', '#hbar');
   if ((C.phase === 'reroll' || C.phase === 'use') && run.hp > 0 && inc.inc - C.block + inc.poi >= run.hp) Tips.show('skull', '¡Cuidado! La calavera avisa: si no te proteges o matas a alguien, mueres este turno.', '#hbar');
   Coach.draw();
