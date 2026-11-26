@@ -225,6 +225,28 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 @keyframes pop2{0%{transform:scale(.8)}}
 .coach-hl{outline:3px solid var(--gold)!important;outline-offset:3px;animation:hlp .8s steps(2) infinite}
 @keyframes hlp{50%{outline-color:#fff4d6}}
+
+.dov{position:absolute;transform:translate(-50%,-100%);display:flex;gap:3px;align-items:center}
+.dov .dtag{position:static;transform:none}
+.dlk{background:#000c;padding:2px;box-shadow:0 0 0 2px #000;display:flex}
+.rg{font-size:7px;color:#ff7050;margin-left:2px;display:inline-flex;align-items:center;gap:1px}
+.card{width:100px;background:linear-gradient(#2a2036,#15101c);box-shadow:0 0 0 2px #000,0 0 0 4px var(--rc),0 0 0 6px #000;padding:6px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative}
+.card .cnum{position:absolute;top:4px;left:5px;font-size:6px;color:var(--rc)}
+.card .cart{height:84px;display:flex;align-items:flex-end;justify-content:center;width:100%;background:radial-gradient(ellipse at 50% 70%,color-mix(in srgb,var(--rc) 30%,transparent),transparent 70%)}
+.card .cname{font-size:6px;line-height:1.4;text-align:center;min-height:17px;display:flex;align-items:center}
+.card .crar{font-size:7px;color:var(--rc)}
+.card.big{width:220px;padding:10px 8px 12px;gap:8px}
+.card.big .cart{height:190px}
+.card.big .cname{font-size:10px}
+.card.big .cnum{font-size:8px}
+.card.missing{filter:saturate(.3)}
+.card.missing .cname{color:#5a5068}
+.card.r3:not(.missing){animation:leg 1.6s steps(2) infinite}
+@keyframes leg{50%{box-shadow:0 0 0 2px #000,0 0 0 4px #fff4a0,0 0 0 6px #000}}
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px 8px;justify-items:center}
+.cbtn{background:none;border:none;padding:0;cursor:pointer;font:inherit;color:inherit}
+.reveal{animation:flip .7s steps(7)}
+@keyframes flip{0%{transform:perspective(500px) rotateY(90deg) scale(.6)}100%{transform:none}}
 </style>
 </head>
 <body>
@@ -807,24 +829,35 @@ function dieCols(d) {
   if (d === 'def') return ['#132044', '#4a8ae8'];
   const c = hexRGB(H().dc); return ['#' + c.map(v => Math.round(v * .3).toString(16).padStart(2, '0')).join(''), H().dc];
 }
+const TS = 20; // lado de la textura de cada cara
+const DIG5 = ['01110100011001110101110011000101110', '00100011000010000100001000010001110', '01110100010000100010001000100011111', '11110000010000101110000010000111110', '00010001100101010010111110001000010', '11111100001111000001000011000101110', '00110010001000011110100011000101110', '11111000010001000100010000100001000', '01110100011000101110100011000101110', '01110100011000101111000010001001100'];
 function dieTexture(key, bodyH, rimH, parts, gold) {
   if (texCache[key]) return texCache[key];
-  const body = hexRGB(bodyH), rim = hexRGB(rimH);
-  const px = Array.from({ length: 256 }, () => body.slice());
-  for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
-    if (x === 0 || y === 0 || x === 15 || y === 15) px[y * 16 + x] = rim.map(v => v * .8);
-    else if (x === 1 || y === 1) px[y * 16 + x] = body.map(v => Math.min(255, v * 1.5 + 12));
-    else if (x === 14 || y === 14) px[y * 16 + x] = body.map(v => v * .6);
+  const body = hexRGB(bodyH), rim = hexRGB(rimH), N = TS;
+  const px = Array.from({ length: N * N }, () => body.slice());
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    if (x === 0 || y === 0 || x === N - 1 || y === N - 1) px[y * N + x] = rim.map(v => v * .8);
+    else if (x === 1 || y === 1) px[y * N + x] = body.map(v => Math.min(255, v * 1.5 + 12));
+    else if (x === N - 2 || y === N - 2) px[y * N + x] = body.map(v => v * .6);
   }
-  const put = (x, y, c) => { if (x >= 0 && x < 16 && y >= 0 && y < 16) px[y * 16 + x] = c; };
+  const put = (x, y, c) => { if (x >= 1 && x < N - 1 && y >= 1 && y < N - 1) px[y * N + x] = c; };
   const icon = (n, ox, oy) => ICO[n].forEach((row, y) => { for (let x = 0; x < row.length; x++) if (PAL[row[x]]) put(ox + x, oy + y, hexRGB(PAL[row[x]])); });
-  const num = (str, ox, oy, ch) => { const col = hexRGB(ch); [...str].forEach((c, k) => { const m = DIGITS[+c]; for (let i = 0; i < 15; i++) if (m[i] === '1') { const x = ox + k * 4 + (i % 3), y = oy + (i / 3 | 0); put(x + 1, y + 1, [10, 6, 8]); put(x, y, col); } }); };
-  if (!parts.length) { for (const [x, y] of [[7, 7], [8, 7], [7, 8], [8, 8]]) put(x, y, rim); }
+  // número grande (5x7 por cifra) con contorno oscuro para que se lea bien
+  const num = (str, ox, oy, ch) => {
+    const col = hexRGB(ch), on = (x, y) => { const k = Math.floor((x - ox) / 6), cx = (x - ox) % 6; if (k < 0 || k >= str.length || cx > 4 || y < oy || y >= oy + 7) return false; return DIG5[+str[k]][(y - oy) * 5 + cx] === '1'; };
+    const w = str.length * 6 - 1;
+    for (let y = oy - 1; y <= oy + 7; y++) for (let x = ox - 1; x <= ox + w; x++) {
+      if (on(x, y)) put(x, y, col);
+      else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1) || on(x - 1, y - 1) || on(x + 1, y + 1) || on(x - 1, y + 1) || on(x + 1, y - 1)) put(x, y, [8, 5, 7]);
+    }
+  };
+  const cen = st => Math.round((N - (st.length * 6 - 1)) / 2);
+  if (!parts.length) { for (const [x, y] of [[9, 9], [10, 9], [9, 10], [10, 10]]) put(x, y, rim); }
   else if (parts.length === 1) {
     const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
-    icon(ic, 4, st ? 2 : 4);
-    if (st) { const w = st.length * 4 - 1; num(st, 8 - Math.ceil(w / 2), 10, gold ? '#f8d84a' : c); }
-  } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 1, 1 + r * 7); if (n !== '') num(String(n), 10, 2 + r * 7, c); });
+    icon(ic, 6, st ? 2 : 6);
+    if (st) num(st, cen(st), 11, gold ? '#f8d84a' : c);
+  } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 2, 2 + r * 9); if (n !== '') num(String(n), 11, 2 + r * 9, c); });
   return texCache[key] = [.5, .74, 1.02].map(k => Uint32Array.from(px, c => pack(Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0)));
 }
 function faceTex(d, f, gold) {
@@ -935,9 +968,9 @@ function rasterTri(s, idb, a, b, c, ua, ub, uc, tex, id) {
     const w2 = 1 - w0 - w1;
     if (w0 < -1e-4 || w1 < -1e-4 || w2 < -1e-4) continue;
     const iw = w0 * wa + w1 * wb + w2 * wc;
-    let u = (w0 * ua[0] * wa + w1 * ub[0] * wb + w2 * uc[0] * wc) / iw * 16 | 0, v = (w0 * ua[1] * wa + w1 * ub[1] * wb + w2 * uc[1] * wc) / iw * 16 | 0;
-    if (u < 0) u = 0; else if (u > 15) u = 15; if (v < 0) v = 0; else if (v > 15) v = 15;
-    buf[y * W + x] = tex[v * 16 + u]; idb[y * W + x] = id;
+    let u = (w0 * ua[0] * wa + w1 * ub[0] * wb + w2 * uc[0] * wc) / iw * TS | 0, v = (w0 * ua[1] * wa + w1 * ub[1] * wb + w2 * uc[1] * wc) / iw * TS | 0;
+    if (u < 0) u = 0; else if (u > TS - 1) u = TS - 1; if (v < 0) v = 0; else if (v > TS - 1) v = TS - 1;
+    buf[y * W + x] = tex[v * TS + u]; idb[y * W + x] = id;
   }
 }
 
@@ -1240,6 +1273,313 @@ const MODEL_DEFS = {
   diablillo: [16, 16, 10, mImp], gargola: [18, 17, 14, mGargoyle], espectro: [18, 21, 12, mSpecter], cultista: [16, 19, 12, mCultist],
   caballerooscuro: [16, 23, 12, M => mKnight(M, { dark: 1 })], dragon: [24, 22, 24, mDragon],
 };
+
+// ---------- criaturas nuevas (solo para las cartas, de momento)
+function mKobold(M) {
+  M.cap(5.5, 4, 5, 5, .5, 5.5, .6, 'R'); M.cap(8.5, 4, 5, 9, .5, 5.5, .6, 'R');
+  M.box(5, 4, 4, 9, 5, 7, 'N');
+  M.ell(7, 6.6, 5, 2.2, 2.6, 1.8, 'r'); M.ell(7, 10.4, 5.4, 2.2, 2, 2, 'r'); M.ell(7, 9.8, 7.4, 1.3, 1, 1.5, 'r');
+  M.px(6, 11, 7, 'y'); M.px(8, 11, 7, 'y'); M.px(6, 9, 8, 'k'); M.px(7, 9, 8, 'k');
+  M.cap(5.6, 12, 5, 4.6, 13.6, 4, .4, 'w'); M.cap(8.4, 12, 5, 9.4, 13.6, 4, .4, 'w');
+  M.cap(7, 5, 3, 7, 2, .4, .5, 'r');
+  M.cap(5, 7.6, 5, 3.8, 5, 6.6, .6, 'r'); M.cap(9, 7.6, 5, 10.4, 6.4, 6.6, .6, 'r');
+  M.cap(10.6, 1, 6.6, 10.6, 12.6, 6.6, .35, 'n'); M.box(10, 13, 6, 10, 13, 6, 'g');
+}
+function mZombie(M) {
+  M.cap(7, 6, 6, 6.6, .5, 6.5, .8, 'N'); M.cap(9, 6, 6, 9.4, .5, 6.2, .8, 'N');
+  M.ell(8, 10, 6, 2.8, 3, 2.2, 'n'); M.px(7, 9, 8, 'E'); M.px(9, 11, 8, 'E'); M.px(8, 8, 8, 'R');
+  M.cap(5.4, 12, 6, 5, 11, 10.6, .8, 'E'); M.cap(10.6, 12, 6, 11, 11.4, 10.6, .8, 'E');
+  M.ell(8, 15, 6.4, 2.4, 2.4, 2.3, 'E');
+  M.px(6, 15, 8, 'y'); M.px(9, 15, 8, 'k'); M.box(7, 13, 8, 8, 13, 8, 'k'); M.px(8, 17, 6, 'N'); M.px(7, 17, 7, 'N');
+}
+function mWolf(M) {
+  M.ell(6, 5.6, 8, 2.8, 2.6, 5, 'G'); M.ell(6, 5.2, 12.2, 2.4, 2.6, 1.8, 'g');
+  for (const [x, z] of [[4.6, 5.4], [7.4, 5.4], [4.6, 11], [7.4, 11]]) M.cap(x, 4, z, x, .5, z, .65, 'G');
+  M.ell(6, 7.8, 14, 2, 2, 2.2, 'G'); M.ell(6, 7.1, 16.2, 1.1, 1, 1.5, 'G'); M.box(5, 7, 17, 6, 7, 17, 'k'); M.px(5, 6, 17, 'w'); M.px(6, 6, 17, 'w');
+  M.cap(4.8, 9, 13.6, 4.4, 10.8, 13.2, .5, 'G'); M.cap(7.2, 9, 13.6, 7.6, 10.8, 13.2, .5, 'G');
+  M.px(4, 8, 15, 'r'); M.px(7, 8, 15, 'r');
+  M.cap(6, 6.4, 3, 6, 7.8, .4, .7, 'G');
+}
+function mRaven(M) {
+  M.ell(7, 1, 6, 1.8, 1.2, 1.8, 'w'); M.px(6, 1, 7, 'k'); M.px(7, 1, 7, 'k');
+  M.px(6, 2, 6, 'y'); M.px(7, 2, 6, 'y');
+  M.ell(7, 5, 6, 2.4, 2.4, 3.2, 'B'); M.ell(7, 8.4, 8.4, 1.9, 1.9, 1.9, 'B');
+  M.cap(7, 8.2, 10, 7, 7.6, 11.8, .5, 'g'); M.px(5, 9, 9, 'r'); M.px(8, 9, 9, 'r');
+  M.ell(4.2, 6, 5.4, 1, 2.4, 3, 'B'); M.ell(9.8, 6, 5.4, 1, 2.4, 3, 'B');
+  M.cap(7, 4, 3, 7, 2.6, .4, .8, 'B');
+}
+function mToad(M) {
+  M.ell(8, 3.6, 8, 5, 3.4, 5, 'E'); M.ell(8, 2.4, 10.4, 3.8, 1.8, 3.2, 'Y');
+  M.ell(5.6, 6.6, 11, 1.3, 1.3, 1.3, 'y'); M.ell(10.4, 6.6, 11, 1.3, 1.3, 1.3, 'y'); M.px(5, 7, 12, 'k'); M.px(10, 7, 12, 'k');
+  M.box(5, 3, 13, 10, 3, 13, 'k');
+  for (const [x, y, z] of [[6, 6, 6], [10, 6, 7], [8, 7, 9], [4, 5, 9], [12, 5, 9], [7, 6, 3]]) M.px(x, y, z, 'e');
+  M.ell(3, 1, 6, 1.6, 1, 2.4, 'E'); M.ell(13, 1, 6, 1.6, 1, 2.4, 'E'); M.ell(5, .8, 12.8, 1.2, .8, 1.2, 'E'); M.ell(11, .8, 12.8, 1.2, .8, 1.2, 'E');
+}
+function mSnake(M) {
+  M.ring(8, 1, 8, 4, 1.2, 'e'); M.ring(8, 3, 8, 3, 1.1, 'E'); M.ring(8, 5, 8, 2, 1, 'e');
+  M.cap(8, 5.5, 8, 8, 10, 11, 1, 'e'); M.ell(8, 11, 12.2, 1.8, 1.3, 2.1, 'e');
+  M.px(6, 12, 13, 'y'); M.px(9, 12, 13, 'y'); M.cap(8, 10.4, 14, 8, 10.4, 15.6, .3, 'r');
+}
+function mMummy(M) {
+  M.cap(7, 6, 6, 6.8, .5, 6.4, .9, 'Y'); M.cap(9, 6, 6, 9.2, .5, 6.4, .9, 'Y');
+  M.ell(8, 10.4, 6, 2.8, 3.2, 2.2, 'Y'); for (const y of [8, 10, 12]) M.ring(8, y, 6, 2.7, .45, 'w');
+  M.cap(5.2, 12.6, 6, 4.8, 12, 10.4, .8, 'Y'); M.cap(10.8, 12.6, 6, 11.2, 12, 10.4, .8, 'Y');
+  M.px(4, 11, 10, 'w'); M.px(11, 10, 10, 'w');
+  M.ell(8, 15.4, 6, 2.3, 2.4, 2.2, 'Y'); M.ring(8, 16, 6, 2.2, .45, 'w');
+  M.px(6, 15, 8, 'c'); M.px(9, 15, 8, 'c');
+}
+function mWisp(M) {
+  M.cap(6, 4.6, 6, 5, 1, 6, .8, 'b'); M.cap(6, 4.6, 6, 7.4, 2, 6, .6, 'b');
+  M.ell(6, 7.4, 6, 2.6, 3.2, 2.6, 'b'); M.ell(6, 7.6, 6, 1.8, 2.4, 1.8, 'c'); M.ell(6, 10.6, 6, 1.2, 1.8, 1.2, 'c'); M.ell(6, 12.2, 6, .6, 1, .6, 'w');
+  M.px(5, 8, 8, 'B'); M.px(6, 8, 8, 'B');
+}
+function mHarpy(M) {
+  M.cap(9, 5, 5, 8.6, 1, 5.6, .5, 'y'); M.cap(11, 5, 5, 11.4, 1, 5.6, .5, 'y'); M.box(8, 0, 5, 9, 0, 7, 'y'); M.box(11, 0, 5, 12, 0, 7, 'y');
+  M.ell(10, 6.6, 5, 2.2, 2, 1.8, 'n'); M.ell(10, 9.6, 5, 1.9, 2, 1.6, 's'); M.box(8, 9, 6, 11, 9, 6, 'n');
+  M.ell(10, 13, 5.4, 1.9, 2, 1.9, 's'); M.ell(10, 13.8, 4.6, 2.2, 2.2, 2, 'P', (x, y, z) => z < 5.6 || y > 14.4); M.cap(10, 13, 3.6, 10, 8, 3, 1, 'P');
+  M.px(8, 13, 6, 'r'); M.px(11, 13, 6, 'r');
+  mirror(10, (s, X) => { M.ell(X(4.6), 10.6, 5, 4.4, 4.6, .7, 'n', (x, y) => y > 6.4 + (Math.floor(x) % 2 ? 1 : 0)); M.cap(X(8), 11.4, 5, X(1), 15, 5, .45, 'N'); });
+}
+function mSiren(M) {
+  M.ell(8, 1.6, 6, 5, 2, 4.6, 'G');
+  M.cap(8, 4, 6, 10, 3.6, 9, 1.4, 'b'); M.cap(10, 3.6, 9, 12.6, 4.6, 10.4, .9, 'b'); M.ell(13.4, 5.4, 10.6, 1.6, 1.4, .5, 'c');
+  M.ell(8, 5.6, 6, 2.2, 1.8, 1.8, 'b'); M.px(7, 5, 7, 'c'); M.px(9, 6, 7, 'c');
+  M.ell(8, 9, 6, 2, 2.4, 1.6, 's'); M.px(7, 9, 7, 'm'); M.px(8, 9, 7, 'm');
+  M.cap(6, 10.6, 6, 4.6, 7.4, 7, .6, 's'); M.cap(10, 10.6, 6, 11.4, 7.4, 7, .6, 's');
+  M.ell(8, 12.6, 6, 2.1, 2.2, 2, 's'); M.ell(8, 13.2, 5.4, 2.4, 2.4, 2.2, 'E', (x, y, z) => z < 6.2 || y > 13.8);
+  M.cap(6, 13, 5, 5.4, 7, 5, .9, 'E'); M.cap(10, 13, 5, 10.6, 7, 5, .9, 'E');
+  M.px(6, 13, 7, 'c'); M.px(9, 13, 7, 'c');
+}
+function mTroll(M) {
+  M.cap(7, 6, 6, 6.4, .6, 6.4, 1.4, 'E'); M.cap(11, 6, 6, 11.6, .6, 6.4, 1.4, 'E');
+  M.box(6, 5, 3, 12, 7, 9, 'N');
+  M.ell(9, 11, 6.4, 4, 4.6, 3.2, 'E'); M.ell(9, 10, 8.6, 2.6, 2.4, 1.2, 'e');
+  M.cap(5, 14, 6, 3.4, 4, 8, 1.3, 'E'); M.cap(13, 14, 6, 14.6, 4, 8, 1.3, 'E'); M.ell(3.4, 3.4, 8, 1.6, 1.4, 1.6, 'E'); M.ell(14.6, 3.4, 8, 1.6, 1.4, 1.6, 'E');
+  M.ell(9, 16, 8.6, 2.4, 2.2, 2.2, 'E'); M.ell(9, 15.6, 10.8, .9, 1.2, .9, 'e');
+  M.px(8, 17, 10, 'y'); M.px(10, 17, 10, 'y'); M.px(8, 14, 10, 'w'); M.px(10, 14, 10, 'w'); M.ell(9, 18, 8, 1.6, .8, 1.6, 'n');
+}
+function mMinotaur(M) {
+  M.cap(7.4, 6, 6, 7, .6, 6.6, 1.2, 'N'); M.cap(10.6, 6, 6, 11, .6, 6.6, 1.2, 'N'); M.box(6, 0, 6, 8, 0, 8, 'k'); M.box(10, 0, 6, 12, 0, 8, 'k');
+  M.box(6, 5, 3, 12, 7, 9, 'R');
+  M.ell(9, 10.6, 6, 3.8, 3.8, 2.8, 'n'); M.ell(9, 11.6, 8, 2.6, 2, 1.2, 'S');
+  M.cap(4.8, 13, 6, 3.8, 7.6, 7.6, 1.2, 'n'); M.cap(13.2, 13, 6, 14.2, 8.6, 7.8, 1.2, 'n');
+  M.ell(9, 16.6, 7, 2.6, 2.4, 2.6, 'n'); M.ell(9, 15.6, 9.4, 1.6, 1.2, 1.2, 'S');
+  M.px(8, 15, 10, 'k'); M.px(9, 15, 10, 'k'); M.px(8, 14, 10, 'y'); M.px(9, 14, 10, 'y');
+  mirror(9, (s, X) => { M.cap(X(6.8), 18, 7, X(4), 19.6, 7.6, .55, 'w'); M.cap(X(4), 19.6, 7.6, X(3.4), 21.4, 8, .4, 'w'); });
+  M.px(7, 17, 9, 'r'); M.px(10, 17, 9, 'r');
+  M.cap(15, 4, 8.6, 15, 17, 8.6, .45, 'n'); M.ell(15, 16, 10.4, .6, 2.2, 1.6, 'g'); M.ell(15, 16, 6.8, .6, 2.2, 1.6, 'g');
+}
+function mWerewolf(M) {
+  mirror(9, (s, X) => { M.cap(X(7.4), 6, 6, X(6.6), 2.6, 5, 1, 'G'); M.cap(X(6.6), 2.6, 5, X(7), .4, 7, .6, 'G'); });
+  M.ell(9, 13.6, 5.6, 3, 2.4, 2, 'G');
+  M.ell(9, 10.6, 6.6, 3.6, 3.8, 2.8, 'G'); M.ell(9, 11, 8.6, 2.4, 2.6, 1, 'g');
+  M.cap(5.4, 13, 6.6, 3.6, 7, 9, 1, 'G'); M.cap(12.6, 13, 6.6, 14.4, 7, 9, 1, 'G');
+  for (const [x, y, z] of [[3, 6, 9], [3, 7, 10], [4, 6, 10], [15, 6, 9], [15, 7, 10], [14, 6, 10]]) M.px(x, y, z, 'w');
+  M.ell(9, 15.6, 8, 2.4, 2.2, 2.4, 'G'); M.ell(9, 15, 10.4, 1.2, 1.1, 1.6, 'G');
+  M.px(8, 15, 11, 'k'); M.px(9, 15, 11, 'k'); M.px(8, 14, 11, 'w'); M.px(9, 14, 11, 'w');
+  M.cap(7.4, 17, 7.4, 6.6, 19.6, 7, .6, 'G'); M.cap(10.6, 17, 7.4, 11.4, 19.6, 7, .6, 'G');
+  M.px(7, 16, 10, 'r'); M.px(10, 16, 10, 'r');
+}
+function mBanshee(M) {
+  M.cone(8, 6, 2, 12, 3.6, 2, 'w'); M.cap(7, 2.4, 6, 6.4, 0, 6, .6, 'w'); M.cap(9.4, 2.4, 6.4, 10.4, .4, 6.4, .6, 'w'); M.cap(8, 2.4, 4, 8, .2, 3.6, .6, 'w');
+  M.ell(8, 12.6, 6, 2, 2, 1.6, 'w');
+  M.cap(6, 13, 6, 3.6, 17, 7, .55, 'w'); M.cap(10, 13, 6, 12.4, 17, 7, .55, 'w');
+  M.ell(8, 16, 6, 2.1, 2.3, 2, 'c'); M.ell(8, 16.8, 5.2, 2.6, 2.6, 2.2, 'P', (x, y, z) => z < 6 || y > 17.2);
+  M.cap(6, 16, 5, 5, 9, 4.6, 1, 'P'); M.cap(10, 16, 5, 11, 9, 4.6, 1, 'P');
+  M.px(6, 16, 7, 'k'); M.px(9, 16, 7, 'k'); M.ell(8, 14.8, 7.6, .8, 1.2, .6, 'k');
+}
+function mMimic(M) {
+  M.box(2, 0, 3, 13, 5, 12, 'n'); M.box(2, 2, 12, 13, 2, 12, 'Y'); M.box(2, 0, 3, 2, 5, 12, 'N'); M.box(13, 0, 3, 13, 5, 12, 'N');
+  M.box(3, 5, 4, 12, 6, 11, 'k');
+  M.box(2, 8, 2, 13, 10, 7, 'n'); M.box(2, 10, 2, 13, 10, 7, 'Y');
+  for (let x = 3; x <= 12; x += 2) { M.px(x, 6, 11, 'w'); M.px(x + 1, 7, 7, 'w'); }
+  M.cap(7.5, 6, 8, 8, 6.4, 13.4, .8, 'm');
+  M.px(5, 9, 7, 'y'); M.px(10, 9, 7, 'y'); M.px(7, 3, 12, 'y'); M.px(8, 3, 12, 'y');
+}
+function mWyvern(M) {
+  M.ell(11, 6, 9, 3, 2.8, 4, 'E'); M.ell(11, 5, 10.6, 2, 2, 3, 'e');
+  M.cap(9, 4.6, 8, 8.6, .5, 9, 1, 'E'); M.cap(13, 4.6, 8, 13.4, .5, 9, 1, 'E');
+  M.cap(11, 8, 12, 11, 11, 15.6, 1.2, 'E'); M.ell(11, 12, 17, 1.8, 1.6, 2.2, 'E'); M.ell(11, 11, 18.6, 1.2, .8, 1.2, 'E');
+  M.px(10, 13, 18, 'y'); M.px(12, 13, 18, 'y');
+  mirror(11, (s, X) => { M.cap(X(10), 13.4, 16, X(9), 15, 14.6, .4, 'w'); M.ell(X(4.6), 10, 8, 4.4, 4.4, .7, 'e', (x, y) => y > 6.6 + (Math.floor(x) % 3 === 0 ? 1.2 : 0)); M.cap(X(8.6), 9, 8, X(1), 15, 8, .45, 'E'); });
+  M.cap(11, 5, 5, 11, 4, 1, 1, 'E'); M.cap(11, 4, 1, 15, 3, .6, .6, 'E'); M.px(16, 3, 0, 'w');
+}
+function mBasilisk(M) {
+  M.ell(8, 3.6, 10, 3, 2.6, 6.4, 'E'); M.ell(8, 2.4, 11, 2.2, 1.4, 5, 'e');
+  M.ell(8, 4.6, 17, 2.2, 2, 2.4, 'E'); M.ell(6.4, 5.6, 18.4, .7, .7, .6, 'y'); M.ell(9.6, 5.6, 18.4, .7, .7, .6, 'y');
+  M.box(7, 6, 15, 8, 8, 17, 'r'); for (let z = 4; z <= 14; z += 2) M.px(7, 6, z, 'r');
+  for (const z of [5, 10, 14]) { M.cap(5.2, 2.6, z, 3, .4, z, .6, 'E'); M.cap(10.8, 2.6, z, 13, .4, z, .6, 'E'); }
+  M.cap(8, 3, 4, 8, 1.6, .4, 1.2, 'E');
+}
+function mMedusa(M) {
+  M.ring(8, 1, 6, 3.6, 1.2, 'E'); M.ring(8, 3, 6, 2.6, 1.1, 'E'); M.cap(8, 4, 6, 8, 7, 6, 1.6, 'E');
+  M.ell(8, 9.6, 6, 2.2, 2.6, 1.8, 's'); M.ell(8, 10.2, 6.2, 2.3, 1.4, 1.9, 'Y');
+  M.cap(5.8, 11, 6, 4.4, 7.6, 7.4, .6, 's'); M.cap(10.2, 11, 6, 11.6, 7.6, 7.4, .6, 's');
+  M.ell(8, 14.4, 6, 2.2, 2.2, 2, 's'); M.px(6, 14, 7, 'y'); M.px(9, 14, 7, 'y'); M.px(7, 13, 7, 'k'); M.px(8, 13, 7, 'k');
+  for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, bx = 8 + Math.cos(a) * 1.8, bz = 6 + Math.sin(a) * 1.6, tx = 8 + Math.cos(a) * 4, ty = 17.4 + (k % 2) * 1.6, tz = 6 + Math.sin(a) * 3.4; M.cap(bx, 15.6, bz, tx, ty, tz, .45, 'e'); M.px(Math.floor(tx), Math.floor(ty), Math.floor(tz), 'E'); }
+}
+function mHippogriff(M) {
+  M.ell(8, 7, 10, 3, 3, 6, 'n'); M.ell(8, 8, 14, 2.8, 2.8, 2.6, 'w');
+  M.cap(8, 10, 15, 8, 12.6, 17, 1.6, 'w'); M.ell(8, 13.4, 17.6, 1.9, 1.9, 2, 'w'); M.cap(8, 13, 19.4, 8, 12, 21, .6, 'y');
+  M.px(6, 14, 18, 'k'); M.px(9, 14, 18, 'k');
+  M.cap(6.6, 5, 14, 6.6, .5, 15, .7, 'y'); M.cap(9.4, 5, 14, 9.4, .5, 15, .7, 'y');
+  M.cap(6.4, 5, 6, 6.4, .5, 6, .8, 'n'); M.cap(9.6, 5, 6, 9.6, .5, 6, .8, 'n'); M.px(6, 0, 6, 'k'); M.px(9, 0, 6, 'k');
+  M.cap(8, 8, 4, 8, 4, 1, .6, 'N');
+  mirror(8, (s, X) => { M.ell(X(2.4), 11.4, 10, 2.4, 3.6, 5, 'n', (x, y) => y > 8.6); M.ell(X(1.4), 13, 10, 1.2, 1.6, 4, 'w', (x, y) => y > 12); });
+}
+function mCyclops(M) {
+  M.cap(7.4, 7, 6, 7, .6, 6.4, 1.4, 's'); M.cap(10.6, 7, 6, 11, .6, 6.4, 1.4, 's'); M.box(5, 0, 6, 8, 0, 8, 'n'); M.box(10, 0, 6, 13, 0, 8, 'n');
+  M.box(6, 5, 3, 12, 8, 9, 'n');
+  M.ell(9, 12, 6, 4, 4.4, 3, 's'); M.px(9, 10, 9, 'S');
+  M.cap(4.6, 15, 6, 3.4, 8, 7.6, 1.4, 's'); M.cap(13.4, 15, 6, 14.6, 9, 7.6, 1.4, 's');
+  M.ell(9, 19.4, 6.4, 2.8, 2.8, 2.6, 's'); M.ell(9, 20, 8.6, 1.4, 1.1, .7, 'w'); M.px(8, 20, 9, 'k'); M.px(9, 20, 9, 'r');
+  M.box(8, 18, 8, 10, 18, 8, 'k'); M.px(9, 22, 6, 'w'); M.px(9, 23, 6, 'w');
+  M.cap(15, 8, 8.6, 16, 20, 9.4, 1.1, 'N');
+}
+function mVampire(M) {
+  M.cone(8, 5, 0, 13, 4.3, 2.9, 'P');
+  M.box(6, 0, 6, 7, 5, 8, 'k'); M.box(8, 0, 6, 9, 5, 8, 'k');
+  M.ell(8, 10, 6.6, 2.4, 3, 1.9, 'B'); M.box(7, 9, 8, 8, 12, 8, 'w'); M.px(7, 11, 9, 'r');
+  M.ell(8, 13.6, 5.2, 3.2, 1.8, 1.6, 'R', (x, y, z) => z < 6);
+  M.ell(8, 14.8, 6.4, 2, 2.2, 2, 'w'); M.ell(8, 15.8, 6, 2.2, 1.4, 2.1, 'k', (x, y) => y > 15.6);
+  M.px(6, 15, 8, 'r'); M.px(9, 15, 8, 'r'); M.px(7, 13, 8, 'w'); M.px(8, 13, 8, 'k');
+  M.cap(5.4, 12, 6.4, 4, 8.4, 7.8, .8, 'B'); M.cap(10.6, 12, 6.4, 12, 8.4, 7.8, .8, 'B'); M.px(4, 8, 8, 'w'); M.px(12, 8, 8, 'w');
+}
+function mCerberus(M) {
+  M.ell(10, 6, 8, 3.4, 3, 5, 'G');
+  for (const [x, z] of [[7.6, 5], [12.4, 5], [7.6, 11], [12.4, 11]]) M.cap(x, 4, z, x, .5, z, .8, 'G');
+  M.cap(10, 6, 3, 10, 8, .4, .6, 'G');
+  for (const hx of [6, 10, 14]) {
+    M.cap(10, 8, 11, hx, 10, 14, 1.2, 'G'); M.ell(hx, 10.6, 15, 1.7, 1.6, 1.9, 'G'); M.ell(hx, 10, 16.8, .9, .8, 1, 'G');
+    M.px(Math.floor(hx) - 1, 11, 16, 'r'); M.px(Math.floor(hx), 11, 16, 'r'); M.px(Math.floor(hx), 9, 17, 'o');
+    M.cap(hx - .8, 12, 14.6, hx - 1.2, 13.4, 14, .4, 'G'); M.cap(hx + .8, 12, 14.6, hx + 1.2, 13.4, 14, .4, 'G');
+  }
+}
+function mManticore(M) {
+  M.ell(10, 6, 9, 3.4, 3, 5, 'Y');
+  for (const [x, z] of [[7.6, 6], [12.4, 6], [7.6, 12], [12.4, 12]]) M.cap(x, 4, z, x, .5, z, .8, 'Y');
+  M.ell(10, 9, 13.6, 3, 3, 2.4, 'R'); M.ell(10, 9, 15.4, 1.8, 1.8, 1.4, 's'); M.px(9, 10, 16, 'k'); M.px(11, 10, 16, 'k'); M.px(10, 8, 16, 'r');
+  mirror(10, (s, X) => M.ell(X(4), 11.6, 8, 3.8, 3.4, .6, 'R', (x, y) => y > 9 + (Math.floor(x) % 2 ? .8 : 0)));
+  M.cap(10, 7, 4, 10, 11, 1.4, .8, 'r'); M.cap(10, 11, 1.4, 10, 14.4, 4, .7, 'r'); M.cap(10, 14.4, 4, 10, 13.6, 7, .5, 'r'); M.px(10, 13, 8, 'k');
+}
+function mHydra(M) {
+  M.ell(11, 4.6, 8, 5, 4, 5, 'E'); M.ell(11, 3.4, 10, 3.6, 2.4, 3.6, 'e');
+  for (const [x, z] of [[7, 5], [15, 5], [7, 11], [15, 11]]) M.cap(x, 3, z, x, .4, z, .9, 'E');
+  M.cap(11, 4, 3, 11, 2, .4, 1.2, 'E');
+  for (const [hx, hy, hz] of [[3.6, 13.6, 13], [7.2, 16.6, 15], [11, 18, 16], [14.8, 16.6, 15], [18.4, 13.6, 13]]) {
+    M.cap(11, 7, 10, hx, hy - 1.4, hz - 1, 1, 'E'); M.ell(hx, hy, hz, 1.4, 1.2, 1.7, 'e'); M.cap(hx, hy - .5, hz + 1.2, hx, hy - .8, hz + 2.2, .6, 'e');
+    M.px(Math.floor(hx) - 1, Math.floor(hy), Math.floor(hz) + 1, 'r'); M.px(Math.floor(hx) + 1, Math.floor(hy), Math.floor(hz) + 1, 'r');
+  }
+}
+function mLich(M) {
+  M.cone(9, 6, 0, 13, 4.6, 2.8, 'B'); M.cone(9, 6, 0, 0, 4.7, 4.7, 'P');
+  M.ell(9, 13.4, 6, 3, 2.4, 2.2, 'B'); M.ring(9, 12.4, 6.4, 1.6, .4, 'w');
+  M.ell(5.6, 14.6, 6, 1.6, 1.2, 1.6, 'P'); M.ell(12.4, 14.6, 6, 1.6, 1.2, 1.6, 'P'); M.px(5, 16, 6, 'w'); M.px(12, 16, 6, 'w');
+  M.cap(5.4, 14, 6, 4.4, 10, 8, .5, 'w'); M.cap(12.6, 14, 6, 13.8, 11, 8, .5, 'w');
+  M.ell(9, 17.6, 6.2, 2.3, 2.4, 2.2, 'w'); M.ell(9, 18.2, 5.4, 2.8, 2.8, 2.6, 'B', (x, y, z) => z < 6.4 || y > 19.4);
+  M.px(7, 18, 8, 'c'); M.px(10, 18, 8, 'c'); M.px(8, 16, 8, 'k'); M.px(9, 16, 8, 'k');
+  M.ring(9, 20.6, 6, 2.2, .4, 'c');
+  M.cap(14, 0, 8.4, 14, 19, 8.4, .45, 'G'); M.ell(14, 20.2, 8.4, 1.2, 1.2, 1.2, 'w'); M.ell(14, 22, 8.4, .8, 1.2, .8, 'c');
+}
+Object.assign(MODEL_DEFS, {
+  kobold: [14, 15, 10, mKobold], zombi: [16, 18, 12, mZombie], lobo: [12, 12, 18, mWolf], cuervo: [14, 12, 12, mRaven],
+  sapo: [16, 9, 16, mToad], serpiente: [16, 14, 16, mSnake], momia: [16, 19, 12, mMummy], fuegofatuo: [12, 14, 12, mWisp],
+  arpia: [20, 17, 10, mHarpy], sirena: [16, 17, 12, mSiren], troll: [18, 20, 12, mTroll], minotauro: [18, 23, 12, mMinotaur],
+  hombrelobo: [18, 21, 12, mWerewolf], banshee: [16, 20, 12, mBanshee], mimico: [16, 12, 14, mMimic], wyvern: [22, 17, 20, mWyvern],
+  basilisco: [16, 9, 20, mBasilisk], medusa: [16, 21, 12, mMedusa], hipogrifo: [16, 16, 22, mHippogriff], ciclope: [18, 24, 12, mCyclops],
+  vampiro: [16, 18, 12, mVampire], cerbero: [20, 14, 18, mCerberus], manticora: [20, 16, 20, mManticore], hidra: [22, 20, 18, mHydra], lich: [18, 23, 12, mLich],
+});
+
+// ---------- cartas coleccionables
+// rareza: 0 común · 1 rara · 2 épica · 3 legendaria
+const RAREZA = [{ n: 'Común', c: '#9a9aac' }, { n: 'Rara', c: '#4a8ae8' }, { n: 'Épica', c: '#b070e0' }, { n: 'Legendaria', c: '#f8d84a' }];
+const CARD_CHANCE = { cofre: .2, elite: .07, jefe: .15 };   // probabilidad de que un cofre tenga carta
+const CARDS = [
+  ['rata', 'Rata de cripta', 0, 'Roe huesos viejos y oye todo lo que pasa en la mazmorra.'],
+  ['murcielago', 'Murciélago', 0, 'Duerme cabeza abajo y caza al oír el latido de los vivos.'],
+  ['goblin', 'Goblin', 0, 'Pequeño, codicioso y siempre con un cuchillo escondido.'],
+  ['limo', 'Limo', 0, 'Se traga todo lo que encuentra. Lo que no digiere, lo guarda dentro.'],
+  ['esqueleto', 'Esqueleto', 0, 'Un soldado que olvidó morir. Sigue cumpliendo órdenes.'],
+  ['arana', 'Araña de cueva', 0, 'Teje redes del tamaño de una puerta en los túneles.'],
+  ['hongo', 'Hongo andante', 0, 'Sus esporas curan a sus amigos y marean a sus enemigos.'],
+  ['diablillo', 'Diablillo', 0, 'Escapó del Abismo para hacer travesuras crueles.'],
+  ['cultista', 'Cultista', 0, 'Reza a algo que vive bajo la mazmorra y quiere salir.'],
+  ['orco', 'Orco', 0, 'Pega fuerte y piensa poco. Lo segundo no le preocupa.'],
+  ['kobold', 'Kóbold', 0, 'Reptil pequeño que pone trampas por puro placer.'],
+  ['zombi', 'Zombi', 0, 'Camina despacio, pero nunca se cansa de seguirte.'],
+  ['lobo', 'Lobo sombrío', 0, 'Caza en manada en los bosques que rodean la mazmorra.'],
+  ['cuervo', 'Cuervo de mal agüero', 0, 'Si se posa cerca de ti, alguien va a morir pronto.'],
+  ['sapo', 'Sapo venenoso', 0, 'Su piel quema. Su lengua, todavía más.'],
+  ['serpiente', 'Serpiente', 0, 'Se enrosca entre las piedras esperando un tobillo.'],
+  ['momia', 'Momia', 0, 'Un rey antiguo envuelto en vendas y en rencor.'],
+  ['fuegofatuo', 'Fuego fatuo', 0, 'Una luz azul que guía a los perdidos... hacia el abismo.'],
+  ['ratagigante', 'Rata gigante', 1, 'La reina de las ratas. Sus colas se anudaron al nacer.'],
+  ['limogrande', 'Limo morado', 1, 'Se comió a un grupo entero de aventureros. Aún se ven.'],
+  ['ogro', 'Ogro', 1, 'Usa un árbol como garrote y a los goblins de palillos.'],
+  ['gargola', 'Gárgola', 1, 'Parece una estatua hasta que dejas de mirarla.'],
+  ['espectro', 'Espectro', 1, 'El grito de alguien que murió con miedo.'],
+  ['arpia', 'Arpía', 1, 'Mitad mujer, mitad ave. Roba lo que brilla y a quien lo lleva.'],
+  ['sirena', 'Sirena', 1, 'Canta en los lagos subterráneos. Nadie vuelve para contarlo.'],
+  ['troll', 'Troll', 1, 'Sus heridas se cierran solas. Solo el fuego lo detiene.'],
+  ['minotauro', 'Minotauro', 1, 'Guardián de laberintos. Conoce cada pasillo de memoria.'],
+  ['hombrelobo', 'Hombre lobo', 1, 'De día, un leñador amable. De noche, otra cosa.'],
+  ['banshee', 'Banshee', 1, 'Su llanto anuncia la muerte de quien lo escucha.'],
+  ['mimico', 'Mímico', 1, 'Parece un cofre lleno de oro. No lo abras con la mano.'],
+  ['wyvern', 'Guiverno', 1, 'Primo pequeño del dragón, con un aguijón en la cola.'],
+  ['basilisco', 'Basilisco', 1, 'Una mirada suya y te conviertes en piedra.'],
+  ['golem', 'Gólem de piedra', 2, 'Hecho con los muros de la mazmorra. Las runas lo mueven.'],
+  ['caballerooscuro', 'Caballero oscuro', 2, 'Juró proteger el reino. Ahora protege a su nuevo amo.'],
+  ['gusano', 'Gusano gigante', 2, 'Excava las cuevas a mordiscos. Su boca no tiene fondo.'],
+  ['medusa', 'Medusa', 2, 'Sus cabellos son serpientes. Su mirada, una tumba de piedra.'],
+  ['hipogrifo', 'Hipogrifo', 2, 'Mitad águila, mitad caballo. Solo obedece a los valientes.'],
+  ['ciclope', 'Cíclope', 2, 'Un solo ojo, pero no se le escapa nada.'],
+  ['vampiro', 'Vampiro', 2, 'Un noble que lleva siglos cenando a sus invitados.'],
+  ['cerbero', 'Cerbero', 2, 'Tres cabezas para vigilar que nadie salga del Abismo.'],
+  ['manticora', 'Mantícora', 2, 'Cuerpo de león, alas de murciélago y cola de escorpión.'],
+  ['reycalavera', 'Rey Calavera', 3, 'Gobernó la Cripta en vida. Sigue gobernándola en muerte.'],
+  ['dragon', 'Dragón', 3, 'El fuego más antiguo duerme sobre su tesoro en el Abismo.'],
+  ['hidra', 'Hidra', 3, 'Córtale una cabeza y le saldrán dos.'],
+  ['lich', 'Liche', 3, 'Un hechicero que encerró su alma para no morir jamás.'],
+].map(([m, n, r, d], i) => ({ id: m, m, n, r, d, num: i + 1 }));
+function albumGet() { try { return new Set(JSON.parse(localStorage.getItem('mazmorra_album') || '[]')); } catch (e) { return new Set(); } }
+function albumAdd(id) { const s = albumGet(); s.add(id); try { localStorage.setItem('mazmorra_album', JSON.stringify([...s])); } catch (e) {} }
+// abre un cofre: con suerte, una carta que aún no tienes
+function rollCard(chance) {
+  if (FAST || Math.random() >= chance) return null;
+  const own = albumGet(), left = CARDS.filter(c => !own.has(c.id));
+  if (!left.length) return null;
+  const w = [60, 27, 10, 3].map((x, r) => left.some(c => c.r === r) ? x : 0);
+  let t = Math.random() * w.reduce((a, b) => a + b, 0), r = 0;
+  while (t >= w[r]) { t -= w[r]; r++; }
+  const card = pick(left.filter(c => c.r === r));
+  albumAdd(card.id);
+  return card;
+}
+function cardHTML(c, big, owned = true) {
+  const px = big ? 7 : 4.2;
+  return `<div class="card r${c.r} ${big ? 'big' : ''} ${owned ? '' : 'missing'}" style="--rc:${RAREZA[c.r].c}">
+    <div class="cnum">#${String(c.num).padStart(2, '0')}</div>
+    <div class="cart">${sp3(c.m, px, '', -.35, { sil: !owned, still: !big })}</div>
+    <div class="cname">${owned ? c.n : '???'}</div>
+    ${big ? `<div class="crar">${RAREZA[c.r].n}</div>` : ''}
+  </div>`;
+}
+function cardReveal(c, after) {
+  S = { scr: 'card', after };
+  app.innerHTML = `<div class="center c" style="align-items:center"><p class="t">Dentro del cofre había algo más...</p><h1 style="font-size:16px">¡Carta nueva!</h1>
+    <div class="reveal">${cardHTML(c, true)}</div><p class="t" style="max-width:280px">${c.d}</p>
+    <p class="t">Álbum: ${albumGet().size}/${CARDS.length}</p>
+    <button class="btn pri" onclick="G.cardOk()">Guardar en el álbum</button></div>`;
+  Sfx.clack(1);
+}
+function albumScreen() {
+  S = { scr: 'album' };
+  const own = albumGet();
+  app.innerHTML = `<h2 class="c">Álbum de criaturas</h2><p class="t c">${own.size} de ${CARDS.length} cartas. Se encuentran en los cofres, con mucha suerte.</p>
+    <div class="cgrid">${CARDS.map(c => `<button class="cbtn" onclick="G.cardView('${c.id}')">${cardHTML(c, false, own.has(c.id))}</button>`).join('')}</div>
+    <button class="btn small" onclick="G.title()">Volver</button>`;
+}
+
 const V3D = {
   models: {}, frames: {},
   model(name) {
@@ -1313,17 +1653,19 @@ const V3D = {
       const ctx = cv.getContext('2d'), img = ctx.createImageData(cw, ch);
       cv._s = { cw, ch, ctx, img, buf: new Uint32Array(img.data.buffer), yaw: +cv.dataset.yaw, ph: +cv.dataset.ph, last: null };
     }
-    const S0 = cv._s, yq = Math.round((S0.yaw + Math.sin(time * .8 + S0.ph) * .32) / .04);
+    const S0 = cv._s, yq = Math.round((S0.yaw + (cv.dataset.still ? 0 : Math.sin(time * .8 + S0.ph) * .32)) / .04);
     if (yq === S0.last) return;
     S0.last = yq;
-    S0.buf.set(this.frame(cv.dataset.n, S0.cw, S0.ch, yq));
+    const fr = this.frame(cv.dataset.n, S0.cw, S0.ch, yq);
+    if (cv.dataset.sil) { const ol = pack(8, 5, 10), sh = pack(34, 26, 46); for (let i = 0; i < fr.length; i++) S0.buf[i] = fr[i] ? (fr[i] === ol ? ol : sh) : 0; }
+    else S0.buf.set(fr);
     S0.ctx.putImageData(S0.img, 0, 0);
   },
 };
-function sp3(name, px, swap, yaw = 0) {
+function sp3(name, px, swap, yaw = 0, o = {}) {
   const d = MODEL_DEFS[name] || MODEL_DEFS.rata, ext = Math.hypot(d[0], d[2]), k = px * .88;
   const w = Math.round(ext * k * .82 / 2) * 2, h = Math.round((d[1] * .95 + ext * .31) * k / 2) * 2;
-  return `<canvas class="v3d px3d" data-n="${name}" data-yaw="${yaw}" data-ph="${(Math.random() * 6).toFixed(2)}" style="width:${w}px;height:${h}px"></canvas>`;
+  return `<canvas class="v3d px3d" data-n="${name}" data-yaw="${yaw}" ${o.sil ? 'data-sil="1"' : ''} ${o.still ? 'data-still="1"' : ''} data-ph="${(Math.random() * 6).toFixed(2)}" style="width:${w}px;height:${h}px"></canvas>`;
 }
 let v3last = 0;
 (function v3loop(now) {
@@ -1863,6 +2205,7 @@ function title() {
     <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
+    <button class="btn gold" onclick="G.album()">${sp('dado', 2)} Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
     <button class="btn" onclick="G.help()">Cómo se juega</button>
     <button class="btn small" onclick="G.sfx()">Sonido: ${Sfx.on ? 'sí' : 'no'}</button>
   </div>`;
@@ -2007,7 +2350,7 @@ function curse() {
 }
 const EVENTS = [
   { id: 'cofre', t: 'Cofre polvoriento', ico: 'cofre', x: 'En una esquina hay un cofre lleno de telarañas.', o: [
-    { t: 'Abrirlo', f: r => Math.random() < .6 ? (r.gold += 25, '¡Monedas! +25 de oro.') : (hurt(5), '¡Era una trampa! Pierdes 5 de vida.') },
+    { t: 'Abrirlo', f: r => { if (Math.random() >= .6) { hurt(5); return '¡Era una trampa! Pierdes 5 de vida.'; } r.gold += 25; const c = rollCard(CARD_CHANCE.cofre); return c ? { msg: '¡Monedas! +25 de oro. Y en el fondo del cofre brilla algo...', next: () => cardReveal(c, nextRoom) } : '¡Monedas! +25 de oro.'; } },
     { t: 'Dejarlo', f: () => 'Mejor no tocar nada.' }] },
   { id: 'fuente', t: 'Fuente azul', ico: 'veneno', sw: 'agua', x: 'Un agua azul brilla en una fuente de piedra.', o: [
     { t: 'Beber', f: () => Math.random() < .7 ? `Te sientes mejor. +${heal(8)} de vida.` : curse() },
@@ -2294,7 +2637,7 @@ async function endTurn() {
     }
     if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p + ' veneno', '#7aea7a'); }
     if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
-    if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); }
+    if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); Tips.show('rage', 'Se ha enfurecido: desde ahora sus golpes suman ' + e.rage + ' más (el número rojo pequeño).', '#ov-e' + C.en.indexOf(e) + ' .intent'); }
     if (it.s && alive().length < 3) { const m = makeEnemy(it.s); C.en.push(m); fl(m, '¡Aparece!', '#d0a0ff'); }
     e.acted = true;
     cRender(); await sleep(480);
@@ -2311,7 +2654,7 @@ async function endTurn() {
 function intentHTML(e) {
   const it = e.intent; if (!it || C.phase === 'enemy') return '<span style="color:var(--dim)">…</span>';
   const p = [];
-  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a + e.rage}</span>`);
+  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a}${e.rage ? `<span class="rg">+${e.rage}${sp('furia', 1)}</span>` : ''}</span>`);
   if (it.b) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${it.b}</span>`);
   if (it.p) p.push(`<span style="color:#7aea7a">${sp('veneno', 2)}${it.p}</span>`);
   if (it.h) p.push(`<span style="color:#ff8a8a">${sp('corazon', 2)}+${it.h}</span>`);
@@ -2387,8 +2730,12 @@ function cRender() {
   const inc = incoming();
   ov += `<div class="hbar" id="hbar"><div class="hb-top"><span>${run.cls}</span><span class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</span></div>
     ${pips(run.hp, run.maxHp, { inc: inc.inc, poi: inc.poi, blk: C.block, row: 20, cls: 'big' })}</div>`;
-  if (eff && C.phase !== 'resolve') eff.fs.forEach(f => { const sd = Scene.pdie(f.d); if (sd && f.tag && !C.used[f.d] && !sd.fly) { const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .1, sd.pos[2]]); ov += `<div class="dtag" style="left:${x}px;top:${y}px">${f.tag}</div>`; } });
-  if (C.phase === 'reroll') DKEYS.forEach(k => { const sd = Scene.pdie(k); if (sd && C.locked[k]) { const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .15, sd.pos[2]]); ov += `<div class="dk" style="left:${x}px;top:${y}px">${sp('candado', 2)}</div>`; } });
+  if (eff && C.phase !== 'resolve') eff.fs.forEach(f => {
+    const sd = Scene.pdie(f.d), lk = C.phase === 'reroll' && C.locked[f.d];
+    if (!sd || C.used[f.d] || sd.fly || (!f.tag && !lk)) return;
+    const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .1, sd.pos[2]]);
+    ov += `<div class="dov" style="left:${x}px;top:${y}px">${lk ? `<span class="dlk">${sp('candado', 2)}</span>` : ''}${f.tag ? `<span class="dtag">${f.tag}</span>` : ''}</div>`;
+  });
   if (C.phase === 'roll' && !Tuto.on) ov += `<div class="tap-hint">Toca para tirar tus dados</div>`;
   $('#ovs').innerHTML = ov;
   flushFx();
@@ -2410,12 +2757,14 @@ async function winCombat() {
   run.gold += g;
   if (has('colmillo')) heal(4);
   C = null;
+  const card = kind === 'jefe' || kind === 'elite' ? rollCard(CARD_CHANCE[kind]) : null;
+  const withCard = f => card ? cardReveal(card, f) : f();
   if (kind === 'jefe') {
     run.hp = run.maxHp;
-    if (run.floor >= FLOORS.length - 1) return victory();
-    return evolve(() => relicChoice('Tesoro del jefe', nextFloor));
+    if (run.floor >= FLOORS.length - 1) return withCard(victory);
+    return withCard(() => evolve(() => relicChoice('Tesoro del jefe', nextFloor)));
   }
-  if (kind === 'elite') return relicChoice(`¡Élite vencido! +${g} de oro`, nextRoom);
+  if (kind === 'elite') return withCard(() => relicChoice(`¡Élite vencido! +${g} de oro`, nextRoom));
   reward(g);
 }
 async function lose() { await sleep(600); C = null; Tuto.on = false; Coach.draw(); gameOver(); }
@@ -2445,6 +2794,9 @@ const G = {
     else if (C.phase === 'use') { if (C.used[d]) return; if (C.sel === d && Tuto.on) return; if (Tuto.expect('sel:' + d)) selDie(d); }
     else if (C.phase === 'roll') G.roll();
   },
+  album: () => albumScreen(),
+  cardOk: () => { const a = S.after; a && a(); },
+  cardView: id => { const c = CARDS.find(x => x.id === id), own = albumGet().has(id); modal(`<div class="c" style="display:flex;flex-direction:column;align-items:center;gap:10px">${cardHTML(c, true, own)}<p class="t">${own ? c.d : 'Aún no la has encontrado. Busca en los cofres.'}</p></div>`); },
   legend: () => modal(`<h3>Leyenda de las puertas</h3><div class="col">${Object.values(ROOMS).map(r => `<div class="row">${sp(r.ico, 4)}<div><b style="font-size:9px;font-weight:normal">${r.n === '¿?' ? 'Evento' : r.n}</b><p class="t">${r.d}</p></div></div>`).join('')}</div>`),
   tapEnemy: i => {
     const e = C && C.en[i]; if (!e || e.hp <= 0) return;
