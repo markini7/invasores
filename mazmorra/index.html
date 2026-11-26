@@ -283,6 +283,9 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .scard{display:flex;gap:12px;align-items:center}
 .srow{display:flex;justify-content:space-between;gap:8px;font-size:8px;line-height:1.8;color:var(--dim)}
 .srow b{font-weight:normal;color:var(--txt);font-variant-numeric:tabular-nums}
+.ec-hp{display:flex;align-items:center;gap:5px}
+.ec-hp .pipw{flex:1;min-width:0}
+.hpn{font-size:7px;color:#ff8a8a;flex:none;font-variant-numeric:tabular-nums;text-shadow:1px 1px 0 #000}
 </style>
 </head>
 <body>
@@ -2928,7 +2931,7 @@ function cRender() {
     const row = e.max <= 12 ? e.max : live.length === 1 ? 35 : live.length === 2 ? 25 : 16;
     band += `<div class="ecard ${can ? 'pick' : f ? 'nope' : ''}" id="ec-${i}" style="left:${cx}px;width:${w}px" onclick="G.tapEnemy(${i})">
       <div class="ec-top"><span class="nm">${e.n}</span>${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}<span class="intent">${intentHTML(e)}</span></div>
-      ${pips(e.hp, e.max, { blk: e.block, row: Math.max(row, e.max <= 12 ? e.max : Math.ceil(e.max / 2)), cls: 'en' })}</div>`;
+      <div class="ec-hp">${pips(e.hp, e.max, { blk: e.block, row: Math.max(4, Math.min(Math.max(row, e.max <= 12 ? e.max : Math.ceil(e.max / 2)), Math.floor((w - 12 - 6 * (String(e.max).length * 2 + 1) * 1.0 - 8) / 5))), cls: 'en' })}<span class="hpn">${Math.max(0, e.hp)}/${e.max}</span></div></div>`;
   });
   const eb = $('#eband'); eb.innerHTML = band;
   eb.style.height = Math.max(46, ...[...eb.children].map(c => c.offsetHeight + 10)) + 'px';
