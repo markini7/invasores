@@ -176,7 +176,7 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ov.pick .nm{color:var(--gold)}
 .ov.nope{opacity:.45}
 .dk{position:absolute;transform:translate(-50%,-100%)}
-.tap-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:9px;text-shadow:2px 2px 0 #000;animation:blink 1.2s steps(2) infinite}
+.tap-hint{position:absolute;left:0;right:0;bottom:64px;text-align:center;font-size:9px;text-shadow:2px 2px 0 #000;animation:blink 1.2s steps(2) infinite}
 .phase{background:var(--panel);box-shadow:0 0 0 2px #000,0 0 0 5px #3a2e4a,0 0 0 7px #000;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:64px}
 .ph-t{font-size:10px;color:var(--gold);line-height:1.5}
 .ph-t .gold{color:#fff4a0}
@@ -191,6 +191,36 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .dchip.lk span::after{content:' · guardado';color:#c8e6ff}
 .row2{display:flex;gap:10px}
 .row2 .btn{flex:1}
+
+.pipw{display:flex;align-items:center;gap:4px}
+.pips{display:grid;gap:2px;width:max-content}
+.pips i{display:block;width:3px;height:6px;background:#e04848;box-shadow:0 0 0 1px #000}
+.pips.mid i{width:5px;height:8px}
+.pips.big i{width:8px;height:11px}
+.pips i.e{background:#2c1a20}
+.pips i.y{background:#f8d84a;animation:pipb .9s steps(2) infinite}
+.pips i.g{background:#5ad05a;animation:pipb .9s steps(2) infinite}
+.pips i.b{background:#4a8ae8}
+.pips i.x{background:#9ac8ff}
+@keyframes pipb{50%{filter:brightness(.55)}}
+.skull{animation:blink .6s steps(2) infinite}
+.hbar{position:absolute;left:8px;right:8px;bottom:8px;background:#000c;box-shadow:0 0 0 2px #000,0 0 0 4px #3a2e4a;padding:6px 8px;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.hb-top{display:flex;justify-content:space-between;align-items:center;font-size:7px;color:#e8e0f0}
+.hb-top .badges{min-height:0}
+.dtag{position:absolute;transform:translate(-50%,-100%);font-size:9px;color:#000;background:var(--gold);padding:2px 4px;box-shadow:0 0 0 2px #000;animation:blink 1s steps(2) infinite}
+.dchip .tag{font-style:normal;color:#000;background:var(--gold);padding:1px 3px;margin-left:4px}
+.dchip.cb .fc{box-shadow:0 0 0 2px var(--gold)}
+.coach{position:fixed;z-index:80;pointer-events:none;background:#fff4d6;color:#1a1020;font-size:9px;line-height:1.8;padding:10px 12px;box-shadow:0 0 0 3px #000,4px 4px 0 3px #0008;animation:pop2 .25s steps(3)}
+.coach .ct{margin-bottom:2px}
+.coach .cb{pointer-events:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:8px}
+.coach .cb .btn{width:auto;padding:8px 14px;font-size:9px}
+.coach .skip{font:inherit;font-size:6px;color:#7a6a80;background:none;border:none;text-decoration:underline;padding:0;cursor:pointer}
+.coach.up::after,.coach.down::after{content:'';position:absolute;left:calc(var(--ax) - 7px);border:7px solid transparent}
+.coach.up::after{top:100%;border-top-color:#fff4d6}
+.coach.down::after{bottom:100%;border-bottom-color:#fff4d6}
+@keyframes pop2{0%{transform:scale(.8)}}
+.coach-hl{outline:3px solid var(--gold)!important;outline-offset:3px;animation:hlp .8s steps(2) infinite}
+@keyframes hlp{50%{outline-color:#fff4d6}}
 </style>
 </head>
 <body>
@@ -646,7 +676,7 @@ function renderRoom(s, cam, theme, room, time) {
           if (d.boss) { tex *= .8; }
           // símbolo de la sala pintado en la puerta (brilla un poco)
           if (d.ico) {
-            const sz = d.w * .56, cy = rh * .66, ix = Math.floor((ox / sz + .5) * 7), iy = Math.floor((.5 - (py - cy) / sz) * 7);
+            const sz = d.w * .74, cy = rh * .6, ix = Math.floor((ox / sz + .5) * 7), iy = Math.floor((.5 - (py - cy) / sz) * 7);
             if (ix >= 0 && ix < 7 && iy >= 0 && iy < 7) { const g = ICO[d.ico]; const ch = g && g[iy] && g[iy][ix]; if (ch && PAL[ch]) direct = d.icoC[ch]; }
           }
           break;
@@ -1385,8 +1415,8 @@ const Scene = {
     for (const it of items) {
       if (it.f) { this.blitFig(it.f, now); continue; }
       const d = it.d; id++;
-      outl[id] = d.sel ? pack(248, 216, 74) : d.locked ? pack(200, 230, 255) : d.kind === 'e' ? pack(40, 6, 10) : pack(8, 5, 7);
-      const texFn = d.kind === 'e' ? fi => enemyFaceTex(d.en.f[d.map[fi]]) : fi => (fi === d.top && d.boost ? faceTex(d.d, d.boost, true) : faceTex(d.d, run.dice[d.d][d.map[fi]], false));
+      outl[id] = d.sel ? pack(255, 255, 255) : d.boost ? pack(248, 216, 74) : d.locked ? pack(160, 210, 255) : d.kind === 'e' ? pack(40, 6, 10) : pack(8, 5, 7);
+      const texFn = d.kind === 'e' ? fi => enemyFaceTex(d.en.f[d.map[fi]]) : fi => faceTex(d.d, run.dice[d.d][d.map[fi]], false);
       if (d.fade) { const k = Math.min(1, (now - d.fade) / 450); if (k >= 1) { d.gone = true; continue; } d.fk = k; } else d.fk = 0;
       drawCube(s, idb, cam, d, texFn, id);
       if (d.fk) for (let i = 0; i < buf.length; i++) if (idb[i] === id && BAYER[((i / W | 0) & 3) * 4 + (i % W & 3)] < d.fk) { buf[i] = this.bg[i]; idb[i] = 0; }
@@ -1615,7 +1645,7 @@ const ROOMS = {
   elite:    { n: 'Élite', ico: 'calavera', d: 'Duro. Da reliquia' },
   forja:    { n: 'Forja', ico: 'yunque', d: '+1 a dos caras' },
   altar:    { n: 'Altar', ico: 'altar', d: 'Un dado entero +1' },
-  evento:   { n: '¿?', ico: 'pregunta', d: 'Algo pasa...' },
+  evento:   { n: '¿?', ico: 'pregunta', d: 'Una sorpresa: puede salir bien o mal' },
   descanso: { n: 'Hoguera', ico: 'fuego', d: 'Cura o entrena' },
   tienda:   { n: 'Tienda', ico: 'moneda', d: 'Caras y reliquias' },
   jefe:     { n: 'Jefe', ico: 'corona', d: '¡Cuidado!' },
@@ -1658,17 +1688,105 @@ function genDoors(s) {
 }
 
 // ---------------------------------------------------------- utilidades de interfaz
-function hearts(hp, max, per = 12) {
-  hp = Math.max(0, hp);
-  const u = max <= per * 2 ? 1 : 5, n = Math.ceil(max / u), full = Math.floor(hp / u), part = hp - full * u, nm = u === 1 ? 'hp1' : 'hp5';
+// ---------------------------------------------------------- barra de vida de puntitos
+// rojo = vida · amarillo = lo que te van a quitar los golpes · azul = lo bloqueado
+// (y escudo que sobra, al final) · verde = lo que te quitará el veneno · oscuro = perdida
+function pips(hp, max, o = {}) {
+  hp = Math.max(0, Math.min(hp, max));
+  const risk = Math.min(hp, o.inc || 0), blocked = Math.min(o.blk || 0, risk), yellow = risk - blocked;
+  const green = Math.min(hp - risk, o.poi || 0), safe = hp - risk - green, extra = Math.max(0, (o.blk || 0) - blocked);
+  const row = o.row || (max <= 12 ? max : max <= 30 ? 15 : 20);
   let h = '';
-  for (let i = 0; i < n; i++) h += i < full ? sp(nm, 2) : i === full && part > 0 ? sp(nm + 'h', 2) : sp(nm, 2, 'hpE');
-  const cell = u === 1 ? 12 : 16, row = u === 1 ? per : Math.max(4, Math.round(per * .75));
-  return `<div class="hearts ${u > 1 ? 'big' : ''}" style="max-width:${Math.min(n, row) * cell}px" title="${hp}/${max}">${h}</div>`;
+  for (let i = 0; i < max; i++) h += `<i class="${i < safe ? 'r' : i < safe + blocked ? 'b' : i < safe + blocked + yellow ? 'y' : i < hp ? 'g' : 'e'}"></i>`;
+  for (let i = 0; i < extra; i++) h += '<i class="x"></i>';
+  const dead = o.inc !== undefined && hp > 0 && yellow + green >= hp;
+  return `<div class="pipw">${dead ? `<span class="skull">${sp('calavera', 2)}</span>` : ''}<div class="pips ${o.cls || ''}" style="grid-template-columns:repeat(${row},auto)">${h}</div></div>`;
 }
+function hearts(hp, max) { return pips(hp, max, { cls: 'mid', row: 20 }); }
+// lo que te viene este turno (golpes y veneno de los enemigos que aún no han actuado)
+function incoming() {
+  let inc = 0, poi = C.ppoison;
+  if (C.phase !== 'enemy') for (const e of alive()) if (e.intent && !e.acted) { if (e.intent.a) inc += e.intent.a + e.rage; poi += e.intent.p; }
+  return { inc, poi };
+}
+
+// ---------------------------------------------------------- tutorial paso a paso y pistas
+// Un bocadillo con una flecha señala UNA cosa con una frase corta.
+const Coach = {
+  draw() {
+    const old = document.getElementById('coach'); if (old) old.remove();
+    document.querySelectorAll('.coach-hl').forEach(x => x.classList.remove('coach-hl'));
+    if (FAST) return;
+    if (Tuto.on && C && C.busy) return;
+    let st = null;
+    if (Tuto.on) { st = Tuto.steps[Tuto.step]; if (st) { const el = typeof st.el === 'function' ? st.el() : st.el; st = { t: typeof st.t === 'function' ? st.t() : st.t, el, ok: !st.on, tuto: 1, dy: el && el.startsWith('#ov-e') ? 64 : 0 }; } }
+    else if (Tips.cur) st = { t: Tips.cur.t, el: Tips.cur.el, ok: 1, dy: Tips.cur.el && Tips.cur.el.startsWith('#ov-e') ? 64 : 0 };
+    if (!st) return;
+    const el = st.el ? document.querySelector(st.el) : null;
+    if (st.el && !el) return;
+    const b = document.createElement('div'); b.id = 'coach'; b.className = 'coach';
+    b.innerHTML = `<div class="ct">${st.t}</div>${st.ok || st.tuto ? `<div class="cb">${st.tuto ? `<button class="skip" onclick="Tuto.skip()">Saltar tutorial</button>` : ''}${st.ok ? `<button class="btn pri" onclick="${st.tuto ? 'Tuto.ok()' : 'Tips.close()'}">Vale</button>` : ''}</div>` : ''}`;
+    document.body.appendChild(b);
+    const vw = window.innerWidth, bw = Math.min(260, vw - 24);
+    b.style.width = bw + 'px';
+    if (!el) { b.style.left = (vw - bw) / 2 + 'px'; b.style.top = '35%'; return; }
+    el.classList.add('coach-hl');
+    const r = el.getBoundingClientRect(), bh = b.offsetHeight, cx = r.left + r.width / 2;
+    const left = Math.max(12, Math.min(vw - bw - 12, cx - bw / 2));
+    const above = !st.dy && r.top - bh - 14 > 8;
+    b.style.left = left + 'px'; b.style.top = (above ? r.top - bh - 12 : r.bottom + 12 + (st.dy || 0)) + 'px';
+    b.classList.add(above ? 'up' : 'down'); b.style.setProperty('--ax', (cx - left) + 'px');
+  },
+};
+const Tuto = {
+  on: false, step: 0, rig: {},
+  seen() { try { return !!localStorage.getItem('mazmorra_tuto3'); } catch (e) { return true; } },
+  start() {
+    this.on = true; this.step = 0;
+    const atk = run.dice.atk, hi = atk.reduce((b, f, i) => f.v > atk[b].v ? i : b, 0), blank = d => Math.max(0, run.dice[d].findIndex(f => blankF(f)));
+    this.rig = { atk: [hi], def: [blank('def'), run.dice.def.findIndex(f => f.v === 1)], esp: [blank('esp'), 5] };
+  },
+  steps: [
+    { el: '#ov-e0 .intent', t: 'Esta rata te va a pegar 2.' },
+    { el: '#hbar', t: 'Tu barra lo avisa: 2 puntitos en amarillo.' },
+    { el: '#btn-roll', t: 'Tira tus dados.', on: 'roll' },
+    { el: '.dchip[data-d="atk"]', t: 'Buen ataque. Tócalo para guardarlo.', on: 'lock:atk' },
+    { el: '#btn-rr', t: 'Vuelve a tirar los demás.', on: 'reroll' },
+    { el: '#btn-ready', t: '¡Mejor! Ahora, a usarlos.', on: 'ready' },
+    { el: '.dchip[data-d="def"]', t: 'Toca tu protección.', on: 'sel:def' },
+    { el: '#btn-self', t: 'Úsala en ti.', on: 'use:def' },
+    { el: '#hbar', t: 'Lo amarillo pasa a azul: ese golpe ya está parado.' },
+    { el: '.dchip[data-d="atk"]', t: 'Toca tu ataque.', on: 'sel:atk' },
+    { el: '#ov-e0', t: 'Y ahora toca a la rata.', on: 'use:atk' },
+    { el: '.dchip[data-d="esp"]', t: () => `Por último, tu dado de ${DN('esp')}.`, on: 'sel:esp' },
+    { el: () => targetType(effFaces().fs[2]) === 'self' ? '#btn-self' : '#ov-e0', t: () => targetType(effFaces().fs[2]) === 'self' ? 'Este es para ti.' : 'Úsalo en la rata.', on: 'use:esp' },
+  ],
+  // ¿se permite esta acción ahora? (durante el tutorial solo la que toca)
+  expect(ev) {
+    if (!this.on) return true;
+    const st = this.steps[this.step];
+    if (!st) return true;
+    if (st.on === ev) { this.step++; if (this.step >= this.steps.length) this.finish(); return true; }
+    toast(st.on ? 'Sigue la flecha' : 'Pulsa Vale'); return false;
+  },
+  ok() { const st = this.steps[this.step]; if (st && !st.on) { this.step++; Coach.draw(); } },
+  finish() { this.on = false; try { localStorage.setItem('mazmorra_tuto3', '1'); } catch (e) {} setTimeout(() => toast('¡Así se pelea!'), 600); },
+  skip() { this.on = false; this.rig = {}; try { localStorage.setItem('mazmorra_tuto3', '1'); } catch (e) {} Coach.draw(); if (C) cRender(); },
+};
+// pistas de una frase que salen solo la primera vez que pasa algo
+const Tips = {
+  cur: null,
+  seen: (() => { try { return new Set(JSON.parse(localStorage.getItem('mazmorra_tips') || '[]')); } catch (e) { return new Set(); } })(),
+  show(id, t, el) {
+    if (FAST || Tuto.on || this.cur || this.seen.has(id)) return;
+    this.seen.add(id); try { localStorage.setItem('mazmorra_tips', JSON.stringify([...this.seen])); } catch (e) {}
+    this.cur = { id, t, el };
+  },
+  close() { this.cur = null; Coach.draw(); },
+};
 function bar(v, m, col) { const p = Math.max(0, Math.min(100, v / m * 100)); return `<div class="bar"><i style="width:${p}%;${col ? 'background:' + col : ''}"></i><b>${Math.max(0, v)}/${m}</b></div>`; }
 function hud() {
-  return `<div class="hud"><span>${FLOORS[run.floor].n}</span><span>${sp('moneda', 2)}${run.gold}</span></div>${S.scr === 'combat' || S.scr === 'map' ? '' : `<div class="hudhp">${hearts(run.hp, run.maxHp, 15)}</div>`}`;
+  return `<div class="hud"><span>${FLOORS[run.floor].n}</span><span>${sp('moneda', 2)}${run.gold}</span></div>${S.scr === 'combat' || S.scr === 'map' ? '' : `<div class="hudhp">${hearts(run.hp, run.maxHp)}</div>`}`;
 }
 function faceHTML(f, d, opts = {}) {
   const tag = opts.click ? 'button' : 'div';
@@ -1752,7 +1870,7 @@ function chooseHero() {
   app.innerHTML = `<h2 class="c">Elige tu héroe</h2>${Object.entries(HEROES).map(([k, h]) => {
     const rec = b[k] ? `Récord: piso ${Math.floor(b[k].p / STEPS) + 1}${b[k].w ? ` · ${b[k].w} victoria${b[k].w > 1 ? 's' : ''}` : ''}` : '';
     return `<button class="btn hero-card" style="--dc:${h.dc}" onclick="G.start('${k}')">${fig(sp3(h.spr, 5, '', .4))}<div class="info">
-      <h3>${h.n}</h3>${hearts(h.hp, h.hp, 12)}
+      <h3>${h.n}</h3>${hearts(h.hp, h.hp)}
       <small>${h.d}</small>
       <div class="drow">${h.esp.map(f => faceHTML(f, 'esp')).join('')}</div>
       ${rec ? `<small style="color:var(--gold)">${rec}</small>` : ''}</div></button>`;
@@ -1761,12 +1879,12 @@ function chooseHero() {
 function help() {
   modal(`<div class="help col"><h3>Cómo se juega</h3>
   <p>Tienes <b>3 dados</b>: Ataque, Protección y Especial (cambia según el héroe). Cada turno los tiras todos a la vez.</p>
-  <p>La vida son <b>corazones</b>: cada uno es 1 de vida. Los de <b>borde dorado</b> (enemigos grandes) valen 5.</p>
+  <p>La vida es una <b>barra de puntitos</b>. En la tuya, <b>amarillo</b> es lo que te van a quitar los golpes, <b>azul</b> lo que has bloqueado y <b>verde</b> el veneno.</p>
   <p>Los enemigos <b>tiran sus dados primero</b>: encima de cada uno ves lo que va a hacer.</p>
   <p>Después tiras los tuyos. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces por turno).</p>
-  <p>Luego <b>usa cada dado</b>: tócalo y toca su objetivo. El ataque va al enemigo que elijas, la protección para el ataque de un enemigo concreto y los especiales a quien toque.</p>
+  <p>Luego <b>usa cada dado</b>: tócalo y toca su objetivo. El ataque va al enemigo que elijas; la protección es para ti y para los golpes (el veneno la atraviesa).</p>
   <p>Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
-  <p><b>Pareja</b>: si dos dados sacan el mismo número, los dos suman +1. <b>Trío</b>: si salen los tres iguales, todo vale el doble.</p>
+  <p><b>Pareja</b>: dos dados con el mismo número llevan la etiqueta <b>+1</b> y suman uno más cada uno. <b>Trío</b>: los tres iguales llevan <b>×2</b> y valen el doble.</p>
   <p>Toca a un enemigo (sin dado elegido) para ver todas las caras de su dado.</p>
   <p>Entre combates eliges puerta: forjas, altares, tiendas y eventos <b>mejoran las caras</b> de tus dados. Al vencer a un jefe tu héroe <b>evoluciona</b>.</p>
   <p>Si mueres, vuelves a empezar. ¡Suerte!</p></div>`);
@@ -1786,11 +1904,14 @@ function map() {
   const dots = Array.from({ length: STEPS }, (_, i) => `<i class="${i < run.step ? 'done' : i === run.step ? 'now' : i === STEPS - 1 ? 'boss' : ''}"></i>`).join('');
   app.innerHTML = `${hud()}<div class="steps">${dots}</div>
     <div class="view" id="view"><div class="view-t">${run.doors.length > 1 ? 'Toca una puerta' : run.doors[0] === 'jefe' ? 'El jefe te espera' : 'Toca la puerta'}</div>
-      ${run.doors.map((d, i) => `<div class="dl3 ${d === 'jefe' ? 'boss' : ''}" onclick="G.door(${i})"><b>${ROOMS[d].n}</b>${run.doors.length < 3 ? `<small>${ROOMS[d].d}</small>` : ''}</div>`).join('')}</div>
-    <div class="panel row">${fig(sp3(H().spr, 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${hearts(run.hp, run.maxHp, 15)}${relicsHTML()}</div></div>
+    </div>
+    <button class="btn small" id="btn-leg" onclick="G.legend()">${sp('pregunta', 2)} Leyenda de símbolos</button>
+    <div class="panel row">${fig(sp3(H().spr, 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${hearts(run.hp, run.maxHp)}${relicsHTML()}</div></div>
     <div class="panel">${diceRows()}</div>
     <button class="btn small" onclick="G.title()">Guardar y salir</button>`;
   if (!FAST) Corr.build($('#view'), run.doors, run.floor);
+  if (run.doors.length > 1) Tips.show('legend', 'Cada símbolo es un tipo de sala. Si no sabes cuál es cuál, mira la leyenda.', '#btn-leg');
+  Coach.draw();
 }
 function nextRoom() {
   if (run.hp <= 0) return gameOver();
@@ -1975,7 +2096,8 @@ function makeEnemy(key) {
 function startCombat(kind) {
   const fl = FLOORS[run.floor];
   let list;
-  if (kind === 'jefe') list = [fl.boss];
+  if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
+  else if (kind === 'jefe') list = [fl.boss];
   else if (kind === 'elite') list = [pick(fl.elite)];
   else {
     let n = run.step < 2 ? 1 : Math.random() < (run.floor ? .65 : .5) ? 2 : 1;
@@ -1995,7 +2117,8 @@ async function newTurn() {
   C.locked = { atk: false, def: false, esp: false }; C.used = { atk: false, def: false, esp: false };
   C.furia = C.turn === 1 && has('brasa') ? 2 : 0; C.hits = 1;
   C.rerolls = 2 + (has('trebol') ? 1 : 0);
-  for (const e of C.en) { e.guard = 0; e.thorn = 0; e.die = R(0, 5); e.intent = parseFace(e.f[e.die]); e.block = e.intent.b; }
+  C.thorns = 0;
+  for (const e of C.en) { e.acted = false; e.die = Tuto.on && C.turn === 1 ? Math.max(0, e.f.indexOf('a2')) : R(0, 5); e.intent = parseFace(e.f[e.die]); e.block = e.intent.b; }
   C.phase = 'enemy'; C.busy = true; cRender();
   if (!FAST) {
     Scene.dice = [];
@@ -2003,9 +2126,9 @@ async function newTurn() {
     Scene.dice.push(...ed); await sleep(250); await Scene.throw(ed);
   }
   C.phase = 'roll'; C.busy = false; cRender();
-  if (!FAST && C.turn === 1) tutorial();
 }
 function rollDie(d) {
+  if (Tuto.on && Tuto.rig[d] && Tuto.rig[d].length) { const i = Tuto.rig[d].shift(); return { ...run.dice[d][i], i }; }
   let i = R(0, 5);
   if (has('cargado') && blankF(run.dice[d][i])) i = R(0, 5);
   return { ...run.dice[d][i], i };
@@ -2053,19 +2176,19 @@ function effFaces() {
   const fs = DKEYS.map(d => ({ ...C.rolled[d], d, b: 0 }));
   let combo = '';
   const v = fs.map(f => f.v);
-  if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { fs.forEach(f => { f.b = f.v; f.v *= 2; }); combo = '¡Trío! ×2'; }
+  fs.forEach(f => { f.o = f.v; f.tag = ''; });
+  if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { fs.forEach(f => { f.b = f.v; f.v *= 2; f.tag = '×2'; }); combo = '¡Trío!'; }
   else {
     const b = has('gemelo') ? 2 : 1;
     outer: for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
-      if (fs[i].v > 0 && fs[i].v === fs[j].v) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; combo = `¡Pareja! +${b}`; break outer; }
+      if (fs[i].v > 0 && fs[i].v === fs[j].v) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; fs[i].tag = fs[j].tag = '+' + b; combo = '¡Pareja!'; break outer; }
   }
   return { fs, combo };
 }
 // a quién va un dado
 function targetType(f) {
   if (blankF(f)) return 'none';
-  if (f.k === 'escudo' || f.k === 'espinas') return 'guard';
-  if (f.k === 'luz' || f.k === 'furia' || f.k === 'doble') return 'self';
+  if (f.k === 'escudo' || f.k === 'espinas' || f.k === 'luz' || f.k === 'furia' || f.k === 'doble') return 'self';
   if (f.k === 'nube' || KW[f.k].all) return 'all';
   return 'enemy';
 }
@@ -2073,7 +2196,6 @@ function validTarget(f, t) {
   const tt = targetType(f);
   if (tt === 'self') return t === 'hero';
   if (t === 'hero' || !t || t.hp <= 0) return false;
-  if (tt === 'guard') return (t.intent && t.intent.a > 0);
   return true;
 }
 function selDie(d) {
@@ -2101,8 +2223,8 @@ async function useDie(d, t) {
       cRender(); await sleep(280);
     }
   } else if (f.k === 'escudo' || f.k === 'espinas') {
-    t.guard += f.v; if (f.k === 'espinas') t.thorn += f.v;
-    fl(t, 'BLOQUEO ' + f.v, '#8ab8ff');
+    C.block += f.v; if (f.k === 'espinas') C.thorns += f.v;
+    fl('hero', '+' + f.v + ' prot.', '#8ab8ff');
   } else if (f.k === 'luz') {
     const h = heal(f.v); if (h) fl('hero', '+' + h, '#7aea7a');
     if (f.v > h) { C.block += f.v - h; fl('hero', '+' + (f.v - h) + ' prot.', '#8ab8ff'); }
@@ -2135,7 +2257,7 @@ async function deaths() {
     for (const e of fresh) {
       e._dead = true;
       if (!FAST) { const sd = Scene.edie(e); if (sd) sd.fade = performance.now(); }
-      if (e.intent && (e.intent.a || e.intent.p || e.intent.h || e.intent.s)) fl(e, '¡Dado cancelado!', '#f8d84a');
+      if (e.intent && !e.acted && (e.intent.a || e.intent.p || e.intent.h || e.intent.s)) { fl(e, '¡Dado cancelado!', '#f8d84a'); Tips.show('cancel', 'Lo has matado antes de que actuara: su dado ya no hace nada.', null); }
     }
     if (has('calavera')) for (const _ of fresh) for (const e of alive()) hitEnemy(e, 2, true, '#e0e0f0');
     cRender(); await sleep(350);
@@ -2160,17 +2282,17 @@ async function endTurn() {
     if (sd) sd.sel = true;
     if (it.a) {
       let dmg = it.a + e.rage;
-      const g = Math.min(e.guard, dmg); dmg -= g;
       const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
       if (!FAST) Scene.lunge(e, 'hero');
       run.hp -= dmg;
       fl('hero', dmg > 0 ? '-' + dmg : '¡BLOQUEADO!', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
-      if (e.thorn) hitEnemy(e, e.thorn, true, '#c0d0ff');
+      if (C.thorns) hitEnemy(e, C.thorns, true, '#c0d0ff');
     }
     if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p + ' veneno', '#7aea7a'); }
     if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
     if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); }
     if (it.s && alive().length < 3) { const m = makeEnemy(it.s); C.en.push(m); fl(m, '¡Aparece!', '#d0a0ff'); }
+    e.acted = true;
     cRender(); await sleep(480);
     if (sd) { sd.sel = false; sd.fade = performance.now(); }
     if (run.hp <= 0) return lose();
@@ -2185,8 +2307,8 @@ async function endTurn() {
 function intentHTML(e) {
   const it = e.intent; if (!it || C.phase === 'enemy') return '<span style="color:var(--dim)">…</span>';
   const p = [];
-  if (it.a) { const d = Math.max(0, it.a + e.rage - e.guard); p.push(`<span style="color:${d ? '#ff8a8a' : '#8ab8ff'}">${sp('golpe', 2)}${d}${e.guard ? `<s>${it.a + e.rage}</s>` : ''}</span>`); }
-  if (e.block) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${e.block}</span>`);
+  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a + e.rage}</span>`);
+  if (it.b) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${it.b}</span>`);
   if (it.p) p.push(`<span style="color:#7aea7a">${sp('veneno', 2)}${it.p}</span>`);
   if (it.h) p.push(`<span style="color:#ff8a8a">${sp('corazon', 2)}+${it.h}</span>`);
   if (it.r) p.push(`<span style="color:#ff7050">${sp('furia', 2)}+${it.r}</span>`);
@@ -2204,8 +2326,8 @@ function dieText(f) {
   const kw = KW[f.k];
   if (blankF(f)) return 'vacío';
   if (kw.dmg) { const v = f.v + C.furia; return kw.x(v) + (C.hits > 1 ? ' (×2)' : ''); }
-  if (f.k === 'escudo') return `bloquea ${f.v} del ataque de un enemigo`;
-  if (f.k === 'espinas') return `bloquea ${f.v} de un enemigo y le devuelve ${f.v}`;
+  if (f.k === 'escudo') return `+${f.v} de protección contra los golpes`;
+  if (f.k === 'espinas') return `+${f.v} de protección y devuelves ${f.v} a quien te pegue`;
   if (f.k === 'furia') return `+${f.v} a tus golpes de este turno`;
   if (f.k === 'doble') return `tus golpes de este turno pegan 2 veces${f.v ? ` y +${f.v}` : ''}`;
   return kw.x(f.v);
@@ -2214,21 +2336,21 @@ const sceneH = () => Math.max(330, Math.min(430, Math.round(window.innerHeight *
 function phaseBox(eff) {
   const ph = C.phase;
   const left = eff ? eff.fs.filter(f => !C.used[f.d]) : [];
-  const chips = left.length ? `<div class="dchips">${left.map(f => `<button class="dchip ${C.sel === f.d ? 'on' : ''} ${C.locked[f.d] ? 'lk' : ''}" onclick="G.tapDie('${f.d}')">${faceHTML(f, f.d, { cls: f.b ? 'boost' : '' })}<span><b>${DN(f.d)}</b>${dieText(f)}</span></button>`).join('')}</div>` : '';
+  const chips = left.length ? `<div class="dchips">${left.map(f => `<button class="dchip ${C.sel === f.d ? 'on' : ''} ${C.locked[f.d] ? 'lk' : ''} ${f.tag ? 'cb' : ''}" data-d="${f.d}" onclick="G.tapDie('${f.d}')">${faceHTML({ k: f.k, v: f.o }, f.d)}<span><b>${DN(f.d)}${f.tag ? ` <em class="tag">${f.tag}</em>` : ''}</b>${dieText(f)}</span></button>`).join('')}</div>` : '';
   if (ph === 'enemy') return { t: 'Turno de los enemigos', d: 'Están tirando sus dados…', b: '' };
   if (ph === 'rolling') return { t: 'Tirando…', d: '', b: '' };
   if (ph === 'resolve') return { t: 'Los enemigos actúan', d: 'Cada enemigo vivo hace lo que sacó en su dado.', b: '' };
-  if (ph === 'roll') return { t: 'Tu turno', d: 'Arriba de cada enemigo ves lo que va a hacer. Tira tus dados.', b: `<button class="btn pri" onclick="G.roll()">Tirar dados</button>` };
+  if (ph === 'roll') return { t: 'Tu turno', d: 'Arriba de cada enemigo ves lo que va a hacer. Tira tus dados.', b: `<button class="btn pri" id="btn-roll" onclick="G.roll()">Tirar dados</button>` };
   if (ph === 'reroll') {
     const any = DKEYS.some(k => !C.locked[k]);
     return { t: `Guarda o vuelve a tirar${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca los dados que quieras <b>guardar</b> (llevan candado) y vuelve a tirar los demás.', c: chips,
-      b: `<div class="row2"><button class="btn" ${any ? '' : 'disabled'} onclick="G.reroll()">Volver a tirar (${C.rerolls})</button><button class="btn pri" onclick="G.ready()">Usar dados</button></div>` };
+      b: `<div class="row2"><button class="btn" id="btn-rr" ${any ? '' : 'disabled'} onclick="G.reroll()">Volver a tirar (${C.rerolls})</button><button class="btn pri" id="btn-ready" onclick="G.ready()">Usar dados</button></div>` };
   }
   // usar
   if (C.sel) {
     const f = eff.fs[DKEYS.indexOf(C.sel)], tt = targetType(f);
-    const how = tt === 'enemy' ? 'Toca al enemigo que quieras.' : tt === 'all' ? 'Afecta a todos los enemigos.' : tt === 'self' ? 'Es para ti.' : alive().some(e => e.intent && e.intent.a) ? 'Toca al enemigo cuyo ataque quieres parar.' : 'Ningún enemigo ataca: este dado no sirve ahora.';
-    const btn = tt === 'all' ? `<button class="btn pri" onclick="G.useAll()">¡A todos!</button>` : tt === 'self' ? `<button class="btn pri" onclick="G.use('hero')">Usar en ti</button>` : '';
+    const how = tt === 'enemy' ? 'Toca al enemigo que quieras.' : tt === 'all' ? 'Afecta a todos los enemigos.' : 'Es para ti: toca a tu héroe o pulsa "Usar en ti".';
+    const btn = tt === 'all' ? `<button class="btn pri" id="btn-all" onclick="G.useAll()">¡A todos!</button>` : tt === 'self' ? `<button class="btn pri" id="btn-self" onclick="G.use('hero')">Usar en ti</button>` : '';
     return { t: `${DN(C.sel)}: ${dieText(f)}`, d: how, c: chips, b: `<div class="row2">${btn}<button class="btn" onclick="G.tapDie('${C.sel}')">Cancelar</button></div>` };
   }
   const blanks = eff.fs.filter(f => blankF(f)).map(f => DN(f.d));
@@ -2239,7 +2361,7 @@ function cRender() {
   S.scr = 'combat';
   if (FAST) { fxq = []; return; }
   const eff = C.rolled && C.phase !== 'rolling' ? effFaces() : null;
-  if (eff) eff.fs.forEach((f, i) => { const sd = Scene.pdie(f.d); if (sd) sd.boost = f.b ? f : null; });
+  if (eff) eff.fs.forEach((f, i) => { const sd = Scene.pdie(f.d); if (sd) sd.boost = f.tag || null; });
   const pb = phaseBox(eff);
   app.innerHTML = `${hud()}
   <div class="scene" id="scene" style="height:${sceneH()}px"><div id="ovs"></div></div>
@@ -2253,29 +2375,30 @@ function cRender() {
     if (e.hp <= 0) return;
     const [x, y0] = Scene.headCss(e), y = Math.max(y0, 84), can = f && validTarget(f, targetType(f) === 'all' ? e : e);
     ov += `<div class="ov ${can ? 'pick' : f ? 'nope' : ''}" id="ov-e${i}" style="left:${x}px;top:${y}px">
-      <div class="intent">${intentHTML(e)}</div><div class="nm">${e.n}</div>${hearts(e.hp, e.max, 8)}
-      <div class="badges">${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}${e.thorn ? badge('espinas', e.thorn, '#c0d0ff') : ''}</div></div>`;
+      <div class="intent">${intentHTML(e)}</div><div class="nm">${e.n}</div>${pips(e.hp, e.max, { blk: e.block })}
+      <div class="badges">${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`;
   });
   const [hx, hy] = Scene.headCss('hero'), hcan = f && validTarget(f, 'hero');
-  ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px">
-    <div class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div>
-    <div class="nm">${run.cls}</div>${hearts(run.hp, run.maxHp, 10)}</div>`;
+  ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px"><div class="nm">&nbsp;</div></div>`;
+  const inc = incoming();
+  ov += `<div class="hbar" id="hbar"><div class="hb-top"><span>${run.cls}</span><span class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</span></div>
+    ${pips(run.hp, run.maxHp, { inc: inc.inc, poi: inc.poi, blk: C.block, row: 20, cls: 'big' })}</div>`;
+  if (eff && C.phase !== 'resolve') eff.fs.forEach(f => { const sd = Scene.pdie(f.d); if (sd && f.tag && !C.used[f.d] && !sd.fly) { const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .1, sd.pos[2]]); ov += `<div class="dtag" style="left:${x}px;top:${y}px">${f.tag}</div>`; } });
   if (C.phase === 'reroll') DKEYS.forEach(k => { const sd = Scene.pdie(k); if (sd && C.locked[k]) { const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .15, sd.pos[2]]); ov += `<div class="dk" style="left:${x}px;top:${y}px">${sp('candado', 2)}</div>`; } });
-  if (C.phase === 'roll') ov += `<div class="tap-hint">Toca para tirar tus dados</div>`;
+  if (C.phase === 'roll' && !Tuto.on) ov += `<div class="tap-hint">Toca para tirar tus dados</div>`;
   $('#ovs').innerHTML = ov;
   flushFx();
-}
-function tutorial() {
-  try { if (localStorage.getItem('mazmorra_tuto2')) return; localStorage.setItem('mazmorra_tuto2', '1'); } catch (e) { return; }
-  modal(`<div class="help col"><h3>Cómo se pelea</h3>
-  <p><b>1.</b> Los enemigos tiran primero. Encima de cada uno ves <b>lo que va a hacer</b>.</p>
-  <p><b>2.</b> Tira tus dados. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces).</p>
-  <p><b>3.</b> Usa cada dado: <b>tócalo y después toca su objetivo</b>. La protección para el ataque de un enemigo concreto.</p>
-  <p><b>4.</b> Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
-  <p>Pareja (dos números iguales): +1 a los dos. Trío: todo ×2.</p></div>`);
+  // pistas de la primera vez
+  if (eff && eff.combo && (C.phase === 'reroll' || C.phase === 'use')) Tips.show(eff.combo === '¡Trío!' ? 'trio' : 'pareja', eff.combo === '¡Trío!' ? '¡Trío! Tres dados con el mismo número: los tres valen el doble.' : '¡Pareja! Dos dados con el mismo número: cada uno suma +1.', '.dchip.cb');
+  if (C.phase === 'roll') { const i = C.en.findIndex(e => e.hp > 0 && e.intent && e.intent.b); if (i >= 0) Tips.show('eblock', 'Este enemigo se protege (azul): tu daño primero rompe esos cuadraditos.', '#ov-e' + i + ' .pipw'); }
+  if (C.phase === 'roll' && inc.poi) Tips.show('poison', 'Lo verde es veneno: te quita vida al final del turno y la protección no lo para.', '#hbar');
+  if ((C.phase === 'reroll' || C.phase === 'use') && run.hp > 0 && inc.inc - C.block + inc.poi >= run.hp) Tips.show('skull', '¡Cuidado! La calavera avisa: si no te proteges o matas a alguien, mueres este turno.', '#hbar');
+  Coach.draw();
 }
 async function winCombat() {
   if (!C || C.won) return; C.won = true;
+  if (Tuto.on) Tuto.finish();
+  Coach.draw();
   await sleep(600);
   const kind = C.kind;
   let g = kind === 'jefe' ? 40 + run.floor * 10 : kind === 'elite' ? 20 + run.floor * 5 : R(6, 10) + run.floor * 3;
@@ -2291,7 +2414,7 @@ async function winCombat() {
   if (kind === 'elite') return relicChoice(`¡Élite vencido! +${g} de oro`, nextRoom);
   reward(g);
 }
-async function lose() { await sleep(600); C = null; gameOver(); }
+async function lose() { await sleep(600); C = null; Tuto.on = false; Coach.draw(); gameOver(); }
 
 // ---------------------------------------------------------- acciones (botones)
 const G = {
@@ -2306,29 +2429,36 @@ const G = {
     Corr.walk(i, () => enter(run.doors[i]));
   },
   sfx: () => { Sfx.toggle(); title(); },
-  roll: () => doRoll(),
-  reroll: () => rerollDice(),
-  ready: () => { if (C && C.phase === 'reroll' && !C.busy) toUse(); },
-  end: () => endTurn(),
-  use: t => { if (C && C.sel) useDie(C.sel, t); },
-  useAll: () => { if (C && C.sel) useDie(C.sel, alive()[0]); },
-  tapDie: d => { if (!C || C.busy) return; if (C.phase === 'reroll') toggleLock(d); else if (C.phase === 'use') selDie(d); else if (C.phase === 'roll') doRoll(); },
+  roll: () => { if (C && C.phase === 'roll' && !C.busy && Tuto.expect('roll')) doRoll(); },
+  reroll: () => { if (C && C.phase === 'reroll' && !C.busy && Tuto.expect('reroll')) rerollDice(); },
+  ready: () => { if (C && C.phase === 'reroll' && !C.busy && Tuto.expect('ready')) toUse(); },
+  end: () => { if (Tuto.expect('end')) endTurn(); },
+  use: t => { if (C && C.sel && !C.busy && Tuto.expect('use:' + C.sel)) useDie(C.sel, t); },
+  useAll: () => { if (C && C.sel && !C.busy && Tuto.expect('use:' + C.sel)) useDie(C.sel, alive()[0]); },
+  tapDie: d => {
+    if (!C || C.busy) return;
+    if (C.phase === 'reroll') { if (Tuto.expect('lock:' + d)) toggleLock(d); }
+    else if (C.phase === 'use') { if (C.used[d]) return; if (C.sel === d && Tuto.on) return; if (Tuto.expect('sel:' + d)) selDie(d); }
+    else if (C.phase === 'roll') G.roll();
+  },
+  legend: () => modal(`<h3>Leyenda de las puertas</h3><div class="col">${Object.values(ROOMS).map(r => `<div class="row">${sp(r.ico, 4)}<div><b style="font-size:9px;font-weight:normal">${r.n === '¿?' ? 'Evento' : r.n}</b><p class="t">${r.d}</p></div></div>`).join('')}</div>`),
   tapEnemy: i => {
     const e = C && C.en[i]; if (!e || e.hp <= 0) return;
     if (C.phase === 'use' && C.sel && !C.busy) {
       const f = effFaces().fs[DKEYS.indexOf(C.sel)];
-      if (validTarget(f, e)) return useDie(C.sel, e);
+      if (validTarget(f, e)) { if (Tuto.expect('use:' + C.sel)) useDie(C.sel, e); return; }
       return toast(targetType(f) === 'guard' ? 'Ese enemigo no ataca' : targetType(f) === 'self' ? 'Este dado es para ti' : 'Ahí no');
     }
-    if (C.phase === 'roll') return doRoll();
-    modal(`<h3>${e.n}</h3>${hearts(e.hp, e.max, 10)}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>`);
+    if (C.phase === 'roll') return G.roll();
+    if (Tuto.on) return;
+    modal(`<h3>${e.n}</h3>${pips(e.hp, e.max, { blk: e.block, cls: 'mid' })}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>`);
   },
   tapHero: () => {
     if (!C) return;
-    if (C.phase === 'use' && C.sel && !C.busy) { const f = effFaces().fs[DKEYS.indexOf(C.sel)]; if (validTarget(f, 'hero')) return useDie(C.sel, 'hero'); return toast('Este dado va a un enemigo'); }
-    if (C.phase === 'roll') doRoll();
+    if (C.phase === 'use' && C.sel && !C.busy) { const f = effFaces().fs[DKEYS.indexOf(C.sel)]; if (validTarget(f, 'hero')) { if (Tuto.expect('use:' + C.sel)) useDie(C.sel, 'hero'); return; } return toast('Este dado va a un enemigo'); }
+    if (C.phase === 'roll') G.roll();
   },
-  tapFloor: () => { if (C && C.phase === 'roll') doRoll(); },
+  tapFloor: () => { if (C && C.phase === 'roll') G.roll(); },
   myDice: () => modal(`<h3>Tus dados</h3>${diceRows()}<p class="t">${run.dice.esp.concat(run.dice.atk, run.dice.def).filter(f => !blankF(f)).map(f => f.k).filter((k, i, a) => a.indexOf(k) === i).map(k => `<b style="color:${KW[k].col}">${KW[k].n}</b>: ${KW[k].x('N')}`).join('<br>')}</p>`),
   relic: k => modal(`<div class="row">${sp(RELICS[k].ico, 5, RELICS[k].sw)}<h3>${RELICS[k].n}</h3></div><p class="t">${RELICS[k].d}</p>`),
   pf: (d, i) => { const cfg = S.pf; if (cfg) cfg.on(d, i); },
@@ -2367,12 +2497,12 @@ const G = {
   _s: () => ({ S, C, run }),
   _fast: v => { FAST = v; },
 };
-window.G = G;
+window.G = G; window.Tuto = Tuto; window.Tips = Tips;
 // transición corta al cambiar de pantalla
 let lastScr = '';
 new MutationObserver(() => {
   if (FAST || S.scr === lastScr) return;
-  lastScr = S.scr;
+  lastScr = S.scr; Coach.draw();
   app.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 240, easing: 'steps(5)' });
 }).observe(app, { childList: true });
 title();
