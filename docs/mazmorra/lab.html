@@ -248,8 +248,8 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .reveal{animation:flip .7s steps(7)}
 @keyframes flip{0%{transform:perspective(500px) rotateY(90deg) scale(.6)}100%{transform:none}}
 
-.eband{position:relative;height:var(--ebh,72px);background:linear-gradient(#0d0a12,#16111e);box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;flex:none;margin-bottom:-6px;z-index:3}
-.ecard{position:absolute;top:6px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;padding:5px 6px;background:#000a;box-shadow:0 0 0 2px #000;cursor:pointer}
+.eband{position:relative;height:var(--ebh,50px);background:linear-gradient(#0d0a12,#16111e);box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;flex:none;z-index:3}
+.ecard{position:absolute;top:5px;transform:translateX(-50%);display:flex;flex-direction:column;gap:3px;padding:4px 6px;background:#000a;box-shadow:0 0 0 2px #000;cursor:pointer}
 .ecard{overflow:hidden}
 .ecard .ec-top{display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap;row-gap:2px}
 .ecard .nm{font-size:7px;color:#e8e0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -258,7 +258,8 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ecard.pick{box-shadow:0 0 0 2px #000,0 0 0 4px var(--gold);animation:hlp .8s steps(2) infinite}
 .ecard.pick .nm{color:var(--gold)}
 .ecard.nope{opacity:.4}
-.pips.en i{width:4px;height:7px}
+.pips.en i{width:4px;height:5px}
+.pips.en{gap:1px}
 .ov .nm{visibility:hidden}
 .danc{position:absolute;width:44px;height:50px;pointer-events:none}
 .dinfos{display:flex;flex-direction:column;gap:4px}
@@ -1786,8 +1787,8 @@ let v3last = 0;
 //  rodando por el suelo: los enemigos en su zona y tú en la tuya.
 // ====================================================================
 const ZONE_E = [[0, 1, 0, 0, .3], [1, 0, 0, 3.2, .45], [-1, 0, 0, 3.2, .45], [0, 0, 1, 1.95, .45], [0, 0, -1, -.35, .45]];
-const ZONE_P = [[0, 1, 0, 0, .3], [1, 0, 0, 1.2, .45], [-1, 0, 0, 3.2, .45], [0, 0, 1, .05, .45], [0, 0, -1, 3.35, .45]];
-const HERO_POS = [-2.25, 0, 2.75], EN_Z = -2.6, DKEYS = ['atk', 'def', 'esp'];
+const ZONE_P = [[0, 1, 0, 0, .3], [1, 0, 0, 1.2, .45], [-1, 0, 0, 3.2, .45], [0, 0, 1, .05, .45], [0, 0, -1, 2.85, .45]];
+const HERO_POS = [-2.3, 0, 2.15], EN_Z = -2.6, DKEYS = ['atk', 'def', 'esp'];
 const slotX = (i, n) => n === 1 ? 0 : n === 2 ? [-1.35, 1.35][i] : [-2.15, 0, 2.15][i] ?? 0;
 const voxSize = e => e.px >= 8 ? .118 : e.px >= 7 ? .1 : .088;
 // proyección "afín": el dado se coloca con perspectiva, pero su forma no se deforma
@@ -1864,7 +1865,7 @@ const Scene = {
   },
   setup() {
     const s = this.s;
-    this.cam = makeCam([0, 8.4, 5.4], [0, 0, .15], Math.min(s.W * 1.3, s.H * 1.5), s.W, s.H);
+    this.cam = makeCam([0, 8.4, 5.4], [0, .55, -.35], Math.min(s.W * 1.25, s.H * 1.45), s.W, s.H);
     this.idb = new Uint8Array(s.W * s.H); this.bg = null;
   },
   room: { CW: 3.9, CH: 4.4, L: 3.5, lamp: .45, torches: [[-2.3, 2.5, -3.45], [2.3, 2.5, -3.45], [-3.84, 2.3, -.4], [3.84, 2.3, -.4]], doors: [] },
@@ -1958,7 +1959,7 @@ const Scene = {
       if (!list.includes(d)) return;
       const b = bodies[i], r = Math.random;
       if (d.kind === 'e') { const x = this.figOf(d.en).tx; b.pos = [x + (r() - .5) * .6, 1.4 + r() * .4, -1.8]; b.vel = [(r() - .5) * 2.4 - x * .3, 1.2 + r(), 2.2 + r() * 1.4]; }
-      else { b.pos = [3, 1.3 + r() * .6, .75 + k * .95]; b.vel = [-(3.8 + k * 1.3 + r() * 2.2), 1 + r() * 1.6, (r() - .5) * 2]; k++; }
+      else { b.pos = [3, 1.3 + r() * .6, .55 + k * .85]; b.vel = [-(3.8 + k * 1.3 + r() * 2.2), 1 + r() * 1.6, (r() - .5) * 2]; k++; }
       b.w = [(r() - .5) * 26, (r() - .5) * 26, (r() - .5) * 26]; b.q = Q4.rand();
     });
     const sim = simulate(bodies);
@@ -2892,11 +2893,11 @@ function cRender() {
     const cx = n === 1 ? bw / 2 : bw * (k + .5) / n;
     const row = e.max <= 12 ? e.max : live.length === 1 ? 35 : live.length === 2 ? 25 : 16;
     band += `<div class="ecard ${can ? 'pick' : f ? 'nope' : ''}" id="ec-${i}" style="left:${cx}px;width:${w}px" onclick="G.tapEnemy(${i})">
-      <div class="ec-top"><span class="nm">${e.n}</span><span class="intent">${intentHTML(e)}</span></div>
-      ${pips(e.hp, e.max, { blk: e.block, row, cls: 'en' })}
-      <div class="badges">${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', '+' + e.rage, '#ff7050') : ''}</div></div>`;
+      <div class="ec-top"><span class="nm">${e.n}</span>${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}<span class="intent">${intentHTML(e)}</span></div>
+      ${pips(e.hp, e.max, { blk: e.block, row: Math.max(row, e.max <= 12 ? e.max : Math.ceil(e.max / 2)), cls: 'en' })}</div>`;
   });
-  $('#eband').innerHTML = band;
+  const eb = $('#eband'); eb.innerHTML = band;
+  eb.style.height = Math.max(46, ...[...eb.children].map(c => c.offsetHeight + 10)) + 'px';
   const [hx, hy] = Scene.headCss('hero'), hcan = f && validTarget(f, 'hero');
   ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px"><div class="nm">&nbsp;</div></div>`;
   const inc = incoming();
