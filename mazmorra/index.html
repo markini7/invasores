@@ -177,8 +177,8 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ov.nope{opacity:.45}
 .dk{position:absolute;transform:translate(-50%,-100%)}
 .tap-hint{position:absolute;left:0;right:0;bottom:64px;text-align:center;font-size:9px;text-shadow:2px 2px 0 #000;animation:blink 1.2s steps(2) infinite}
-.phase{background:var(--panel);box-shadow:0 0 0 2px #000,0 0 0 5px #3a2e4a,0 0 0 7px #000;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:64px}
-.ph-t{font-size:10px;color:var(--gold);line-height:1.5}
+.phase{background:var(--panel);box-shadow:0 0 0 2px #000,0 0 0 5px #3a2e4a,0 0 0 7px #000;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.ph-t{font-size:8px;color:var(--gold);line-height:1.5}
 .ph-t .gold{color:#fff4a0}
 .ph-d{font-size:7px;line-height:1.9;color:var(--dim)}
 .ph-d b{color:var(--txt);font-weight:normal}
@@ -2873,7 +2873,7 @@ function cRender() {
   app.innerHTML = `${hud()}
   <div class="eband" id="eband"></div>
   <div class="scene" id="scene" style="height:${sceneH()}px"><div id="ovs"></div></div>
-  <div class="phase"><div class="ph-t">${pb.t}</div>${pb.d ? `<div class="ph-d">${pb.d}</div>` : ''}${pb.c || ''}</div>
+  <div class="phase"><div class="ph-t">${pb.t}</div>${pb.c || ''}</div>
   <div class="acts">${pb.b}<button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
   Scene.attach($('#scene'));
   // etiquetas flotando sobre cada personaje y candados sobre los dados guardados
