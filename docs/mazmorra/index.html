@@ -290,6 +290,9 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ec-hp{display:flex;align-items:center;gap:5px}
 .ec-hp .pipw{flex:1;min-width:0}
 .hpn{font-size:7px;color:#ff8a8a;flex:none;font-variant-numeric:tabular-nums;text-shadow:1px 1px 0 #000}
+.ftip{position:fixed;z-index:95;background:#fff4d6;color:#1a1020;font-size:8px;line-height:1.8;padding:8px 10px;box-shadow:0 0 0 3px #000,3px 3px 0 3px #0008;pointer-events:none;animation:pop2 .2s steps(3)}
+.ftip b{font-weight:normal;color:#7a2030}
+.dinfo .fs .fc{cursor:pointer}
 </style>
 </head>
 <body>
@@ -311,7 +314,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.18'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.19'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -584,6 +587,27 @@ const ICO = {
   hp1h: ['.r.R.', 'rrRRR', 'rrRRR', '.rRR.', '..R..'],
   hp5: ['.yy.yy.', 'yrryrry', 'yrwrrry', 'yrrrrry', '.yrrry.', '..yry..', '...y...'],
   hp5h: ['.yy.yy.', 'yrryRRy', 'yrwRRRy', 'yrrRRRy', '.yrRRy.', '..yRy..', '...y...'],
+  yelmo: ['.ggggg.', 'ggggggg', 'gkkkkkg', 'ggggggg', 'gg.g.gg', '.g...g.', '.......'],
+  reloj: ['nnnnnnn', '.yyyyy.', '..yyy..', '...y...', '..y.y..', '.yyyyy.', 'nnnnnnn'],
+  anillo: ['...r...', '..rRr..', '.yy.yy.', 'y.....y', 'y.....y', '.y...y.', '..yyy..'],
+  afilar: ['.....w.', '....wg.', '...wg..', '..wg...', 'GGGGGG.', 'GggggG.', 'GGGGGG.'],
+  ojo: ['.......', '..www..', '.wwbww.', 'wwbkbww', '.wwbww.', '..www..', '.......'],
+  cuerno: ['......w', '.....ww', '....ww.', 'y..ww..', 'yyww...', 'yyw....', '.y.....'],
+  hueso: ['w.....w', 'ww...ww', '.wwwww.', '..www..', '.wwwww.', 'ww...ww', 'w.....w'],
+  hacha: ['.gg....', 'ggg....', 'gggn...', '.g..n..', '....n..', '.....n.', '......n'],
+  copa: ['yrrrrry', 'yrrrrry', '.yrrry.', '..yyy..', '...y...', '..yyy..', '.yyyyy.'],
+  raiz: ['n..n..n', '.n.n.n.', '..nnn..', 'G.nnn.G', '.GnnnG.', '..nnn..', '...n...'],
+  capa: ['..PPP..', '.PPPPP.', 'PPkPkPP', 'PPPPPPP', 'PPPPPPP', 'PP.P.PP', 'P..P..P'],
+  coraza: ['g.....g', 'ggggggg', 'gGgggGg', 'ggGgGgg', '.ggggg.', '.ggggg.', '..ggg..'],
+  manzana: ['...n...', '..ne...', '.yyyyy.', 'yywyyyy', 'yyyyyyy', '.yyyyy.', '..yyy..'],
+  mapa: ['nYYYYYn', 'nY.r.Yn', 'nYr.rYn', 'nY.Y.Yn', 'nYYrYYn', 'nYYYYYn', 'nnnnnnn'],
+  llave: ['.yyy...', 'y...y..', 'y...y..', '.yyy...', '..y....', '..yy...', '..yyy..'],
+  saco: ['..nnn..', '...n...', '.nnnnn.', 'nnyynnn', 'nnyynnn', 'nnnnnnn', '.nnnnn.'],
+  recuerdos: ['.ppppp.', 'pwwwwwp', 'pwpppwp', 'pwpwpwp', 'pwpppwp', 'pwwwwwp', '.ppppp.'],
+  acido: ['..ggg..', '...g...', '..geg..', '.geeeg.', 'geewee.', 'geeeeeg', '.ggggg.'],
+  carbon: ['...o...', '..oyo..', '.ooyoo.', 'GGGGGGG', 'GkGkGkG', 'GGGGGGG', '.......'],
+  incienso: ['..w....', '...w...', '..w....', '...y...', '..yyy..', '.YYYYY.', 'YYYYYYY'],
+  tambor: ['w.....w', '.w...w.', 'RRRRRRR', 'RyRyRyR', 'RRRRRRR', 'RyRyRyR', 'RRRRRRR'],
   candado: ['..www..', '.w...w.', '.w...w.', 'yyyyyyy', 'yyykyyy', 'yyykyyy', 'yyyyyyy'],
   invoca: ['..p.p..', '.p.w.p.', 'p.www.p', '.wwwww.', 'p.www.p', '.p.w.p.', '..p.p..'],
 };
@@ -1660,7 +1684,7 @@ function albumGet() { try { return new Set(JSON.parse(localStorage.getItem('mazm
 function albumAdd(id) { const s = albumGet(); s.add(id); try { localStorage.setItem('mazmorra_album', JSON.stringify([...s])); } catch (e) {} }
 // abre un cofre: con suerte, una carta que aún no tienes
 function rollCard(chance) {
-  if (FAST || Math.random() >= chance) return null;
+  if (FAST || Math.random() >= chance * (has('recuerdos') ? 2 : 1)) return null;
   const own = albumGet(), left = CARDS.filter(c => !own.has(c.id));
   if (!left.length) return null;
   const w = [60, 27, 10, 3].map((x, r) => left.some(c => c.r === r) ? x : 0);
@@ -2140,6 +2164,28 @@ const RELICS = {
   seta:     { n: 'Seta rara', ico: 'seta', d: 'El veneno que pones es +1', req: r => hasKw(r, ['veneno', 'nube']) },
   calavera: { n: 'Calavera', ico: 'calavera', d: 'Cuando muere un enemigo, los demás reciben 2 de daño' },
   cargado:  { n: 'Dado cargado', ico: 'dado', sw: 'rojo', d: 'Si sacas una cara vacía, se vuelve a tirar sola' },
+  yelmo:    { n: 'Yelmo abollado', ico: 'yelmo', d: 'Empiezas cada combate con 4 de protección' },
+  reloj:    { n: 'Reloj de arena', ico: 'reloj', d: '+1 re-tirada en el primer turno de cada combate' },
+  anillo:   { n: 'Anillo de sangre', ico: 'anillo', d: '+1 a cada golpe, pero al empezar cada combate pierdes 1 de vida' },
+  afilar:   { n: 'Piedra de afilar', ico: 'afilar', d: 'Tus caras de golpe que valen 1 cuentan como 2', req: r => r.dice.atk.some(f => f.k === 'golpe' && f.v === 1) },
+  ojo:      { n: 'Ojo de cristal', ico: 'ojo', d: 'Si tu dado de protección sale vacío, te da 1 de protección' },
+  cuerno:   { n: 'Cuerno de guerra', ico: 'cuerno', d: 'Si sacas pareja o trío, +1 a cada golpe ese turno' },
+  hueso:    { n: 'Dado de hueso', ico: 'hueso', d: 'Los tríos valen ×3 en vez de ×2' },
+  hacha:    { n: 'Hacha del verdugo', ico: 'hacha', d: 'Si un golpe deja a un enemigo con 2 de vida o menos, lo remata' },
+  copa:     { n: 'Copa de sangre', ico: 'copa', d: 'Cada vez que matas a un enemigo te curas 2' },
+  avaro:    { n: 'Moneda del avaro', ico: 'moneda', sw: 'rojo', d: 'Cada enemigo que matas te da 3 de oro' },
+  raiz:     { n: 'Raíz espinosa', ico: 'raiz', d: 'Empiezas cada turno con 1 de espinas (devuelves 1 a quien te pegue)' },
+  capa:     { n: 'Capa de sombras', ico: 'capa', d: 'El primer golpe que te dan en cada combate no te hace daño' },
+  coraza:   { n: 'Coraza vieja', ico: 'coraza', d: 'La protección que no gastas pasa al turno siguiente (hasta 3)' },
+  manzana:  { n: 'Manzana dorada', ico: 'manzana', d: 'Dormir en las hogueras te cura el doble' },
+  mapa:     { n: 'Mapa viejo', ico: 'mapa', d: 'Siempre puedes elegir entre 3 puertas' },
+  llave:    { n: 'Llave del mercader', ico: 'llave', d: 'Todo en las tiendas cuesta un 25% menos' },
+  saco:     { n: 'Saco del herrero', ico: 'saco', d: 'Las forjas mejoran 3 caras en vez de 2' },
+  recuerdos:{ n: 'Álbum de recuerdos', ico: 'recuerdos', d: 'El doble de probabilidad de encontrar cartas en los cofres' },
+  acido:    { n: 'Frasco de ácido', ico: 'acido', d: 'Al envenenar a un enemigo, pierde toda su protección', req: r => hasKw(r, ['veneno', 'nube']) },
+  carbon:   { n: 'Carbón ardiente', ico: 'carbon', d: 'Tus caras de fuego y explosión hacen +1', req: r => hasKw(r, ['fuego', 'explosion']) },
+  incienso: { n: 'Incienso sagrado', ico: 'incienso', d: 'Tus caras de luz curan +1', req: r => hasKw(r, ['luz']) },
+  tambor:   { n: 'Tambor de guerra', ico: 'tambor', d: 'Tus caras de furia y doble suman +1 más', req: r => hasKw(r, ['furia', 'doble']) },
 };
 
 // ---------------------------------------------------------- salas
@@ -2209,7 +2255,7 @@ function genDoors(s) {
   if (s === STEPS - 1) return ['jefe'];
   if (s === 0) return ['combate'];
   const w = { combate: 34, evento: 20, forja: 11, altar: 5, elite: s >= 2 ? 12 : 0, descanso: s >= 3 ? 9 : 0, tienda: s >= 2 ? 10 : 0 };
-  const n = Math.random() < .55 ? 3 : 2, out = [];
+  const n = has('mapa') || Math.random() < .55 ? 3 : 2, out = [];
   if (s === STEPS - 2) out.push('descanso');
   while (out.length < n) { const t = wpick(w); if (!out.includes(t)) out.push(t); }
   return shuffle(out);
@@ -2334,7 +2380,7 @@ function faceHTML(f, d, opts = {}) {
 }
 function diceRows(opts = {}) {
   return `<div class="col ${opts.pick ? 'pick' : ''}">${['atk', 'def', 'esp'].map(d => `<div class="drow"><div class="lb">${DN(d)}</div>${run.dice[d].map((f, i) => {
-    if (!opts.pick) return faceHTML(f, d);
+    if (!opts.pick) return faceHTML(f, d, { click: `G.face(event,'${d}',${i})` });
     const ok = opts.pick.includes(d);
     return faceHTML(f, d, { click: ok ? `G.pf('${d}',${i})` : '', cls: ok ? '' : 'off' });
   }).join('')}</div>`).join('')}</div>`;
@@ -2344,6 +2390,23 @@ function relicsHTML() {
   return `<div class="relics">${run.relics.map(k => `<button onclick="G.relic('${k}')">${sp(RELICS[k].ico, 3, RELICS[k].sw)}</button>`).join('')}</div>`;
 }
 const topbar = (label, fn) => `<div class="topbar"><button class="back" onclick="${fn}">← ${label}</button></div>`;
+// bocadillo pequeño junto a lo que has tocado (se va solo)
+function hideTips() { document.querySelectorAll('.ftip').forEach(x => x.parentNode && x.parentNode.removeChild(x)); }
+function showTip(el, html) {
+  hideTips();
+  const r = el.getBoundingClientRect(), t = document.createElement('div');
+  t.className = 'ftip'; t.innerHTML = html; document.body.appendChild(t);
+  const vw = window.innerWidth, w = Math.min(230, vw - 24); t.style.width = w + 'px';
+  t.style.left = Math.max(12, Math.min(vw - w - 12, r.left + r.width / 2 - w / 2)) + 'px';
+  const top = r.top - t.offsetHeight - 8; t.style.top = (top > 8 ? top : r.bottom + 8) + 'px';
+  clearTimeout(showTip.tm); showTip.tm = setTimeout(hideTips, 2800);
+}
+document.addEventListener('pointerdown', e => { if (!e.target.closest('.fc')) hideTips(); });
+function faceInfo(d, f) {
+  if (blankF(f)) return `<b>${DN(d)}</b> · Cara vacía<br>No hace nada.`;
+  const kw = KW[f.k];
+  return `<b>${DN(d)}</b> · ${kw.n}${f.k === 'doble' && !f.v ? '' : ' ' + f.v}<br>${kw.x(f.v).replace(/^./, c => c.toUpperCase())}.`;
+}
 function toast(t) { if (FAST) return; const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
 function modal(html) {
   const m = document.createElement('div'); m.className = 'modal';
@@ -2463,7 +2526,7 @@ function nextRoom() {
 }
 function enter(t) {
   if (t === 'combate' || t === 'elite' || t === 'jefe') return startCombat(t);
-  if (t === 'forja') return forge(2);
+  if (t === 'forja') return forge(has('saco') ? 3 : 2);
   if (t === 'altar') return altar();
   if (t === 'evento') return event();
   if (t === 'descanso') return rest();
@@ -2488,7 +2551,7 @@ function altar(fromEvent) {
 }
 function rest() {
   S = { scr: 'rest' };
-  const n = Math.max(5, Math.round(run.maxHp * .35));
+  const n = Math.max(5, Math.round(run.maxHp * .35)) * (has('manzana') ? 2 : 1);
   app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('fuego', 6)}</div><h2>Hoguera</h2><p class="t">Un buen sitio para recuperar fuerzas.</p></div>
     <button class="btn opt" onclick="G.rest(0)">${sp('corazon', 4)}<span>Dormir<small>Te curas ${n} de vida</small></span></button>
     <button class="btn opt" onclick="G.rest(1)">${sp('yunque', 4)}<span>Entrenar<small>+1 a una cara que elijas</small></span></button>`;
@@ -2511,6 +2574,7 @@ function shop() {
       { t: 'up', p: 14 + run.floor * 4 },
       { t: 'heal', n: 8 + run.floor * 3, p: 12 },
       ...(rel ? [{ t: 'relic', k: rel, p: 45 + run.floor * 10 }] : [])] };
+    if (has('llave')) S.shop.forEach(it => { it.p = Math.ceil(it.p * .75); });
   }
   S.scr = 'shop';
   const lbl = it => it.t === 'st' ? [faceHTML(it.s.f, it.s.d), `Nueva cara para tu dado de ${DN(it.s.d)}`, `${KW[it.s.f.k].n} ${it.s.f.v}: ${KW[it.s.f.k].x(it.s.f.v)}`]
@@ -2648,6 +2712,7 @@ function startCombat(kind) {
     if (run.floor > 0 && run.step >= 2 && Math.random() < .3) n++;
     list = Array.from({ length: n }, () => pick(fl.pool));
   }
+  if (has('anillo') && run.hp > 1) run.hp -= 1;
   C = { kind, en: list.map(makeEnemy), turn: 0, block: 0, ppoison: 0, rolled: null, locked: {}, used: {}, rerolls: 0, phase: 'enemy', sel: null, furia: 0, hits: 1, busy: false };
   if (!FAST) Scene.reset();
   S.scr = 'combat';
@@ -2657,11 +2722,12 @@ const alive = () => C.en.filter(e => e.hp > 0);
 async function newTurn() {
   if (!C) return;
   C.en = C.en.filter(e => e.hp > 0);
-  C.turn++; C.block = has('escudo') ? 1 : 0; C.rolled = null; C.sel = null;
+  const keep = has('coraza') ? Math.min(3, C.block || 0) : 0;
+  C.turn++; C.block = (has('escudo') ? 1 : 0) + keep + (C.turn === 1 && has('yelmo') ? 4 : 0); C.rolled = null; C.sel = null; C.cuerno = false;
   C.locked = { atk: false, def: false, esp: false }; C.used = { atk: false, def: false, esp: false };
-  C.furia = C.turn === 1 && has('brasa') ? 2 : 0; C.hits = 1;
-  C.rerolls = 2 + (has('trebol') ? 1 : 0);
-  C.thorns = 0;
+  C.furia = (C.turn === 1 && has('brasa') ? 2 : 0) + (has('anillo') ? 1 : 0); C.hits = 1;
+  C.rerolls = 2 + (has('trebol') ? 1 : 0) + (C.turn === 1 && has('reloj') ? 1 : 0);
+  C.thorns = has('raiz') ? 1 : 0;
   for (const e of C.en) { e.acted = false; e.die = Tuto.on && C.turn === 1 ? Math.max(0, e.f.indexOf('a2')) : R(0, 5); e.intent = parseFace(e.f[e.die]); e.block = e.intent.b; }
   C.phase = 'enemy'; C.busy = true; cRender();
   if (!FAST) {
@@ -2712,6 +2778,7 @@ function toUse() {
   C.phase = 'use'; C.sel = null;
   DKEYS.forEach(k => { C.locked[k] = false; const sd = !FAST && Scene.pdie(k); if (sd) sd.locked = false; });
   const eff = effFaces();
+  if (eff.combo && has('cuerno') && !C.cuerno) { C.cuerno = true; C.furia += 1; fl('hero', 'CUERNO +1', '#ff7050'); }
   eff.fs.forEach(f => { if (blankF(f)) { C.used[f.d] = true; const sd = !FAST && Scene.pdie(f.d); if (sd) sd.fade = performance.now(); } });
   cRender();
   if (DKEYS.every(k => C.used[k])) setTimeout(() => endTurn(), FAST ? 0 : 700);
@@ -2721,11 +2788,19 @@ function effFaces() {
   let combo = '';
   const v = fs.map(f => f.v);
   fs.forEach(f => { f.o = f.v; f.tag = ''; });
-  if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { fs.forEach(f => { f.b = f.v; f.v *= 2; f.tag = '×2'; }); combo = '¡Trío!'; }
+  if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { const m = has('hueso') ? 3 : 2; fs.forEach(f => { f.b = f.v * (m - 1); f.v *= m; f.tag = '×' + m; }); combo = '¡Trío!'; }
   else {
     const b = has('gemelo') ? 2 : 1;
     outer: for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
       if (fs[i].v > 0 && fs[i].v === fs[j].v) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; fs[i].tag = fs[j].tag = '+' + b; combo = '¡Pareja!'; break outer; }
+  }
+  // reliquias que cambian el valor de las caras
+  for (const f of fs) {
+    if (has('afilar') && f.k === 'golpe' && f.o === 1) f.v += 1;
+    if (has('ojo') && f.d === 'def' && blankF(f)) { f.k = 'escudo'; f.v = 1; }
+    if (has('carbon') && (f.k === 'fuego' || f.k === 'explosion') && f.v > 0) f.v += 1;
+    if (has('incienso') && f.k === 'luz' && f.v > 0) f.v += 1;
+    if (has('tambor') && (f.k === 'furia' || f.k === 'doble')) f.v += 1;
   }
   return { fs, combo };
 }
@@ -2776,9 +2851,9 @@ async function useDie(d, t) {
     C.furia += f.v; if (f.k === 'doble') C.hits = 2;
     fl('hero', f.k === 'doble' ? '¡DOBLE!' : 'FURIA +' + f.v, '#ff7050');
   } else if (f.k === 'veneno') {
-    t.poison += f.v + seta; fl(t, '+' + (f.v + seta) + ' veneno', '#7aea7a');
+    t.poison += f.v + seta; fl(t, '+' + (f.v + seta) + ' veneno', '#7aea7a'); if (has('acido')) t.block = 0;
   } else if (f.k === 'nube') {
-    for (const e of alive()) { e.poison += f.v + seta; fl(e, '+' + (f.v + seta), '#7aea7a'); }
+    for (const e of alive()) { e.poison += f.v + seta; fl(e, '+' + (f.v + seta), '#7aea7a'); if (has('acido')) e.block = 0; }
   }
   await deaths();
   C.busy = false; cRender();
@@ -2791,7 +2866,12 @@ function hitEnemy(e, amt, pierce, col) {
   amt = Math.min(amt, Math.max(0, e.hp));
   e.hp -= amt;
   if (amt > 0) statAdd('dmg', amt);
-  if (e.hp <= 0 && !e._killed) { e._killed = true; statAdd('kills'); }
+  if (amt > 0 && e.hp > 0 && e.hp <= 2 && has('hacha')) { amt += e.hp; e.hp = 0; fl(e, '¡REMATADO!', '#e0e0f0'); }
+  if (e.hp <= 0 && !e._killed) {
+    e._killed = true; statAdd('kills');
+    if (has('copa')) { const h = heal(2); if (h) fl('hero', '+' + h, '#7aea7a'); }
+    if (has('avaro')) run.gold += 3;
+  }
   fl(e, amt > 0 ? '-' + amt : '0', col || '#ff6a6a', amt > 0);
   if (e.hp <= 0 && !FAST) { (e._fx || (e._fx = {})).die = performance.now(); }
   return amt;
@@ -2829,6 +2909,7 @@ async function endTurn() {
     if (it.a) {
       let dmg = it.a + e.rage;
       const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
+      if (dmg > 0 && has('capa') && !C.capa) { C.capa = true; dmg = 0; fl('hero', 'CAPA DE SOMBRAS', '#b070e0'); }
       if (!FAST) Scene.lunge(e, 'hero');
       run.hp -= dmg;
       fl('hero', dmg > 0 ? '-' + dmg : '¡BLOQUEADO!', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
@@ -2883,7 +2964,7 @@ function phaseBox(eff) {
   const ph = C.phase;
   const left = eff ? eff.fs.filter(f => !C.used[f.d]) : [];
   // mientras se puede volver a tirar: las 6 caras de cada dado (la que salió, marcada)
-  const allFaces = `<div class="dinfos">${DKEYS.map(d => `<div class="dinfo ${C.locked[d] ? 'lk' : ''}" data-d="${d}" onclick="G.tapDie('${d}')"><div class="lb">${DN(d)}${C.locked[d] ? sp('candado', 1) : ''}</div><div class="fs">${run.dice[d].map((f, i) => faceHTML(f, d, { cls: C.rolled && C.rolled[d] && i === C.rolled[d].i ? 'cur' : '' })).join('')}</div></div>`).join('')}</div>`;
+  const allFaces = `<div class="dinfos">${DKEYS.map(d => `<div class="dinfo ${C.locked[d] ? 'lk' : ''}" data-d="${d}"><div class="lb">${DN(d)}${C.locked[d] ? sp('candado', 1) : ''}</div><div class="fs">${run.dice[d].map((f, i) => faceHTML(f, d, { cls: C.rolled && C.rolled[d] && i === C.rolled[d].i ? 'cur' : '', click: `G.face(event,'${d}',${i})` })).join('')}</div></div>`).join('')}</div>`;
   // al usar: lo que va a hacer cada dado, con todo sumado
   const buffs = eff ? eff.fs.filter(f => !C.used[f.d] && (f.k === 'furia' || f.k === 'doble') && !blankF(f)) : [];
   const willDo = f => { let t = dieText(f); if (KW[f.k].dmg && buffs.length) { const add = buffs.reduce((a, b) => a + b.v, 0), x2 = C.hits > 1 || buffs.some(b => b.k === 'doble'); t += ` <i>· con ${buffs[0].k === 'doble' ? 'el rayo' : 'la furia'} antes: ${KW[f.k].x(f.v + C.furia + add)}${x2 ? ' ×2' : ''}</i>`; } return t; };
@@ -3012,6 +3093,7 @@ const G = {
     else if (C.phase === 'roll') G.roll();
   },
   album: () => albumScreen(),
+  face: (ev, d, i) => { if (ev) ev.stopPropagation(); const f = run && run.dice[d][i]; if (f) showTip(ev.currentTarget, faceInfo(d, f)); },
   stats: () => statsScreen(),
   cardOk: () => { const a = S.after; a && a(); },
   cardView: id => { const c = CARDS.find(x => x.id === id), own = albumGet().has(id); modal(`<div class="c" style="display:flex;flex-direction:column;align-items:center;gap:10px">${cardHTML(c, true, own)}<p class="t">${own ? c.d : 'Aún no la has encontrado. Busca en los cofres.'}</p></div>`); },
