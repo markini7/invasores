@@ -280,6 +280,9 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .modal .panel{position:relative;max-height:calc(100dvh - 40px);overflow:auto}
 .mclose{position:sticky;top:0;align-self:flex-end;margin:-4px -4px -30px 0;z-index:2;font:inherit;font-size:12px;width:34px;height:34px;color:var(--txt);background:#3a2e4a;border:none;box-shadow:0 0 0 2px #000;cursor:pointer;flex:none}
 .version{font-size:7px;opacity:.7}
+.scard{display:flex;gap:12px;align-items:center}
+.srow{display:flex;justify-content:space-between;gap:8px;font-size:8px;line-height:1.8;color:var(--dim)}
+.srow b{font-weight:normal;color:var(--txt);font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -2163,13 +2166,36 @@ function recordBest(win) {
   b[run.hero] = o; try { localStorage.setItem(BK, JSON.stringify(b)); } catch (e) {}
 }
 
+// ---------- estadísticas (se guardan en el móvil)
+const STK = 'mazmorra_stats';
+function statsGet() { try { return JSON.parse(localStorage.getItem(STK)) || {}; } catch (e) { return {}; } }
+function statAdd(field, n = 1) {
+  if (FAST || !run) return;
+  const st = statsGet(), h = st[run.hero] || (st[run.hero] = { runs: 0, wins: 0, kills: 0, dmg: 0 });
+  h[field] = (h[field] || 0) + n;
+  try { localStorage.setItem(STK, JSON.stringify(st)); } catch (e) {}
+}
+function statsScreen() {
+  S = { scr: 'stats' };
+  const st = statsGet(), b = best(), keys = Object.keys(HEROES), z = { runs: 0, wins: 0, kills: 0, dmg: 0 };
+  const row = (label, v) => `<div class="srow"><span>${label}</span><b>${v}</b></div>`;
+  const card = (k, h) => {
+    const o = st[k] || z, floor = b[k] ? Math.min(FLOORS.length, Math.floor(b[k].p / STEPS) + 1) : 0;
+    return `<div class="panel scard">${fig(sp3(h.spr, 4.2, '', .4, { still: 1 }))}<div class="col" style="flex:1;gap:4px"><h3>${h.n}</h3>
+      ${row('Partidas', o.runs)}${row('Ganadas', o.wins)}${row('Enemigos derrotados', o.kills)}${row('Daño total', o.dmg)}${row('Mejor piso', floor ? floor + ' de ' + FLOORS.length : '—')}</div></div>`;
+  };
+  const tot = keys.reduce((a, k) => { const o = st[k] || z; for (const f in z) a[f] += o[f] || 0; return a; }, { ...z });
+  app.innerHTML = `${topbar('Volver', 'G.title()')}<h2 class="c">Estadísticas</h2>
+    <div class="panel col" style="gap:4px"><h3>Todos los héroes</h3>${row('Partidas', tot.runs)}${row('Ganadas', tot.wins)}${row('Enemigos derrotados', tot.kills)}${row('Daño total', tot.dmg)}</div>
+    ${keys.map(k => card(k, HEROES[k])).join('')}`;
+}
 function newRun(hero) {
   const h = HEROES[hero];
   run = {
     hero, cls: h.n, hp: h.hp, maxHp: h.hp, gold: 0, floor: 0, step: 0, relics: [], seen: [],
     dice: { atk: (h.atk || [1, 1, 1, 1, 2, 2]).map(v => F('golpe', v)), def: [0, 0, 0, 0, 1, 1].map(v => F('escudo', v)), esp: clone(h.esp) },
   };
-  run.doors = genDoors(0); save(); floorIntro();
+  run.doors = genDoors(0); save(); statAdd('runs'); floorIntro();
 }
 function wpick(w) { let t = 0; for (const k in w) t += w[k]; let x = Math.random() * t; for (const k in w) { x -= w[k]; if (x < 0) return k; } return Object.keys(w)[0]; }
 function genDoors(s) {
@@ -2321,6 +2347,7 @@ function modal(html) {
 let fxq = [];
 function fl(target, txt, col, shake, cls) { fxq.push({ target, txt, col, shake, cls }); }
 function flushFx() {
+  let heroN = 0;
   for (const q of fxq) {
     let el = null;
     if (q.target === 'hero') el = $('#ov-hero');
@@ -2334,9 +2361,10 @@ function flushFx() {
       if (n >= 5) { app.classList.remove('quake'); void app.offsetWidth; app.classList.add('quake'); }
     }
     if (q.txt) {
-      const r = el.getBoundingClientRect(), d = document.createElement('div');
+      const tEl = q.target === 'hero' && $('#hbar') ? $('#hbar') : el, onBar = tEl !== el;
+      const r = tEl.getBoundingClientRect(), d = document.createElement('div');
       d.className = 'fl'; d.textContent = q.txt; d.style.color = q.col || '#fff';
-      d.style.left = (r.left + r.width / 2 + R(-10, 10)) + 'px'; d.style.top = (r.bottom - 6) + 'px';
+      d.style.left = (r.left + r.width / 2 + R(-14, 14)) + 'px'; d.style.top = (onBar ? r.top + 4 - (q.txt ? heroN++ : 0) * 18 : r.bottom - 6) + 'px';
       fxl.appendChild(d); setTimeout(() => d.remove(), 950);
       const hw = d.offsetWidth / 2 + 6, vw = window.innerWidth;
       d.style.left = Math.max(hw, Math.min(vw - hw, parseFloat(d.style.left))) + 'px';
@@ -2366,6 +2394,7 @@ function title() {
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
     <button class="btn gold" onclick="G.album()">Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
+    <button class="btn" onclick="G.stats()">Estadísticas</button>
     <button class="btn" onclick="G.help()">Cómo se juega</button>
     <button class="btn small" onclick="G.sfx()">Sonido: ${Sfx.on ? 'sí' : 'no'}</button>
     <p class="t c version">${VERSION}</p>
@@ -2578,7 +2607,7 @@ function gameOver() {
     <button class="btn pri" onclick="G.choose()">Otra partida</button><button class="btn small" onclick="G.title()">Menú</button></div>`;
 }
 function victory() {
-  run.step = STEPS; recordBest(true); clearSave();
+  run.step = STEPS; recordBest(true); statAdd('wins'); clearSave();
   S = { scr: 'win' };
   app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(heroSkin(), 10, '', .4))}${sp('corona', 6)}
     <p class="t">${run.cls} ha vencido al Dragón y sale de la mazmorra con ${run.gold} de oro.</p>
@@ -2754,6 +2783,8 @@ function hitEnemy(e, amt, pierce, col) {
   if (!pierce) { const ab = Math.min(e.block, amt); e.block -= ab; amt -= ab; }
   amt = Math.min(amt, Math.max(0, e.hp));
   e.hp -= amt;
+  if (amt > 0) statAdd('dmg', amt);
+  if (e.hp <= 0 && !e._killed) { e._killed = true; statAdd('kills'); }
   fl(e, amt > 0 ? '-' + amt : '0', col || '#ff6a6a', amt > 0);
   if (e.hp <= 0 && !FAST) { (e._fx || (e._fx = {})).die = performance.now(); }
   return amt;
@@ -2974,6 +3005,7 @@ const G = {
     else if (C.phase === 'roll') G.roll();
   },
   album: () => albumScreen(),
+  stats: () => statsScreen(),
   cardOk: () => { const a = S.after; a && a(); },
   cardView: id => { const c = CARDS.find(x => x.id === id), own = albumGet().has(id); modal(`<div class="c" style="display:flex;flex-direction:column;align-items:center;gap:10px">${cardHTML(c, true, own)}<p class="t">${own ? c.d : 'Aún no la has encontrado. Busca en los cofres.'}</p></div>`); },
   legend: () => modal(`<h3>Leyenda de las puertas</h3><div class="col">${Object.values(ROOMS).map(r => `<div class="row">${sp(r.ico, 4)}<div><b style="font-size:9px;font-weight:normal">${r.n === '¿?' ? 'Evento' : r.n}</b><p class="t">${r.d}</p></div></div>`).join('')}</div>`),
