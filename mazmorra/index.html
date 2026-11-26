@@ -289,6 +289,9 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ftip{position:fixed;z-index:95;background:#fff4d6;color:#1a1020;font-size:8px;line-height:1.8;padding:8px 10px;box-shadow:0 0 0 3px #000,3px 3px 0 3px #0008;pointer-events:none;animation:pop2 .2s steps(3)}
 .ftip b{font-weight:normal;color:#7a2030}
 .dinfo .fs .fc{cursor:pointer}
+.card.big{transition:transform .45s cubic-bezier(.2,1.4,.4,1);cursor:grab;--sh:-60%}
+.card.big.drag{transition:none;cursor:grabbing}
+.card.big::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent calc(var(--sh) - 18%),#ffffff26 var(--sh),transparent calc(var(--sh) + 18%));transition:background .2s}
 </style>
 </head>
 <body>
@@ -1699,12 +1702,28 @@ function cardHTML(c, big, owned = true) {
     ${big ? `<div class="crar">${RAREZA[c.r].n}</div>` : ''}
   </div>`;
 }
+function cardDrag(root) {
+  const card = (root || document).querySelector('.card.big'); if (!card) return;
+  const cv = card.querySelector('canvas.v3d'); let sx = 0, sy = 0, y0 = 0, on = false;
+  card.style.touchAction = 'none';
+  card.onpointerdown = e => { on = true; sx = e.clientX; sy = e.clientY; if (cv) { y0 = +cv.dataset.yaw; cv.dataset.still = '1'; } card.setPointerCapture(e.pointerId); card.classList.add('drag'); };
+  card.onpointermove = e => {
+    if (!on) return;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (cv) cv.dataset.yaw = (y0 + dx * .025).toFixed(3);
+    const ry = Math.max(-24, Math.min(24, dx * .16)), rx = Math.max(-16, Math.min(16, -dy * .16));
+    card.style.transform = `perspective(700px) rotateY(${ry}deg) rotateX(${rx}deg)`;
+    card.style.setProperty('--sh', (50 - ry * 2.5) + '%');
+  };
+  card.onpointerup = card.onpointercancel = () => { on = false; card.classList.remove('drag'); card.style.transform = ''; card.style.setProperty('--sh', '-60%'); };
+}
 function cardReveal(c, after) {
   S = { scr: 'card', after };
   app.innerHTML = `<div class="center c" style="align-items:center"><p class="t">Dentro del cofre había algo más...</p><h1 style="font-size:16px">¡Carta nueva!</h1>
-    <div class="reveal">${cardHTML(c, true)}</div><p class="t" style="max-width:280px">${c.d}</p>
+    <div class="reveal">${cardHTML(c, true)}</div><p class="t">Desliza el dedo sobre la carta para girarla</p><p class="t" style="max-width:280px">${c.d}</p>
     <p class="t">Álbum: ${albumGet().size}/${CARDS.length}</p>
     <button class="btn pri" onclick="G.cardOk()">Guardar en el álbum</button></div>`;
+  cardDrag(app);
   Sfx.clack(1);
 }
 function albumScreen() {
@@ -1787,7 +1806,7 @@ const V3D = {
       const ctx = cv.getContext('2d'), img = ctx.createImageData(cw, ch);
       cv._s = { cw, ch, ctx, img, buf: new Uint32Array(img.data.buffer), yaw: +cv.dataset.yaw, ph: +cv.dataset.ph, last: null };
     }
-    const S0 = cv._s, yq = Math.round((S0.yaw + (cv.dataset.still ? 0 : Math.sin(time * .8 + S0.ph) * .32)) / .04);
+    const S0 = cv._s, yq = Math.round((+cv.dataset.yaw + (cv.dataset.still ? 0 : Math.sin(time * .8 + S0.ph) * .32)) / .04);
     if (yq === S0.last) return;
     S0.last = yq;
     const fr = this.frame(cv.dataset.n, S0.cw, S0.ch, yq);
@@ -2671,7 +2690,7 @@ function gameOver() {
   app.innerHTML = `<div class="center c" style="align-items:center"><h1>Has caído</h1>${sp('calavera', 12)}
     <p class="t">${run.cls} cayó en ${FLOORS[run.floor].n},<br>sala ${run.step + 1} de ${STEPS}.</p>
     <div class="panel" style="width:100%">${diceRows()}</div>
-    <button class="btn pri" onclick="G.choose()">Otra partida</button><button class="btn small" onclick="G.title()">Menú</button></div>`;
+    <div class="row2" style="width:100%"><button class="btn" onclick="G.title()">Volver al menú</button><button class="btn pri" onclick="G.choose()">Jugar otra vez</button></div></div>`;
 }
 function victory() {
   run.step = STEPS; recordBest(true); statAdd('wins'); clearSave();
@@ -2679,7 +2698,7 @@ function victory() {
   app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(heroSkin(), 10, '', .4))}${sp('corona', 6)}
     <p class="t">${run.cls} ha vencido al Dragón y sale de la mazmorra con ${run.gold} de oro.</p>
     <div class="panel" style="width:100%">${diceRows()}</div>
-    <button class="btn pri" onclick="G.choose()">Jugar otra vez</button></div>`;
+    <div class="row2" style="width:100%"><button class="btn" onclick="G.title()">Volver al menú</button><button class="btn pri" onclick="G.choose()">Jugar otra vez</button></div></div>`;
 }
 
 // ---------------------------------------------------------- combate
@@ -3092,7 +3111,7 @@ const G = {
   face: (ev, d, i) => { if (ev) ev.stopPropagation(); const f = run && run.dice[d][i]; if (f) showTip(ev.currentTarget, faceInfo(d, f)); },
   stats: () => statsScreen(),
   cardOk: () => { const a = S.after; a && a(); },
-  cardView: id => { const c = CARDS.find(x => x.id === id), own = albumGet().has(id); modal(`<div class="c" style="display:flex;flex-direction:column;align-items:center;gap:10px">${cardHTML(c, true, own)}<p class="t">${own ? c.d : 'Aún no la has encontrado. Busca en los cofres.'}</p></div>`); },
+  cardView: id => { const c = CARDS.find(x => x.id === id), own = albumGet().has(id); modal(`<div class="c" style="display:flex;flex-direction:column;align-items:center;gap:10px">${cardHTML(c, true, own)}<p class="t">${own ? c.d + '<br><br>Desliza el dedo sobre la carta para girarla.' : 'Aún no la has encontrado. Busca en los cofres.'}</p></div>`); cardDrag(document.querySelector('.modal')); },
   legend: () => modal(`<h3>Leyenda de las puertas</h3><div class="col">${Object.values(ROOMS).map(r => `<div class="row">${sp(r.ico, 4)}<div><b style="font-size:9px;font-weight:normal">${r.n === '¿?' ? 'Evento' : r.n}</b><p class="t">${r.d}</p></div></div>`).join('')}</div>`),
   tapEnemy: i => {
     const e = C && C.en[i]; if (!e || e.hp <= 0) return;
