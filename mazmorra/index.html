@@ -826,8 +826,13 @@ function dieCols(d) {
   const c = hexRGB(H().dc); return ['#' + c.map(v => Math.round(v * .3).toString(16).padStart(2, '0')).join(''), H().dc];
 }
 const TS = 20; // lado de la textura de cada cara
+// estilo de las caras: A = icono y número, B = número grande, E = placa de color (se prueban en el laboratorio)
+let DSTYLE = { p: 'A', e: 'A' };
+try { const ds = JSON.parse(localStorage.getItem('mazmorra_dstyle')); if (ds && ds.p && ds.e) DSTYLE = ds; } catch (e) {}
+const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
 const DIG5 = ['01110100011001110101110011000101110', '00100011000010000100001000010001110', '01110100010000100010001000100011111', '11110000010000101110000010000111110', '00010001100101010010111110001000010', '11111100001111000001000011000101110', '00110010001000011110100011000101110', '11111000010001000100010000100001000', '01110100011000101110100011000101110', '01110100011000101111000010001001100'];
-function dieTexture(key, bodyH, rimH, parts, gold) {
+function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p') {
+  const style = DSTYLE[kind]; key += '|' + style;
   if (texCache[key]) return texCache[key];
   const body = hexRGB(bodyH), rim = hexRGB(rimH), N = TS;
   const px = Array.from({ length: N * N }, () => body.slice());
@@ -848,8 +853,22 @@ function dieTexture(key, bodyH, rimH, parts, gold) {
     }
   };
   const cen = st => Math.round((N - (st.length * 6 - 1)) / 2);
+  const big = (st, col) => { // número al doble (10x14), a la derecha; si tiene dos cifras, normal
+    if (st.length > 1) return num(st, cen(st), 11, col);
+    const g = DIG5[+st], c = hexRGB(col), on = (x, y) => x >= 0 && y >= 0 && x < 10 && y < 14 && g[(y >> 1) * 5 + (x >> 1)] === '1';
+    for (let y = -1; y <= 14; y++) for (let x = -1; x <= 10; x++) { if (on(x, y)) put(8 + x, 3 + y, c); else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1)) put(8 + x, 3 + y, [8, 5, 7]); }
+  };
+  if (style === 'E' && parts.length) {
+    parts.slice(0, 2).forEach(([ic], r) => { const c = hexRGB(PLATE[ic] || '#55556a'); for (let y = 1; y < N - 1; y++) { if (parts.length > 1 && (r === 0 ? y >= 10 : y < 10)) continue; for (let x = 1; x < N - 1; x++) px[y * N + x] = c.map(v => Math.min(255, v * (y === 1 || x === 1 ? 1.25 : y === N - 2 || x === N - 2 ? .7 : 1))); } });
+    if (parts.length > 1) for (let x = 1; x < N - 1; x++) px[10 * N + x] = [8, 5, 7];
+  }
   if (!parts.length) { for (const [x, y] of [[9, 9], [10, 9], [9, 10], [10, 10]]) put(x, y, rim); }
-  else if (parts.length === 1) {
+  else if ((style === 'B' || style === 'E') && parts.length === 1 && parts[0][1] !== '') {
+    const [ic, n, c] = parts[0];
+    icon(ic, 1, 7); big(String(n), style === 'E' ? '#ffffff' : gold ? '#f8d84a' : '#f4f0e8');
+  } else if (style === 'E' && parts.length > 1) {
+    parts.slice(0, 2).forEach(([ic, n], r) => { icon(ic, 2, 2 + r * 9); if (n !== '') num(String(n), 11, 2 + r * 9, '#ffffff'); });
+  } else if (parts.length === 1) {
     const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
     icon(ic, 6, st ? 2 : 6);
     if (st) num(st, cen(st), 11, gold ? '#f8d84a' : c);
@@ -860,14 +879,14 @@ function faceTex(d, f, gold) {
   const [b, r] = dieCols(d), key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
   if (blankF(f)) return dieTexture(key, b, r, []);
   const kw = KW[f.k];
-  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold);
+  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold, 'p');
 }
 // dado de enemigo: hueso oscuro con borde rojo, y lo que hace pintado (hasta dos cosas)
 function enemyFaceTex(str) {
   const it = parseFace(str), parts = [];
   if (it.a) parts.push(['golpe', it.a, '#ff8a8a']); if (it.b) parts.push(['escudo', it.b, '#8ab8ff']); if (it.p) parts.push(['veneno', it.p, '#7aea7a']);
   if (it.h) parts.push(['corazon', it.h, '#ff8a8a']); if (it.r) parts.push(['furia', it.r, '#ff7050']); if (it.s) parts.push(['invoca', '', '#d0a0ff']);
-  return dieTexture('E|' + str, '#2e2428', '#c04040', parts);
+  return dieTexture('E|' + str, '#2e2428', '#c04040', parts, false, 'e');
 }
 function topFace(q) { let best = 0, bv = -2; CUBE_F.forEach((f, i) => { const n = Q4.rot(q, f.n); if (n[1] > bv) { bv = n[1]; best = i; } }); return best; }
 function settleQ(q, fi) {
@@ -1682,15 +1701,35 @@ const ZONE_P = [[0, 1, 0, 0, .3], [1, 0, 0, 1.2, .45], [-1, 0, 0, 3.2, .45], [0,
 const HERO_POS = [-2.25, 0, 2.75], EN_Z = -2.6, DKEYS = ['atk', 'def', 'esp'];
 const slotX = (i, n) => n === 1 ? 0 : n === 2 ? [-1.35, 1.35][i] : [-2.15, 0, 2.15][i] ?? 0;
 const voxSize = e => e.px >= 8 ? .118 : e.px >= 7 ? .1 : .088;
+// proyección "afín": el dado se coloca con perspectiva, pero su forma no se deforma
+// (así las líneas rectas de los números no se tuercen en los lados de la pantalla)
+function projAff(cam, c0, p) {
+  const vx = p[0] - c0.p[0], vy = p[1] - c0.p[1], vz = p[2] - c0.p[2], k = cam.focal / c0.z;
+  return [c0.sx + (vx * cam.r[0] + vy * cam.r[1] + vz * cam.r[2]) * k, c0.sy - (vx * cam.u[0] + vy * cam.u[1] + vz * cam.u[2]) * k, c0.z + vx * cam.f[0] + vy * cam.f[1] + vz * cam.f[2]];
+}
+let DFLAT = true;
 function drawCube(s, idb, cam, d, texFn, id) {
+  const pc = proj(cam, d.pos), c0 = { p: d.pos, sx: pc[0], sy: pc[1], z: pc[2] };
+  if (DFLAT && d.rest && !d.fly) return drawFlatDie(s, idb, cam, d, texFn, id, pc);
   for (let fi = 0; fi < 6; fi++) {
     const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, DS));
     if (V3.dot(n, V3.sub(cam.eye, c)) <= 0) continue;
     const l = V3.dot(n, LIGHT), lvl = l > .72 ? 2 : l > .25 ? 1 : 0, tex = texFn(fi)[lvl];
-    const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => proj(cam, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, DS), V3.add(V3.mul(F0.a, sa * DS), V3.mul(F0.b, sb * DS)))))));
+    const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => projAff(cam, c0, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, DS), V3.add(V3.mul(F0.a, sa * DS), V3.mul(F0.b, sb * DS)))))));
     rasterTri(s, idb, P[0], P[1], P[2], [0, 1], [1, 1], [1, 0], tex, id);
     rasterTri(s, idb, P[0], P[2], P[3], [0, 1], [1, 0], [0, 0], tex, id);
   }
+}
+// dado parado: la cara de arriba se pinta recta, píxel a píxel, y debajo su lateral
+function drawFlatDie(s, idb, cam, d, texFn, id, pc) {
+  const { W, H, buf } = s, side = 6;
+  let front = 4, bz = -2;
+  for (let fi = 0; fi < 6; fi++) { if (fi === d.top) continue; const n = Q4.rot(d.q, CUBE_F[fi].n); if (n[2] > bz) { bz = n[2]; front = fi; } }
+  const top = texFn(d.top)[2], fr = texFn(front)[0];
+  const x0 = Math.round(pc[0] - TS / 2), y0 = Math.round(pc[1] - TS / 2 - side / 2);
+  const put = (x, y, c) => { if (x < 0 || y < 0 || x >= W || y >= H) return; buf[y * W + x] = c; idb[y * W + x] = id; };
+  for (let r = 0; r < side; r++) { const sr = Math.round(r * (TS - 1) / (side - 1)); for (let x = 0; x < TS; x++) put(x0 + x, y0 + TS + r, fr[sr * TS + x]); }
+  for (let y = 0; y < TS; y++) for (let x = 0; x < TS; x++) put(x0 + x, y0 + y, top[y * TS + x]);
 }
 function floorShadow(s, cam, x, z, r, k) {
   const { W, H, buf } = s, c = proj(cam, [x, 0, z]);
@@ -1814,7 +1853,7 @@ const Scene = {
     all.forEach((d, i) => {
       if (!list.includes(d)) return;
       const top = sim.top[i], map = new Array(6), rest = [0, 1, 2, 3, 4, 5].filter(x => x !== d.want);
-      map[top] = d.want; for (let c = 0; c < 6; c++) if (c !== top) map[c] = rest.shift();
+      d.rest = false; map[top] = d.want; for (let c = 0; c < 6; c++) if (c !== top) map[c] = rest.shift();
       d.map = map; d.top = top;
     });
     return new Promise(res => {
@@ -1823,7 +1862,7 @@ const Scene = {
         const f = Math.max(0, Math.min(sim.frames.length - 1, Math.floor((now - t0) / 16.67)));
         sim.frames[f].forEach((st, i) => { if (bodies[i].dyn) { all[i].pos = st.pos; all[i].q = st.q; } });
         while (si < sim.sounds.length && sim.sounds[si][0] <= f) { Sfx.clack(sim.sounds[si][1]); si++; }
-        if (f >= sim.frames.length - 1) return res();
+        if (f >= sim.frames.length - 1) { list.forEach(d => { d.rest = true; }); return res(); }
         requestAnimationFrame(step);
       };
       requestAnimationFrame(step);
@@ -2201,7 +2240,7 @@ function title() {
     <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${FLOORS[sv.floor].n}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
-    <button class="btn gold" onclick="G.album()">${sp('dado', 2)} Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
+    <button class="btn" onclick="G.album()">Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
     <button class="btn" onclick="G.help()">Cómo se juega</button>
     <button class="btn small" onclick="G.sfx()">Sonido: ${Sfx.on ? 'sí' : 'no'}</button>
   </div>`;
@@ -2439,7 +2478,8 @@ function makeEnemy(key) {
 function startCombat(kind) {
   const fl = FLOORS[run.floor];
   let list;
-  if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
+  if (window.LAB_EN) list = window.LAB_EN.slice();
+  else if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
   else if (kind === 'jefe') list = [fl.boss];
   else if (kind === 'elite') list = [pick(fl.elite)];
   else {
@@ -2729,7 +2769,8 @@ function cRender() {
   if (eff && C.phase !== 'resolve') eff.fs.forEach(f => {
     const sd = Scene.pdie(f.d), lk = C.phase === 'reroll' && C.locked[f.d];
     if (!sd || C.used[f.d] || sd.fly || (!f.tag && !lk)) return;
-    const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .1, sd.pos[2]]);
+    let [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .1, sd.pos[2]]);
+    if (DFLAT && sd.rest) { const k = Scene.s.cv.offsetWidth / Scene.s.W; [x, y] = Scene.css(sd.pos); y -= (TS / 2 + 4) * k; }
     ov += `<div class="dov" style="left:${x}px;top:${y}px">${lk ? `<span class="dlk">${sp('candado', 2)}</span>` : ''}${f.tag ? `<span class="dtag">${f.tag}</span>` : ''}</div>`;
   });
   if (C.phase === 'roll' && !Tuto.on) ov += `<div class="tap-hint">Toca para tirar tus dados</div>`;

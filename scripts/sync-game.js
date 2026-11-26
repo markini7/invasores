@@ -48,6 +48,15 @@ function buildMazmorra() {
   const dst = path.join(dir, 'index.html');
   const prev = fs.existsSync(dst) ? fs.readFileSync(dst, 'utf8') : '';
   if (prev !== out) fs.writeFileSync(dst, out);
+  // laboratorio de dados: el mismo juego con mazmorra/lab.js al final
+  const labSrc = path.join(__dirname, '..', 'mazmorra', 'lab.js');
+  if (fs.existsSync(labSrc)) {
+    const lab = out.replace('<title>Mazmorra de Dados</title>', '<title>Laboratorio de dados</title>')
+      .replace(/<\/body>\s*<\/html>\s*$/, '<script>\n' + fs.readFileSync(labSrc, 'utf8') + '</script>\n</body>\n</html>\n');
+    const labDst = path.join(dir, 'lab.html');
+    const prevLab = fs.existsSync(labDst) ? fs.readFileSync(labDst, 'utf8') : '';
+    if (prevLab !== lab) fs.writeFileSync(labDst, lab);
+  }
 }
 
 // Laboratorio (docs/lab.html): el mismo juego con game/lab.js al final para probar disparos.
