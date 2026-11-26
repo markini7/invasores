@@ -163,6 +163,38 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .hearts img{filter:drop-shadow(1px 1px 0 #000)}
 .hstat .hearts,.panel .hearts,.hudhp .hearts,.hero-card .hearts{justify-content:flex-start;margin:0}
 .hudhp{margin-top:-4px}
+
+/* escena de combate */
+.scene{position:relative;width:100%;background:#000;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;overflow:hidden;cursor:pointer;flex:none}
+.scene canvas{position:absolute;left:0;top:0}
+#ovs{position:absolute;inset:0;pointer-events:none;z-index:2}
+.ov{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;gap:2px;text-shadow:2px 2px 0 #000;white-space:nowrap}
+.ov .nm{font-size:6px;color:#e8e0f0}
+.ov .intent{background:#000b;padding:3px 5px;box-shadow:0 0 0 2px #000;font-size:9px;gap:5px;min-height:0}
+.ov .intent s{font-size:6px;color:#8a8a9a;margin-left:2px}
+.ov .hearts img{width:7px;height:7px}
+.ov .hearts.big img{width:10px;height:10px}
+.ov .hearts{gap:1px;max-width:none!important;flex-wrap:wrap;justify-content:center;width:max-content;max-width:96px!important}
+.ov.hero{transform:translate(-30%,-100%)}
+.ov.pick::before{content:'▼';color:var(--gold);font-size:12px;animation:blink .7s steps(2) infinite;order:-1}
+.ov.pick .nm{color:var(--gold)}
+.ov.nope{opacity:.45}
+.dk{position:absolute;transform:translate(-50%,-100%)}
+.tap-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:9px;text-shadow:2px 2px 0 #000;animation:blink 1.2s steps(2) infinite}
+.phase{background:var(--panel);box-shadow:0 0 0 2px #000,0 0 0 5px #3a2e4a,0 0 0 7px #000;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:64px}
+.ph-t{font-size:10px;color:var(--gold);line-height:1.5}
+.ph-t .gold{color:#fff4a0}
+.ph-d{font-size:7px;line-height:1.9;color:var(--dim)}
+.ph-d b{color:var(--txt);font-weight:normal}
+.dchips{display:flex;flex-direction:column;gap:4px}
+.dchip{display:flex;align-items:center;gap:8px;font:inherit;font-size:7px;line-height:1.6;color:var(--dim);background:#0006;border:none;box-shadow:0 0 0 2px #000;padding:3px 6px;text-align:left;cursor:pointer}
+.dchip b{display:block;color:var(--txt);font-weight:normal}
+.dchip .fc{width:28px;height:28px}
+.dchip.on{box-shadow:0 0 0 2px #000,0 0 0 4px var(--gold)}
+.dchip.lk{box-shadow:0 0 0 2px #000,0 0 0 4px #c8e6ff}
+.dchip.lk span::after{content:' · guardado';color:#c8e6ff}
+.row2{display:flex;gap:10px}
+.row2 .btn{flex:1}
 </style>
 </head>
 <body>
@@ -456,6 +488,7 @@ const ICO = {
   hp1h: ['.r.R.', 'rrRRR', 'rrRRR', '.rRR.', '..R..'],
   hp5: ['.yy.yy.', 'yrryrry', 'yrwrrry', 'yrrrrry', '.yrrry.', '..yry..', '...y...'],
   hp5h: ['.yy.yy.', 'yrryRRy', 'yrwRRRy', 'yrrRRRy', '.yrRRy.', '..yRy..', '...y...'],
+  candado: ['..www..', '.w...w.', '.w...w.', 'yyyyyyy', 'yyykyyy', 'yyykyyy', 'yyyyyyy'],
   invoca: ['..p.p..', '.p.w.p.', 'p.www.p', '.wwwww.', 'p.www.p', '.p.w.p.', '..p.p..'],
 };
 const pxCache = {};
@@ -727,24 +760,6 @@ const Corr = {
   },
 };
 
-// ---------- fondo de la sala de combate (con antorchas que parpadean)
-const Arena = {
-  s: makeSurface('arena-bg'), floor: -1, raf: 0, last: 0,
-  attach(slot, floor) {
-    const s = this.s; slot.appendChild(s.cv);
-    const ch = sizeSurface(s, slot.clientWidth, slot.clientHeight, 2);
-    if (ch || floor !== this.floor) { this.floor = floor; this.draw(performance.now()); }
-    if (!this.raf) { const loop = now => { if (!s.cv.isConnected) { this.raf = 0; return; } if (now - this.last > 90) { this.last = now; this.draw(now); } this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
-  },
-  draw(now) {
-    const s = this.s; if (!s.W) return;
-    const cam = makeCam([0, 2.5, 3.6], [0, .55, -2.2], s.W * .78, s.W, s.H);
-    const room = { CW: 3.4, CH: 3.4, L: 2.4, lamp: .55, torches: [[-1.9, 2.0, -2.34], [1.9, 2.0, -2.34], [-3.34, 1.9, .4], [3.34, 1.9, .4]], doors: [] };
-    renderRoom(s, cam, THEMES[this.floor], room, now / 1000);
-    blit(s);
-  },
-};
-
 // ---------- bandeja de dados con físicas
 const TD = { X: 2.7, Z: 1.35, D: .55 };   // medio ancho, medio fondo y hondo de la bandeja
 const DS = .42; // medio lado del dado
@@ -762,10 +777,9 @@ function dieCols(d) {
   if (d === 'def') return ['#132044', '#4a8ae8'];
   const c = hexRGB(H().dc); return ['#' + c.map(v => Math.round(v * .3).toString(16).padStart(2, '0')).join(''), H().dc];
 }
-function faceTex(d, f, gold) {
-  const key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
+function dieTexture(key, bodyH, rimH, parts, gold) {
   if (texCache[key]) return texCache[key];
-  const [bodyH, rimH] = dieCols(d), body = hexRGB(bodyH), rim = hexRGB(rimH);
+  const body = hexRGB(bodyH), rim = hexRGB(rimH);
   const px = Array.from({ length: 256 }, () => body.slice());
   for (let y = 0; y < 16; y++) for (let x = 0; x < 16; x++) {
     if (x === 0 || y === 0 || x === 15 || y === 15) px[y * 16 + x] = rim.map(v => v * .8);
@@ -773,17 +787,28 @@ function faceTex(d, f, gold) {
     else if (x === 14 || y === 14) px[y * 16 + x] = body.map(v => v * .6);
   }
   const put = (x, y, c) => { if (x >= 0 && x < 16 && y >= 0 && y < 16) px[y * 16 + x] = c; };
-  if (blankF(f)) { for (const [x, y] of [[7, 7], [8, 7], [7, 8], [8, 8]]) put(x, y, rim); }
-  else {
-    const kw = KW[f.k], g = ICO[kw.ico], num = f.k === 'doble' && !f.v ? '' : String(f.v);
-    const oy = num ? 2 : 4;
-    g.forEach((row, y) => { for (let x = 0; x < row.length; x++) { const ch = row[x]; if (PAL[ch]) put(4 + x, oy + y, hexRGB(PAL[ch])); } });
-    if (num) {
-      const col = hexRGB(gold ? '#f8d84a' : kw.col), w = num.length * 4 - 1;
-      [...num].forEach((ch, k) => { const m = DIGITS[+ch]; for (let i = 0; i < 15; i++) if (m[i] === '1') { const x = 8 - Math.ceil(w / 2) + k * 4 + (i % 3), y = 10 + (i / 3 | 0); put(x + 1, y + 1, [10, 6, 8]); put(x, y, col); } });
-    }
-  }
+  const icon = (n, ox, oy) => ICO[n].forEach((row, y) => { for (let x = 0; x < row.length; x++) if (PAL[row[x]]) put(ox + x, oy + y, hexRGB(PAL[row[x]])); });
+  const num = (str, ox, oy, ch) => { const col = hexRGB(ch); [...str].forEach((c, k) => { const m = DIGITS[+c]; for (let i = 0; i < 15; i++) if (m[i] === '1') { const x = ox + k * 4 + (i % 3), y = oy + (i / 3 | 0); put(x + 1, y + 1, [10, 6, 8]); put(x, y, col); } }); };
+  if (!parts.length) { for (const [x, y] of [[7, 7], [8, 7], [7, 8], [8, 8]]) put(x, y, rim); }
+  else if (parts.length === 1) {
+    const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
+    icon(ic, 4, st ? 2 : 4);
+    if (st) { const w = st.length * 4 - 1; num(st, 8 - Math.ceil(w / 2), 10, gold ? '#f8d84a' : c); }
+  } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 1, 1 + r * 7); if (n !== '') num(String(n), 10, 2 + r * 7, c); });
   return texCache[key] = [.5, .74, 1.02].map(k => Uint32Array.from(px, c => pack(Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0)));
+}
+function faceTex(d, f, gold) {
+  const [b, r] = dieCols(d), key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
+  if (blankF(f)) return dieTexture(key, b, r, []);
+  const kw = KW[f.k];
+  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold);
+}
+// dado de enemigo: hueso oscuro con borde rojo, y lo que hace pintado (hasta dos cosas)
+function enemyFaceTex(str) {
+  const it = parseFace(str), parts = [];
+  if (it.a) parts.push(['golpe', it.a, '#ff8a8a']); if (it.b) parts.push(['escudo', it.b, '#8ab8ff']); if (it.p) parts.push(['veneno', it.p, '#7aea7a']);
+  if (it.h) parts.push(['corazon', it.h, '#ff8a8a']); if (it.r) parts.push(['furia', it.r, '#ff7050']); if (it.s) parts.push(['invoca', '', '#d0a0ff']);
+  return dieTexture('E|' + str, '#2e2428', '#c04040', parts);
 }
 function topFace(q) { let best = 0, bv = -2; CUBE_F.forEach((f, i) => { const n = Q4.rot(q, f.n); if (n[1] > bv) { bv = n[1]; best = i; } }); return best; }
 function settleQ(q, fi) {
@@ -807,7 +832,7 @@ function simulate(bodies) {
         let touch = false;
         for (let it = 0; it < 2; it++) for (const v of CUBE_V) {
           const r = Q4.rot(b.q, v), p = V3.add(b.pos, r);
-          for (const pl of P) {
+          for (const pl of (b.P || P)) {
             const n = [pl[0], pl[1], pl[2]], dist = V3.dot(n, p) + pl[3];
             if (dist >= 0) continue;
             touch = true;
@@ -865,148 +890,6 @@ function simulate(bodies) {
   }
   return { frames, top, sounds };
 }
-const Tray = {
-  s: makeSurface('tray'), cam: null, bg: null, dice: [null, null, null], playing: false, raf: 0,
-  attach(slot) {
-    const s = this.s; slot.prepend(s.cv);
-    s.cv.onclick = e => this.tap(e);
-    const w = slot.clientWidth;
-    if (sizeSurface(s, w, Math.round(w * .5), 2)) this.setup();
-    this.draw();
-  },
-  setup() {
-    const s = this.s, W = s.W;
-    const eye = [0, 7.6, 2.9], tgt = [0, 0, .05], f = V3.norm(V3.sub(tgt, eye));
-    const corner = [TD.X + .45, TD.D, TD.Z + .2], depth = V3.dot(V3.sub(corner, eye), f);
-    this.cam = makeCam(eye, tgt, (W / 2 - 1) * depth / (TD.X + .45), W, s.H);
-    // fondo fijo: mesa de madera con un hueco forrado de fieltro
-    const cam = this.cam, wood = rampOf(['#0a0605', '#1c120b', '#301f12', '#47301c', '#634428', '#875d36', '#a87a48']), felt = rampOf(['#0b0406', '#1a080c', '#2c0e14', '#41151c', '#581f25', '#712c2e']);
-    this.bg = new Uint32Array(s.W * s.H);
-    const { X, Z, D } = TD, ex = eye[0], ey = eye[1], ez = eye[2];
-    for (let y = 0; y < s.H; y++) for (let x = 0; x < s.W; x++) {
-      const sx = (x + .5 - W / 2) / cam.focal, sy = -(y + .5 - s.H / 2) / cam.focal;
-      let dx = cam.r[0] * sx + cam.u[0] * sy + cam.f[0], dy = cam.r[1] * sx + cam.u[1] * sy + cam.f[1], dz = cam.r[2] * sx + cam.u[2] * sy + cam.f[2];
-      const dl = Math.hypot(dx, dy, dz); dx /= dl; dy /= dl; dz /= dl;
-      const t0 = (D - ey) / dy, qx = ex + dx * t0, qz = ez + dz * t0;
-      let ramp, tex, nx = 0, ny = 1, nz = 0, px = qx, py = D, pz = qz;
-      if (Math.abs(qx) <= X && Math.abs(qz) <= Z) {
-        let t = -ey / dy, m = 0, tt;
-        if (dx < 0) { tt = (-X - ex) / dx; if (tt < t) { t = tt; m = 1; nx = 1; ny = 0; nz = 0; } } else if (dx > 0) { tt = (X - ex) / dx; if (tt < t) { t = tt; m = 1; nx = -1; ny = 0; nz = 0; } }
-        if (dz < 0) { tt = (-Z - ez) / dz; if (tt < t) { t = tt; m = 1; nx = 0; ny = 0; nz = 1; } } else if (dz > 0) { tt = (Z - ez) / dz; if (tt < t) { t = tt; m = 1; nx = 0; ny = 0; nz = -1; } }
-        px = ex + dx * t; py = ey + dy * t; pz = ez + dz * t;
-        if (m === 0) { ramp = felt; tex = .66 + hash2(Math.floor(px * 22), Math.floor(pz * 22)) * .12; const ix = X - Math.abs(px), iz = Z - Math.abs(pz), edge = Math.min(ix, iz); if (edge > .17 && edge < .23 && ((Math.floor((ix < iz ? pz : px) * 8)) & 1)) tex = .95; }
-        else { ramp = wood; tex = plankTex(nx ? pz * .4 : px * .4, py * 4, 1) * .7; }
-      } else {
-        ramp = wood; tex = plankTex(qz * .9, qx, 1);
-        const rim = Math.max(Math.abs(qx) - X, Math.abs(qz) - Z);
-        if (rim < .16) tex = .95 - rim * 1.5;
-      }
-      let b = .28 + .62 * Math.max(0, nx * LIGHT[0] + ny * LIGHT[1] + nz * LIGHT[2]);
-      b *= 1.05 - Math.min(.55, (px * px * .02 + pz * pz * .05));
-      this.bg[y * s.W + x] = dith(ramp, b * tex * 1.2, x, y);
-    }
-  },
-  hide() { this.dice = [null, null, null]; this.draw(); },
-  // dados: [{d,pos,q,map:[índice de cara del dado en cada cara del cubo],top,boost}]
-  async roll(idx, results) {
-    if (!this.s.W) return;
-    const bodies = [0, 1, 2].map(i => {
-      const o = this.dice[i];
-      return { pos: o ? o.pos.slice() : [50 + i * 5, DS, 0], q: o ? o.q.slice() : [1, 0, 0, 0], vel: [0, 0, 0], w: [0, 0, 0], dyn: idx.includes(i), rest: 0, sleep: false };
-    });
-    idx.forEach((i, k) => {
-      const b = bodies[i];
-      b.pos = [TD.X - .75, 1.5 + Math.random() * .7, idx.length === 1 ? (Math.random() - .5) * 1.4 : -.95 + k * .95 + (Math.random() - .5) * .2];
-      b.vel = [-(4 + k * 1.5 + Math.random() * 2.5), 1 + Math.random() * 2, (Math.random() - .5) * 3];
-      b.w = [(Math.random() - .5) * 26, (Math.random() - .5) * 26, (Math.random() - .5) * 26];
-      b.q = Q4.rand();
-    });
-    const sim = simulate(bodies);
-    const keys = ['atk', 'def', 'esp'];
-    idx.forEach(i => {
-      const d = keys[i], top = sim.top[i], fi = results[i].i, map = new Array(6);
-      map[top] = fi; let rest = [0, 1, 2, 3, 4, 5].filter(x => x !== fi);
-      for (let c = 0; c < 6; c++) if (c !== top) map[c] = rest.shift();
-      this.dice[i] = { d, pos: bodies[i].pos, q: bodies[i].q, map, top, boost: null };
-    });
-    await this.play(sim, idx);
-    sim.frames[sim.frames.length - 1].forEach((st, i) => { if (this.dice[i]) { this.dice[i].pos = st.pos; this.dice[i].q = st.q; } });
-    this.draw();
-  },
-  play(sim, idx) {
-    return new Promise(res => {
-      const t0 = performance.now(); let si = 0, lastF = -1;
-      const step = now => {
-        const f = Math.max(0, Math.min(sim.frames.length - 1, Math.floor((now - t0) / 16.67)));
-        if (f !== lastF) {
-          lastF = f;
-          sim.frames[f].forEach((st, i) => { if (idx.includes(i)) { this.dice[i].pos = st.pos; this.dice[i].q = st.q; } });
-          while (si < sim.sounds.length && sim.sounds[si][0] <= f) { Sfx.clack(sim.sounds[si][1]); si++; }
-          this.draw();
-        }
-        if (f >= sim.frames.length - 1) return res();
-        requestAnimationFrame(step);
-      };
-      requestAnimationFrame(step);
-    });
-  },
-  setBoost(effFs) { // el número de la cara de arriba en dorado si suma por pareja/trío
-    effFs.forEach((f, i) => { if (this.dice[i]) this.dice[i].boost = f.b ? f : null; });
-    this.draw();
-  },
-  draw() {
-    const s = this.s; if (!s.W || !this.bg) return;
-    const { W, H, buf } = s, cam = this.cam; buf.set(this.bg);
-    const idb = this.idb && this.idb.length === W * H ? this.idb.fill(0) : (this.idb = new Uint8Array(W * H));
-    const list = this.dice.map((d, i) => d && { d, i, z: proj(cam, d.pos)[2] }).filter(Boolean).sort((a, b) => b.z - a.z);
-    // sombras en el fieltro
-    for (const { d } of list) {
-      const h = Math.max(0, d.pos[1] - DS), r = (.72 - Math.min(.3, h * .12)) * DS * 2, c = proj(cam, [d.pos[0] - h * .35, 0, d.pos[2] - h * .3]);
-      const rx = Math.abs(proj(cam, [d.pos[0] + r, 0, d.pos[2]])[0] - proj(cam, [d.pos[0] - r, 0, d.pos[2]])[0]) / 2;
-      const ry = Math.abs(proj(cam, [d.pos[0], 0, d.pos[2] + r])[1] - proj(cam, [d.pos[0], 0, d.pos[2] - r])[1]) / 2;
-      const k = .45 + Math.min(.35, h * .1);
-      for (let y = Math.floor(c[1] - ry); y <= c[1] + ry; y++) for (let x = Math.floor(c[0] - rx); x <= c[0] + rx; x++) {
-        if (x < 0 || y < 0 || x >= W || y >= H) continue;
-        const e = ((x + .5 - c[0]) / rx) ** 2 + ((y + .5 - c[1]) / ry) ** 2;
-        if (e <= 1 && (e < .65 || BAYER[(y & 3) * 4 + (x & 3)] > (e - .65) / .35)) buf[y * W + x] = shadeC(buf[y * W + x], k);
-      }
-    }
-    const outl = [];
-    for (const { d, i } of list) {
-      outl[i + 1] = d.boost ? pack(248, 216, 74) : pack(8, 5, 7);
-      const faces = run.dice[d.d];
-      for (let fi = 0; fi < 6; fi++) {
-        const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, DS));
-        if (V3.dot(n, V3.sub(cam.eye, c)) <= 0) continue;
-        const l = V3.dot(n, LIGHT), lvl = l > .72 ? 2 : l > .25 ? 1 : 0;
-        const face = fi === d.top && d.boost ? d.boost : faces[d.map[fi]];
-        const tex = faceTex(d.d, face, fi === d.top && !!d.boost)[lvl];
-        const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => proj(cam, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, DS), V3.add(V3.mul(F0.a, sa * DS), V3.mul(F0.b, sb * DS)))))));
-        const UV = [[0, 1], [1, 1], [1, 0], [0, 0]];
-        rasterTri(s, idb, P[0], P[1], P[2], UV[0], UV[1], UV[2], tex, i + 1);
-        rasterTri(s, idb, P[0], P[2], P[3], UV[0], UV[2], UV[3], tex, i + 1);
-      }
-    }
-    // contorno de cada dado (negro, o dorado si tiene bonus)
-    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const i = y * W + x; if (idb[i]) continue;
-      const n = (x > 0 && idb[i - 1]) || (x < W - 1 && idb[i + 1]) || (y > 0 && idb[i - W]) || (y < H - 1 && idb[i + W]);
-      if (n) buf[i] = outl[n];
-    }
-    blit(s);
-  },
-  hitTest(e) {
-    const r = this.s.cv.getBoundingClientRect(), x = (e.clientX - r.left) / r.width * this.s.W, y = (e.clientY - r.top) / r.height * this.s.H;
-    let best = -1, bd = 1e9;
-    this.dice.forEach((d, i) => { if (!d) return; const p = proj(this.cam, d.pos), dd = Math.hypot(p[0] - x, p[1] - y); if (dd < bd) { bd = dd; best = i; } });
-    return bd < this.s.W * .14 ? best : -1;
-  },
-  tap(e) {
-    if (!C || S.scr !== 'combat') return;
-    if (!C.rolled) return G.roll();
-    const i = this.hitTest(e); if (i >= 0) G.rr(['atk', 'def', 'esp'][i]);
-  },
-};
 function rasterTri(s, idb, a, b, c, ua, ub, uc, tex, id) {
   const { W, H, buf } = s;
   if (a[2] < .1 || b[2] < .1 || c[2] < .1) return;
@@ -1334,14 +1217,24 @@ const V3D = {
     const d = MODEL_DEFS[name] || MODEL_DEFS.rata;
     return this.models[name] = vmodel(d[0], d[1], d[2], d[3], d[4]);
   },
-  // dibuja la figura girada `yaw` (vista ortográfica, un poco desde arriba) con luz por cara y tramado
   frame(name, cw, ch, yawQ) {
     const key = name + '|' + cw + 'x' + ch + '|' + yawQ;
     if (this.frames[key]) return this.frames[key];
-    const m = this.model(name), { W, H, D, vox } = m, yaw = yawQ * .04, pitch = .32;
+    const m = this.model(name), pitch = .32, ext = Math.hypot(m.W, m.D);
+    const scale = Math.min((cw - 2) / ext, (ch - 3) / (m.H * Math.cos(pitch) + ext * Math.sin(pitch)));
+    return this.frames[key] = this.raster(m, cw, ch, scale, cw / 2, ch - 2 - ext / 2 * Math.sin(pitch) * scale, yawQ * .04, pitch);
+  },
+  frameS(name, scale, yawQ, pitch) {
+    const key = name + '|s' + scale + '|' + yawQ + '|' + pitch;
+    if (this.frames[key]) return this.frames[key];
+    const m = this.model(name), ext = Math.hypot(m.W, m.D);
+    const cw = Math.ceil(ext * scale) + 3, ch = Math.ceil((m.H * Math.cos(pitch) + ext * Math.sin(pitch)) * scale) + 4;
+    const ax = cw / 2, ay = ch - 2 - ext / 2 * Math.sin(pitch) * scale;
+    return this.frames[key] = { buf: this.raster(m, cw, ch, scale, ax, ay, yawQ * .04, pitch), cw, ch, ax, ay };
+  },
+  raster(m, cw, ch, scale, ax, ay, yaw, pitch) {
+    const { W, H, D, vox } = m;
     const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), spp = Math.sin(pitch);
-    const ext = Math.hypot(W, D), scale = Math.min((cw - 2) / ext, (ch - 3) / (H * cp + ext * spp));
-    const ax = cw / 2, ay = ch - 2 - ext / 2 * spp * scale;
     const dx = cp * sy, dy = -spp, dz = -cp * cy;
     const L = V3.norm([-.5, .75, .6]);
     const toView = n => { const x1 = n[0] * cy + n[2] * sy, z1 = -n[0] * sy + n[2] * cy, y1 = n[1]; return [x1, y1 * cp - z1 * spp, y1 * spp + z1 * cp]; };
@@ -1380,7 +1273,7 @@ const V3D = {
       const i = y * cw + x; if (buf[i]) continue;
       if ((x > 0 && buf[i - 1]) || (x < cw - 1 && buf[i + 1]) || (y > 0 && buf[i - cw]) || (y < ch - 1 && buf[i + cw])) out[i] = ol;
     }
-    return this.frames[key] = out;
+    return out;
   },
   render(cv, time) {
     if (!cv._s) {
@@ -1409,6 +1302,177 @@ let v3last = 0;
   v3last = now;
   document.querySelectorAll('canvas.v3d').forEach(cv => V3D.render(cv, now / 1000));
 })(0);
+
+
+// ====================================================================
+//  ESCENA DE COMBATE: sala, personajes y dados en el mismo 3D
+//  Enemigos al fondo pisando el suelo, tu héroe delante y los dados
+//  rodando por el suelo: los enemigos en su zona y tú en la tuya.
+// ====================================================================
+const ZONE_E = [[0, 1, 0, 0, .3], [1, 0, 0, 3.2, .45], [-1, 0, 0, 3.2, .45], [0, 0, 1, 1.95, .45], [0, 0, -1, -.35, .45]];
+const ZONE_P = [[0, 1, 0, 0, .3], [1, 0, 0, 1.2, .45], [-1, 0, 0, 3.2, .45], [0, 0, 1, .05, .45], [0, 0, -1, 3.35, .45]];
+const HERO_POS = [-2.25, 0, 2.75], EN_Z = -2.6, DKEYS = ['atk', 'def', 'esp'];
+const slotX = (i, n) => n === 1 ? 0 : n === 2 ? [-1.35, 1.35][i] : [-2.15, 0, 2.15][i] ?? 0;
+const voxSize = e => e.px >= 8 ? .118 : e.px >= 7 ? .1 : .088;
+function drawCube(s, idb, cam, d, texFn, id) {
+  for (let fi = 0; fi < 6; fi++) {
+    const F0 = CUBE_F[fi], n = Q4.rot(d.q, F0.n), c = V3.add(d.pos, V3.mul(n, DS));
+    if (V3.dot(n, V3.sub(cam.eye, c)) <= 0) continue;
+    const l = V3.dot(n, LIGHT), lvl = l > .72 ? 2 : l > .25 ? 1 : 0, tex = texFn(fi)[lvl];
+    const P = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sa, sb]) => proj(cam, V3.add(d.pos, Q4.rot(d.q, V3.add(V3.mul(F0.n, DS), V3.add(V3.mul(F0.a, sa * DS), V3.mul(F0.b, sb * DS)))))));
+    rasterTri(s, idb, P[0], P[1], P[2], [0, 1], [1, 1], [1, 0], tex, id);
+    rasterTri(s, idb, P[0], P[2], P[3], [0, 1], [1, 0], [0, 0], tex, id);
+  }
+}
+function floorShadow(s, cam, x, z, r, k) {
+  const { W, H, buf } = s, c = proj(cam, [x, 0, z]);
+  const rx = Math.abs(proj(cam, [x + r, 0, z])[0] - proj(cam, [x - r, 0, z])[0]) / 2;
+  const ry = Math.max(1, Math.abs(proj(cam, [x, 0, z + r])[1] - proj(cam, [x, 0, z - r])[1]) / 2);
+  for (let y = Math.floor(c[1] - ry); y <= c[1] + ry; y++) for (let X = Math.floor(c[0] - rx); X <= c[0] + rx; X++) {
+    if (X < 0 || y < 0 || X >= W || y >= H) continue;
+    const e = ((X + .5 - c[0]) / rx) ** 2 + ((y + .5 - c[1]) / ry) ** 2;
+    if (e <= 1 && (e < .6 || BAYER[(y & 3) * 4 + (X & 3)] > (e - .6) / .4)) buf[y * W + X] = shadeC(buf[y * W + X], k);
+  }
+}
+const Scene = {
+  s: makeSurface('scene-cv'), cam: null, bg: null, bgT: 0, raf: 0, last: 0, idb: null,
+  dice: [], hfx: {}, figs: [],
+  reset() { this.dice = []; this.hfx = {}; },
+  attach(slot) {
+    const s = this.s; slot.prepend(s.cv); s.cv.onclick = e => this.tap(e);
+    if (sizeSurface(s, slot.clientWidth, slot.clientHeight, 2) || !this.cam) this.setup();
+    this.bg = null; this.draw(performance.now()); this.loop();
+  },
+  setup() {
+    const s = this.s;
+    this.cam = makeCam([0, 8.4, 5.4], [0, 0, .15], Math.min(s.W * 1.3, s.H * 1.5), s.W, s.H);
+    this.idb = new Uint8Array(s.W * s.H); this.bg = null;
+  },
+  room: { CW: 3.9, CH: 4.4, L: 3.5, lamp: .45, torches: [[-2.3, 2.5, -3.45], [2.3, 2.5, -3.45], [-3.84, 2.3, -.4], [3.84, 2.3, -.4]], doors: [] },
+  loop() {
+    if (this.raf) return;
+    const f = now => { if (!this.s.cv.isConnected) { this.raf = 0; return; } this.raf = requestAnimationFrame(f); if (now - this.last < 33) return; this.last = now; this.draw(now); };
+    this.raf = requestAnimationFrame(f);
+  },
+  // posición en pantalla (px css dentro de la escena) de un punto del mundo
+  css(p) { const q = proj(this.cam, p), k = this.s.cv.offsetWidth / this.s.W; return [q[0] * k, q[1] * k]; },
+  figOf(ref) {
+    if (ref === 'hero') return { ref, name: H().spr, x: HERO_POS[0], z: HERO_POS[2], v: .092, yaw: .55, fx: this.hfx, ph: 1.3 };
+    const n = C.en.length, i = C.en.indexOf(ref), tx = slotX(i, n);
+    if (ref._x === undefined) ref._x = tx;
+    return { ref, name: MODEL_DEFS[ref.key] ? ref.key : ref.spr, x: ref._x, tx, z: EN_Z, v: voxSize(ref), yaw: -.45, fx: ref._fx || (ref._fx = {}), ph: i * 2.1 };
+  },
+  headCss(ref) { const f = this.figOf(ref), m = V3D.model(f.name); return this.css([f.tx ?? f.x, m.H * f.v + .1, f.z]); },
+  footCss(ref) { const f = this.figOf(ref); return this.css([f.tx ?? f.x, 0, f.z + .4]); },
+  flash(ref) { const f = ref === 'hero' ? this.hfx : (ref._fx || (ref._fx = {})); f.flash = performance.now() + 200; },
+  lunge(ref, to) { const fx = ref === 'hero' ? this.hfx : (ref._fx || (ref._fx = {})); fx.lunge = { t0: performance.now(), to }; },
+  draw(now) {
+    const s = this.s; if (!s.W || !C) return;
+    const { W, H, buf } = s, cam = this.cam, t = now / 1000;
+    if (!this.bg || now - this.bgT > 110) { renderRoom(s, cam, THEMES[run.floor], this.room, t); this.bg = buf.slice(); this.bgT = now; } else buf.set(this.bg);
+    // figuras
+    const figs = C.en.filter(e => e.hp > 0 || (e._fx && e._fx.die && now - e._fx.die < 600)).map(e => this.figOf(e)).concat([this.figOf('hero')]);
+    for (const f of figs) {
+      if (f.tx !== undefined) { f.ref._x += (f.tx - f.ref._x) * .2; f.x = f.ref._x; }
+      const L = f.fx.lunge; f.ox = 0; f.oz = 0;
+      if (L) { const p = (now - L.t0) / 360; if (p >= 1) f.fx.lunge = null; else { const tf = L.to === 'hero' ? HERO_POS : [this.figOf(L.to).x, 0, EN_Z]; const k = Math.sin(p * Math.PI) * .45; const dx = tf[0] - f.x, dz = tf[2] - f.z, dl = Math.hypot(dx, dz) || 1; f.ox = dx / dl * k; f.oz = dz / dl * k; } }
+      const m = V3D.model(f.name);
+      floorShadow(s, cam, f.x + f.ox, f.z + f.oz, Math.max(m.W, m.D) * f.v * .42, .5);
+    }
+    const live = this.dice.filter(d => !d.gone && d.pos && d.map);
+    for (const d of live) { this.updFly(d, now); const h = Math.max(0, d.pos[1] - DS); floorShadow(s, cam, d.pos[0] - h * .3, d.pos[2] - h * .25, DS * 1.4 * (1 - Math.min(.4, h * .1)), .5); }
+    // de atrás hacia delante
+    const items = figs.map(f => ({ z: proj(cam, [f.x, 0, f.z])[2], f })).concat(live.map(d => ({ z: proj(cam, d.pos)[2] - .4, d })));
+    items.sort((a, b) => b.z - a.z);
+    const idb = this.idb.fill(0), outl = [0];
+    let id = 0;
+    for (const it of items) {
+      if (it.f) { this.blitFig(it.f, now); continue; }
+      const d = it.d; id++;
+      outl[id] = d.sel ? pack(248, 216, 74) : d.locked ? pack(200, 230, 255) : d.kind === 'e' ? pack(40, 6, 10) : pack(8, 5, 7);
+      const texFn = d.kind === 'e' ? fi => enemyFaceTex(d.en.f[d.map[fi]]) : fi => (fi === d.top && d.boost ? faceTex(d.d, d.boost, true) : faceTex(d.d, run.dice[d.d][d.map[fi]], false));
+      if (d.fade) { const k = Math.min(1, (now - d.fade) / 450); if (k >= 1) { d.gone = true; continue; } d.fk = k; } else d.fk = 0;
+      drawCube(s, idb, cam, d, texFn, id);
+      if (d.fk) for (let i = 0; i < buf.length; i++) if (idb[i] === id && BAYER[((i / W | 0) & 3) * 4 + (i % W & 3)] < d.fk) { buf[i] = this.bg[i]; idb[i] = 0; }
+      if (d.dim) for (let i = 0; i < buf.length; i++) if (idb[i] === id) buf[i] = shadeC(buf[i], .45);
+    }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = y * W + x; if (idb[i]) continue;
+      const n = (x > 0 && idb[i - 1]) || (x < W - 1 && idb[i + 1]) || (y > 0 && idb[i - W]) || (y < H - 1 && idb[i + W]);
+      if (n) buf[i] = outl[n];
+    }
+    this.figs = figs;
+    blit(s);
+  },
+  blitFig(f, now) {
+    const s = this.s, cam = this.cam, depth = proj(cam, [f.x, 0, f.z])[2];
+    const scale = Math.max(.5, Math.round(f.v * cam.focal / depth * 4) / 4);
+    const yq = Math.round((f.yaw + Math.sin(now / 1000 * .8 + f.ph) * .22) / .04);
+    const fr = V3D.frameS(f.name, scale, yq, .5);
+    const [sx, sy] = proj(cam, [f.x + f.ox, 0, f.z + f.oz]);
+    const bob = Math.sin(now / 1000 * 3.4 + f.ph) > .3 ? 1 : 0;
+    const x0 = Math.round(sx - fr.ax), y0 = Math.round(sy - fr.ay) - bob;
+    const flash = f.fx.flash && now < f.fx.flash, fade = f.fx.die ? Math.min(1, (now - f.fx.die) / 550) : 0;
+    const { W, H, buf } = s, white = pack(255, 250, 240), red = pack(255, 90, 80);
+    for (let y = 0; y < fr.ch; y++) { const Y = y0 + y; if (Y < 0 || Y >= H) continue; for (let x = 0; x < fr.cw; x++) {
+      const X = x0 + x; if (X < 0 || X >= W) continue;
+      const c = fr.buf[y * fr.cw + x]; if (!c) continue;
+      if (fade && BAYER[(Y & 3) * 4 + (X & 3)] < fade) continue;
+      buf[Y * W + X] = flash ? ((x + y) & 1 ? white : red) : c;
+    } }
+    f.bb = [x0, y0, x0 + fr.cw, y0 + fr.ch];
+  },
+  updFly(d, now) {
+    if (!d.fly) return;
+    const p = Math.min(1, (now - d.fly.t0) / 300), a = d.fly.from, b = d.fly.to;
+    d.pos = [a[0] + (b[0] - a[0]) * p, a[1] + (b[1] - a[1]) * p + Math.sin(p * Math.PI) * 1.2, a[2] + (b[2] - a[2]) * p];
+    d.q = Q4.norm(Q4.mul(Q4.axis([1, 0, 0], .35), d.q));
+    if (p >= 1) d.gone = true;
+  },
+  // lanza los dados de la lista (los demás se quedan quietos como obstáculos)
+  throw(list) {
+    if (!this.s.W) return Promise.resolve();
+    const all = this.dice.filter(d => !d.gone);
+    const bodies = all.map(d => ({ pos: d.pos ? d.pos.slice() : [50, DS, 50], q: d.q ? d.q.slice() : [1, 0, 0, 0], vel: [0, 0, 0], w: [0, 0, 0], dyn: list.includes(d), rest: 0, sleep: false, P: d.kind === 'e' ? ZONE_E : ZONE_P }));
+    let k = 0;
+    all.forEach((d, i) => {
+      if (!list.includes(d)) return;
+      const b = bodies[i], r = Math.random;
+      if (d.kind === 'e') { const x = this.figOf(d.en).tx; b.pos = [x + (r() - .5) * .6, 1.4 + r() * .4, -1.8]; b.vel = [(r() - .5) * 2.4 - x * .3, 1.2 + r(), 2.2 + r() * 1.4]; }
+      else { b.pos = [3, 1.3 + r() * .6, .75 + k * .95]; b.vel = [-(3.8 + k * 1.3 + r() * 2.2), 1 + r() * 1.6, (r() - .5) * 2]; k++; }
+      b.w = [(r() - .5) * 26, (r() - .5) * 26, (r() - .5) * 26]; b.q = Q4.rand();
+    });
+    const sim = simulate(bodies);
+    all.forEach((d, i) => {
+      if (!list.includes(d)) return;
+      const top = sim.top[i], map = new Array(6), rest = [0, 1, 2, 3, 4, 5].filter(x => x !== d.want);
+      map[top] = d.want; for (let c = 0; c < 6; c++) if (c !== top) map[c] = rest.shift();
+      d.map = map; d.top = top;
+    });
+    return new Promise(res => {
+      const t0 = performance.now(); let si = 0;
+      const step = now => {
+        const f = Math.max(0, Math.min(sim.frames.length - 1, Math.floor((now - t0) / 16.67)));
+        sim.frames[f].forEach((st, i) => { if (bodies[i].dyn) { all[i].pos = st.pos; all[i].q = st.q; } });
+        while (si < sim.sounds.length && sim.sounds[si][0] <= f) { Sfx.clack(sim.sounds[si][1]); si++; }
+        if (f >= sim.frames.length - 1) return res();
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  },
+  pdie(d) { return this.dice.find(x => x.kind === 'p' && x.d === d && !x.gone); },
+  edie(e) { return this.dice.find(x => x.kind === 'e' && x.en === e && !x.gone); },
+  tap(ev) {
+    if (!C || S.scr !== 'combat') return;
+    const r = this.s.cv.getBoundingClientRect(), x = (ev.clientX - r.left) / r.width * this.s.W, y = (ev.clientY - r.top) / r.height * this.s.H;
+    let best = null, bd = 1e9;
+    for (const d of this.dice) { if (d.gone || d.fly || d.fade || !d.pos) continue; const p = proj(this.cam, d.pos), dd = Math.hypot(p[0] - x, p[1] - y); if (dd < bd) { bd = dd; best = d; } }
+    if (best && bd < this.s.W * .075) return best.kind === 'p' ? G.tapDie(best.d) : G.tapEnemy(C.en.indexOf(best.en));
+    for (const f of [...this.figs].reverse()) if (f.bb && x >= f.bb[0] && x < f.bb[2] && y >= f.bb[1] && y < f.bb[3]) return f.ref === 'hero' ? G.tapHero() : G.tapEnemy(C.en.indexOf(f.ref));
+    G.tapFloor();
+  },
+};
 
 // ---------- sonido (clic de dados y golpes), muy flojito
 const Sfx = {
@@ -1641,14 +1705,12 @@ function fl(target, txt, col, shake, cls) { fxq.push({ target, txt, col, shake, 
 function flushFx() {
   for (const q of fxq) {
     let el = null;
-    if (q.target === 'hero') el = $('#hero');
-    else if (C) { const i = C.en.indexOf(q.target); if (i >= 0) el = $('#en' + i); }
+    if (q.target === 'hero') el = $('#ov-hero');
+    else if (C) { const i = C.en.indexOf(q.target); if (i >= 0) el = $('#ov-e' + i); }
     if (!el) continue;
-    const fig = el.querySelector('.fig') || el;
-    const re = c => { fig.classList.remove(c); void fig.offsetWidth; fig.classList.add(c); };
-    if (q.cls) re(q.cls);
     if (q.shake) {
-      re('hit'); burst(fig, q.col);
+      if (C) Scene.flash(q.target);
+      burst(el, q.col);
       const n = parseInt(String(q.txt).replace('-', '')) || 0;
       Sfx.hit(Math.min(1, .4 + n / 8));
       if (n >= 5) { app.classList.remove('quake'); void app.offsetWidth; app.classList.add('quake'); }
@@ -1656,7 +1718,7 @@ function flushFx() {
     if (q.txt) {
       const r = el.getBoundingClientRect(), d = document.createElement('div');
       d.className = 'fl'; d.textContent = q.txt; d.style.color = q.col || '#fff';
-      d.style.left = (r.left + r.width / 2 + R(-12, 12)) + 'px'; d.style.top = (r.top + r.height * .4) + 'px';
+      d.style.left = (r.left + r.width / 2 + R(-10, 10)) + 'px'; d.style.top = (r.bottom - 6) + 'px';
       fxl.appendChild(d); setTimeout(() => d.remove(), 950);
     }
   }
@@ -1704,10 +1766,12 @@ function help() {
   modal(`<div class="help col"><h3>Cómo se juega</h3>
   <p>Tienes <b>3 dados</b>: Ataque, Protección y Especial (cambia según el héroe). Cada turno los tiras todos a la vez.</p>
   <p>La vida son <b>corazones</b>: cada uno es 1 de vida. Los de <b>borde dorado</b> (enemigos grandes) valen 5.</p>
-  <p>Arriba de cada enemigo ves <b>lo que va a hacer</b>. Su protección frena tu daño, y la tuya frena el suyo.</p>
-  <p>Puedes <b>volver a tirar un dado</b> por turno: tócalo después de tirar.</p>
+  <p>Los enemigos <b>tiran sus dados primero</b>: encima de cada uno ves lo que va a hacer.</p>
+  <p>Después tiras los tuyos. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces por turno).</p>
+  <p>Luego <b>usa cada dado</b>: tócalo y toca su objetivo. El ataque va al enemigo que elijas, la protección para el ataque de un enemigo concreto y los especiales a quien toque.</p>
+  <p>Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
   <p><b>Pareja</b>: si dos dados sacan el mismo número, los dos suman +1. <b>Trío</b>: si salen los tres iguales, todo vale el doble.</p>
-  <p>Con varios enemigos, <b>toca uno</b> para apuntarle. Tócalo otra vez para ver sus dados.</p>
+  <p>Toca a un enemigo (sin dado elegido) para ver todas las caras de su dado.</p>
   <p>Entre combates eliges puerta: forjas, altares, tiendas y eventos <b>mejoran las caras</b> de tus dados. Al vencer a un jefe tu héroe <b>evoluciona</b>.</p>
   <p>Si mueres, vuelves a empezar. ¡Suerte!</p></div>`);
 }
@@ -1899,6 +1963,9 @@ function victory() {
 }
 
 // ---------------------------------------------------------- combate
+// Turno: 1) los enemigos tiran sus dados  2) tiras los tuyos, guardas los que quieras
+// y vuelves a tirar el resto (2 veces)  3) usas cada dado sobre un objetivo
+// 4) los enemigos que siguen vivos hacen lo que sacaron.
 function parseFace(s) {
   const o = { a: 0, b: 0, p: 0, h: 0, r: 0, s: null };
   const m = s.match(/s:(\w+)/); if (m) o.s = m[1];
@@ -1907,7 +1974,7 @@ function parseFace(s) {
 }
 function makeEnemy(key) {
   const d = EN[key];
-  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp: d.hp, max: d.hp, block: 0, poison: 0, rage: 0, intent: null, f: d.f };
+  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp: d.hp, max: d.hp, block: 0, guard: 0, thorn: 0, poison: 0, rage: 0, intent: null, die: -1, f: d.f };
 }
 function startCombat(kind) {
   const fl = FLOORS[run.floor];
@@ -1919,23 +1986,75 @@ function startCombat(kind) {
     if (run.floor > 0 && run.step >= 2 && Math.random() < .3) n++;
     list = Array.from({ length: n }, () => pick(fl.pool));
   }
-  C = { kind, en: list.map(makeEnemy), turn: 0, block: 0, thorns: 0, ppoison: 0, rolled: null, rerolls: 0, target: 0, busy: false };
-  startTurn(); cRender();
+  C = { kind, en: list.map(makeEnemy), turn: 0, block: 0, ppoison: 0, rolled: null, locked: {}, used: {}, rerolls: 0, phase: 'enemy', sel: null, furia: 0, hits: 1, busy: false };
+  if (!FAST) Scene.reset();
+  S.scr = 'combat';
+  newTurn();
 }
-function startTurn() {
-  C.turn++; C.block = has('escudo') ? 1 : 0; C.thorns = 0; C.rolled = null;
-  if (!FAST) Tray.hide();
-  C.rerolls = 1 + (has('trebol') ? 1 : 0);
-  for (const e of C.en) { e.intent = parseFace(pick(e.f)); e.block = e.intent.b; }
-  if (C.target >= C.en.length) C.target = 0;
+const alive = () => C.en.filter(e => e.hp > 0);
+async function newTurn() {
+  if (!C) return;
+  C.en = C.en.filter(e => e.hp > 0);
+  C.turn++; C.block = has('escudo') ? 1 : 0; C.rolled = null; C.sel = null;
+  C.locked = { atk: false, def: false, esp: false }; C.used = { atk: false, def: false, esp: false };
+  C.furia = C.turn === 1 && has('brasa') ? 2 : 0; C.hits = 1;
+  C.rerolls = 2 + (has('trebol') ? 1 : 0);
+  for (const e of C.en) { e.guard = 0; e.thorn = 0; e.die = R(0, 5); e.intent = parseFace(e.f[e.die]); e.block = e.intent.b; }
+  C.phase = 'enemy'; C.busy = true; cRender();
+  if (!FAST) {
+    Scene.dice = [];
+    const ed = C.en.map(e => ({ kind: 'e', en: e, want: e.die }));
+    Scene.dice.push(...ed); await sleep(250); await Scene.throw(ed);
+  }
+  C.phase = 'roll'; C.busy = false; cRender();
+  if (!FAST && C.turn === 1) tutorial();
 }
 function rollDie(d) {
   let i = R(0, 5);
   if (has('cargado') && blankF(run.dice[d][i])) i = R(0, 5);
   return { ...run.dice[d][i], i };
 }
+async function doRoll() {
+  if (!C || C.busy || C.phase !== 'roll') return;
+  C.busy = true; C.phase = 'rolling';
+  C.rolled = { atk: rollDie('atk'), def: rollDie('def'), esp: rollDie('esp') };
+  cRender();
+  if (!FAST) {
+    const pd = DKEYS.map(d => ({ kind: 'p', d, want: C.rolled[d].i }));
+    Scene.dice.push(...pd); await Scene.throw(pd);
+  }
+  C.busy = false; C.phase = C.rerolls > 0 ? 'reroll' : 'use';
+  if (C.phase === 'use') toUse(); else cRender();
+}
+function toggleLock(d) {
+  if (!C || C.phase !== 'reroll' || C.busy) return;
+  C.locked[d] = !C.locked[d];
+  const sd = !FAST && Scene.pdie(d); if (sd) sd.locked = C.locked[d];
+  cRender();
+}
+async function rerollDice() {
+  if (!C || C.phase !== 'reroll' || C.busy || C.rerolls <= 0) return;
+  const ks = DKEYS.filter(k => !C.locked[k]);
+  if (!ks.length) return toast('Quita algún candado');
+  C.rerolls--; C.busy = true; C.phase = 'rolling';
+  ks.forEach(k => { C.rolled[k] = rollDie(k); });
+  cRender();
+  if (!FAST) { const list = ks.map(k => { const sd = Scene.pdie(k); sd.want = C.rolled[k].i; sd.boost = null; return sd; }); await Scene.throw(list); }
+  C.busy = false;
+  if (C.rerolls <= 0) toUse(); else { C.phase = 'reroll'; cRender(); }
+}
+// pasar a usar los dados: los que salieron vacíos se descartan solos
+function toUse() {
+  if (!C) return;
+  C.phase = 'use'; C.sel = null;
+  DKEYS.forEach(k => { C.locked[k] = false; const sd = !FAST && Scene.pdie(k); if (sd) sd.locked = false; });
+  const eff = effFaces();
+  eff.fs.forEach(f => { if (blankF(f)) { C.used[f.d] = true; const sd = !FAST && Scene.pdie(f.d); if (sd) sd.fade = performance.now(); } });
+  cRender();
+  if (DKEYS.every(k => C.used[k])) setTimeout(() => endTurn(), FAST ? 0 : 700);
+}
 function effFaces() {
-  const fs = ['atk', 'def', 'esp'].map(d => ({ ...C.rolled[d], d, b: 0 }));
+  const fs = DKEYS.map(d => ({ ...C.rolled[d], d, b: 0 }));
   let combo = '';
   const v = fs.map(f => f.v);
   if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { fs.forEach(f => { f.b = f.v; f.v *= 2; }); combo = '¡Trío! ×2'; }
@@ -1944,21 +2063,139 @@ function effFaces() {
     outer: for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
       if (fs[i].v > 0 && fs[i].v === fs[j].v) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; combo = `¡Pareja! +${b}`; break outer; }
   }
-  let furia = 0, hits = 1;
-  for (const f of fs) { if (f.k === 'furia') furia += f.v; if (f.k === 'doble') { furia += f.v; hits = 2; } }
-  if (C.turn === 1 && has('brasa')) furia += 2;
-  return { fs, combo, furia, hits };
+  return { fs, combo };
+}
+// a quién va un dado
+function targetType(f) {
+  if (blankF(f)) return 'none';
+  if (f.k === 'escudo' || f.k === 'espinas') return 'guard';
+  if (f.k === 'luz' || f.k === 'furia' || f.k === 'doble') return 'self';
+  if (f.k === 'nube' || KW[f.k].all) return 'all';
+  return 'enemy';
+}
+function validTarget(f, t) {
+  const tt = targetType(f);
+  if (tt === 'self') return t === 'hero';
+  if (t === 'hero' || !t || t.hp <= 0) return false;
+  if (tt === 'guard') return (t.intent && t.intent.a > 0);
+  return true;
+}
+function selDie(d) {
+  if (!C || C.phase !== 'use' || C.busy || C.used[d]) return;
+  C.sel = C.sel === d ? null : d;
+  if (!FAST) DKEYS.forEach(k => { const sd = Scene.pdie(k); if (sd) sd.sel = C.sel === k; });
+  cRender();
+}
+async function useDie(d, t) {
+  if (!C || C.phase !== 'use' || C.busy || C.used[d]) return false;
+  const f = effFaces().fs[DKEYS.indexOf(d)];
+  if (targetType(f) === 'all' && t !== 'hero') t = alive()[0];
+  if (!validTarget(f, t)) return false;
+  C.busy = true; C.used[d] = true; C.sel = null;
+  const sd = !FAST && Scene.pdie(d);
+  if (sd) { sd.sel = false; const to = t === 'hero' ? [HERO_POS[0], 1, HERO_POS[2]] : [Scene.figOf(t).tx, 1.2, EN_Z]; sd.fly = { t0: performance.now(), from: sd.pos.slice(), to }; Sfx.clack(.6); }
+  cRender(); await sleep(300);
+  const kw = KW[f.k], seta = has('seta') ? 1 : 0;
+  if (kw.dmg) {
+    const targets = kw.all ? alive() : [t];
+    for (let h = 0; h < C.hits; h++) {
+      if (!alive().length) break;
+      if (!FAST) Scene.lunge('hero', targets[0]);
+      for (const e of targets) { if (e.hp <= 0) continue; const dealt = hitEnemy(e, f.v + C.furia, kw.pierce, f.k === 'fuego' || f.k === 'explosion' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); } }
+      cRender(); await sleep(280);
+    }
+  } else if (f.k === 'escudo' || f.k === 'espinas') {
+    t.guard += f.v; if (f.k === 'espinas') t.thorn += f.v;
+    fl(t, 'BLOQUEO ' + f.v, '#8ab8ff');
+  } else if (f.k === 'luz') {
+    const h = heal(f.v); if (h) fl('hero', '+' + h, '#7aea7a');
+    if (f.v > h) { C.block += f.v - h; fl('hero', '+' + (f.v - h) + ' prot.', '#8ab8ff'); }
+  } else if (f.k === 'furia' || f.k === 'doble') {
+    C.furia += f.v; if (f.k === 'doble') C.hits = 2;
+    fl('hero', f.k === 'doble' ? '¡DOBLE!' : 'FURIA +' + f.v, '#ff7050');
+  } else if (f.k === 'veneno') {
+    t.poison += f.v + seta; fl(t, '+' + (f.v + seta) + ' veneno', '#7aea7a');
+  } else if (f.k === 'nube') {
+    for (const e of alive()) { e.poison += f.v + seta; fl(e, '+' + (f.v + seta), '#7aea7a'); }
+  }
+  await deaths();
+  C.busy = false; cRender();
+  if (!alive().length) { winCombat(); return true; }
+  if (DKEYS.every(k => C.used[k])) setTimeout(() => { if (C && C.phase === 'use' && !C.busy) endTurn(); }, FAST ? 0 : 650);
+  return true;
+}
+function hitEnemy(e, amt, pierce, col) {
+  if (!pierce) { const ab = Math.min(e.block, amt); e.block -= ab; amt -= ab; }
+  amt = Math.min(amt, Math.max(0, e.hp));
+  e.hp -= amt;
+  fl(e, amt > 0 ? '-' + amt : '0', col || '#ff6a6a', amt > 0);
+  if (e.hp <= 0 && !FAST) { (e._fx || (e._fx = {})).die = performance.now(); }
+  return amt;
+}
+// enemigos que acaban de morir: su dado se cancela (y la calavera hace daño)
+async function deaths() {
+  let fresh = C.en.filter(e => e.hp <= 0 && !e._dead);
+  while (fresh.length) {
+    for (const e of fresh) {
+      e._dead = true;
+      if (!FAST) { const sd = Scene.edie(e); if (sd) sd.fade = performance.now(); }
+      if (e.intent && (e.intent.a || e.intent.p || e.intent.h || e.intent.s)) fl(e, '¡Dado cancelado!', '#f8d84a');
+    }
+    if (has('calavera')) for (const _ of fresh) for (const e of alive()) hitEnemy(e, 2, true, '#e0e0f0');
+    cRender(); await sleep(350);
+    fresh = C.en.filter(e => e.hp <= 0 && !e._dead);
+  }
+}
+async function endTurn() {
+  if (!C || C.busy || (C.phase !== 'use' && C.phase !== 'reroll')) return;
+  C.busy = true; C.phase = 'resolve'; C.sel = null;
+  if (!FAST) Scene.dice.forEach(d => { if (d.kind === 'p') { d.sel = false; d.locked = false; if (!d.gone && !d.fly) d.fade = performance.now(); } });
+  cRender(); await sleep(250);
+  // el veneno hace daño
+  let pz = false;
+  for (const e of alive()) if (e.poison > 0) { hitEnemy(e, e.poison, true, '#7aea7a'); e.poison--; pz = true; }
+  if (pz) { cRender(); await sleep(400); }
+  await deaths();
+  if (!alive().length) return winCombat();
+  // los enemigos hacen lo que sacaron
+  for (const e of [...C.en]) {
+    if (e.hp <= 0 || !e.intent) continue;
+    const it = e.intent, sd = !FAST && Scene.edie(e);
+    if (sd) sd.sel = true;
+    if (it.a) {
+      let dmg = it.a + e.rage;
+      const g = Math.min(e.guard, dmg); dmg -= g;
+      const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
+      if (!FAST) Scene.lunge(e, 'hero');
+      run.hp -= dmg;
+      fl('hero', dmg > 0 ? '-' + dmg : '¡BLOQUEADO!', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
+      if (e.thorn) hitEnemy(e, e.thorn, true, '#c0d0ff');
+    }
+    if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p + ' veneno', '#7aea7a'); }
+    if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
+    if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); }
+    if (it.s && alive().length < 3) { const m = makeEnemy(it.s); C.en.push(m); fl(m, '¡Aparece!', '#d0a0ff'); }
+    cRender(); await sleep(480);
+    if (sd) { sd.sel = false; sd.fade = performance.now(); }
+    if (run.hp <= 0) return lose();
+    await deaths();
+    if (!alive().length) return winCombat();
+  }
+  if (C.ppoison > 0) { run.hp -= C.ppoison; fl('hero', '-' + C.ppoison, '#7aea7a', true); C.ppoison--; cRender(); await sleep(400); if (run.hp <= 0) return lose(); }
+  C.busy = false;
+  await sleep(200);
+  newTurn();
 }
 function intentHTML(e) {
-  const it = e.intent; if (!it) return '';
+  const it = e.intent; if (!it || C.phase === 'enemy') return '<span style="color:var(--dim)">…</span>';
   const p = [];
-  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a + e.rage}</span>`);
-  if (it.b) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${it.b}</span>`);
+  if (it.a) { const d = Math.max(0, it.a + e.rage - e.guard); p.push(`<span style="color:${d ? '#ff8a8a' : '#8ab8ff'}">${sp('golpe', 2)}${d}${e.guard ? `<s>${it.a + e.rage}</s>` : ''}</span>`); }
+  if (e.block) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${e.block}</span>`);
   if (it.p) p.push(`<span style="color:#7aea7a">${sp('veneno', 2)}${it.p}</span>`);
   if (it.h) p.push(`<span style="color:#ff8a8a">${sp('corazon', 2)}+${it.h}</span>`);
   if (it.r) p.push(`<span style="color:#ff7050">${sp('furia', 2)}+${it.r}</span>`);
   if (it.s) p.push(`<span style="color:#d0a0ff">${sp('invoca', 2)}</span>`);
-  return p.join('');
+  return p.join('') || '<span style="color:var(--dim)">nada</span>';
 }
 function intentText(it, e) {
   const p = [];
@@ -1967,136 +2204,83 @@ function intentText(it, e) {
   return p.join(', ') || 'nada';
 }
 function badge(ico, v, col) { return `<span style="color:${col}">${sp(ico, 2)}${v}</span>`; }
+function dieText(f) {
+  const kw = KW[f.k];
+  if (blankF(f)) return 'vacío';
+  if (kw.dmg) { const v = f.v + C.furia; return kw.x(v) + (C.hits > 1 ? ' (×2)' : ''); }
+  if (f.k === 'escudo') return `bloquea ${f.v} del ataque de un enemigo`;
+  if (f.k === 'espinas') return `bloquea ${f.v} de un enemigo y le devuelve ${f.v}`;
+  if (f.k === 'furia') return `+${f.v} a tus golpes de este turno`;
+  if (f.k === 'doble') return `tus golpes de este turno pegan 2 veces${f.v ? ` y +${f.v}` : ''}`;
+  return kw.x(f.v);
+}
+const sceneH = () => Math.max(330, Math.min(430, Math.round(window.innerHeight * .5)));
+function phaseBox(eff) {
+  const ph = C.phase;
+  const left = eff ? eff.fs.filter(f => !C.used[f.d]) : [];
+  const chips = left.length ? `<div class="dchips">${left.map(f => `<button class="dchip ${C.sel === f.d ? 'on' : ''} ${C.locked[f.d] ? 'lk' : ''}" onclick="G.tapDie('${f.d}')">${faceHTML(f, f.d, { cls: f.b ? 'boost' : '' })}<span><b>${DN(f.d)}</b>${dieText(f)}</span></button>`).join('')}</div>` : '';
+  if (ph === 'enemy') return { t: 'Turno de los enemigos', d: 'Están tirando sus dados…', b: '' };
+  if (ph === 'rolling') return { t: 'Tirando…', d: '', b: '' };
+  if (ph === 'resolve') return { t: 'Los enemigos actúan', d: 'Cada enemigo vivo hace lo que sacó en su dado.', b: '' };
+  if (ph === 'roll') return { t: 'Tu turno', d: 'Arriba de cada enemigo ves lo que va a hacer. Tira tus dados.', b: `<button class="btn pri" onclick="G.roll()">Tirar dados</button>` };
+  if (ph === 'reroll') {
+    const any = DKEYS.some(k => !C.locked[k]);
+    return { t: `Guarda o vuelve a tirar${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca los dados que quieras <b>guardar</b> (llevan candado) y vuelve a tirar los demás.', c: chips,
+      b: `<div class="row2"><button class="btn" ${any ? '' : 'disabled'} onclick="G.reroll()">Volver a tirar (${C.rerolls})</button><button class="btn pri" onclick="G.ready()">Usar dados</button></div>` };
+  }
+  // usar
+  if (C.sel) {
+    const f = eff.fs[DKEYS.indexOf(C.sel)], tt = targetType(f);
+    const how = tt === 'enemy' ? 'Toca al enemigo que quieras.' : tt === 'all' ? 'Afecta a todos los enemigos.' : tt === 'self' ? 'Es para ti.' : alive().some(e => e.intent && e.intent.a) ? 'Toca al enemigo cuyo ataque quieres parar.' : 'Ningún enemigo ataca: este dado no sirve ahora.';
+    const btn = tt === 'all' ? `<button class="btn pri" onclick="G.useAll()">¡A todos!</button>` : tt === 'self' ? `<button class="btn pri" onclick="G.use('hero')">Usar en ti</button>` : '';
+    return { t: `${DN(C.sel)}: ${dieText(f)}`, d: how, c: chips, b: `<div class="row2">${btn}<button class="btn" onclick="G.tapDie('${C.sel}')">Cancelar</button></div>` };
+  }
+  const blanks = eff.fs.filter(f => blankF(f)).map(f => DN(f.d));
+  return { t: `Usa tus dados${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca un dado y después su objetivo. <b>Si matas a un enemigo, su dado ya no hace nada.</b>' + (blanks.length ? `<br>Salieron vacíos (no hacen nada): ${blanks.join(' y ')}.` : ''), c: chips,
+    b: `<button class="btn" onclick="G.end()">Terminar turno</button>` };
+}
 function cRender() {
   S.scr = 'combat';
   if (FAST) { fxq = []; return; }
-  const fl = FLOORS[run.floor], eff = C.rolled ? effFaces() : null;
-  const multi = C.en.length > 1;
+  const eff = C.rolled && C.phase !== 'rolling' ? effFaces() : null;
+  if (eff) eff.fs.forEach((f, i) => { const sd = Scene.pdie(f.d); if (sd) sd.boost = f.b ? f : null; });
+  const pb = phaseBox(eff);
   app.innerHTML = `${hud()}
-  <div class="arena" id="arena">
-    <div class="enemies">${C.en.map((e, i) => `<div class="en ${multi && i === C.target ? 'tgt' : ''} ${e.hp <= 0 ? 'dead' : ''}" id="en${i}" onclick="G.tgt(${i})">
-      <div class="intent">${e.hp > 0 ? intentHTML(e) : ''}</div>${fig(sp3(MODEL_DEFS[e.key] ? e.key : e.spr, e.px >= 8 ? 6 : e.px >= 7 ? 5.6 : 5, '', -.5))}<div class="nm">${e.n}</div>${hearts(e.hp, e.max, 8)}
-      <div class="badges">${e.block ? badge('escudo', e.block, '#8ab8ff') : ''}${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`).join('')}</div>
-    <div class="herorow"><div id="hero">${fig(sp3(H().spr, 5, '', .5))}</div><div class="hstat"><div style="font-size:8px">${run.cls}</div>${hearts(run.hp, run.maxHp, 15)}
-      <div class="badges" style="justify-content:flex-start">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div></div></div>
-  </div>
-  <div class="trayw" id="tray"><div class="combo">${eff && eff.combo ? eff.combo : ''}</div>${!C.rolled && !C.busy ? '<div class="tray-hint">Toca para tirar</div>' : ''}</div>
-  <div class="chips">${['atk', 'def', 'esp'].map(d => `<span><i style="border-color:${dieCols(d)[1]};background:${dieCols(d)[0]}"></i>${DN(d)}</span>`).join('')}</div>
-  <div class="ftxt">${eff ? faceTexts(eff) : C.busy ? '' : 'Mira qué va a hacer el enemigo<br>y tira tus dados.'}</div>
-  <div class="acts">${C.busy ? '<button class="btn" disabled>...</button>' : !C.rolled
-    ? `<button class="btn pri" onclick="G.roll()">TIRAR DADOS</button>`
-    : `<button class="btn pri" onclick="G.act()">¡ACTUAR!</button><p class="t c">${C.rerolls ? `Toca un dado de la bandeja para volver a tirarlo (${C.rerolls})` : 'Sin re-tiradas'}</p>`}
-    <button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
-  Arena.attach($('#arena'), run.floor);
-  Tray.attach($('#tray'));
-  if (eff) Tray.setBoost(eff.fs);
+  <div class="scene" id="scene" style="height:${sceneH()}px"><div id="ovs"></div></div>
+  <div class="phase"><div class="ph-t">${pb.t}</div>${pb.d ? `<div class="ph-d">${pb.d}</div>` : ''}${pb.c || ''}</div>
+  <div class="acts">${pb.b}<button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
+  Scene.attach($('#scene'));
+  // etiquetas flotando sobre cada personaje y candados sobre los dados guardados
+  const f = eff && C.sel ? eff.fs[DKEYS.indexOf(C.sel)] : null;
+  let ov = '';
+  C.en.forEach((e, i) => {
+    if (e.hp <= 0) return;
+    const [x, y0] = Scene.headCss(e), y = Math.max(y0, 84), can = f && validTarget(f, targetType(f) === 'all' ? e : e);
+    ov += `<div class="ov ${can ? 'pick' : f ? 'nope' : ''}" id="ov-e${i}" style="left:${x}px;top:${y}px">
+      <div class="intent">${intentHTML(e)}</div><div class="nm">${e.n}</div>${hearts(e.hp, e.max, 8)}
+      <div class="badges">${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}${e.thorn ? badge('espinas', e.thorn, '#c0d0ff') : ''}</div></div>`;
+  });
+  const [hx, hy] = Scene.headCss('hero'), hcan = f && validTarget(f, 'hero');
+  ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px">
+    <div class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</div>
+    <div class="nm">${run.cls}</div>${hearts(run.hp, run.maxHp, 10)}</div>`;
+  if (C.phase === 'reroll') DKEYS.forEach(k => { const sd = Scene.pdie(k); if (sd && C.locked[k]) { const [x, y] = Scene.css([sd.pos[0], sd.pos[1] + DS + .15, sd.pos[2]]); ov += `<div class="dk" style="left:${x}px;top:${y}px">${sp('candado', 2)}</div>`; } });
+  if (C.phase === 'roll') ov += `<div class="tap-hint">Toca para tirar tus dados</div>`;
+  $('#ovs').innerHTML = ov;
   flushFx();
 }
-function faceTexts(eff) {
-  const lines = [];
-  for (const f of eff.fs) {
-    if (blankF(f)) { lines.push(`${DN(f.d)}: <em>nada</em>`); continue; }
-    let t = KW[f.k].x(f.v);
-    if (KW[f.k].dmg && (eff.furia || eff.hits > 1)) t = KW[f.k].x(f.v + eff.furia) + (eff.hits > 1 ? ' ×2' : '');
-    lines.push(`${DN(f.d)}: <em>${t}</em>`);
-  }
-  return lines.join('<br>');
-}
-async function doRoll() {
-  if (C.busy || C.rolled) return;
-  C.busy = true; cRender();
-  const res = { atk: rollDie('atk'), def: rollDie('def'), esp: rollDie('esp') };
-  if (!FAST) await Tray.roll([0, 1, 2], [res.atk, res.def, res.esp]);
-  C.rolled = res; C.busy = false; cRender();
-}
-async function reroll(d) {
-  if (C.busy || !C.rolled || C.rerolls <= 0) return;
-  C.rerolls--; C.busy = true; cRender();
-  const i = ['atk', 'def', 'esp'].indexOf(d), r = rollDie(d), arr = [];
-  arr[i] = r;
-  if (!FAST) { Tray.dice[i] && (Tray.dice[i].boost = null); await Tray.roll([i], arr); }
-  C.rolled[d] = r; C.busy = false; cRender();
-}
-const alive = () => C.en.filter(e => e.hp > 0);
-function tgtEnemy() { let e = C.en[C.target]; if (!e || e.hp <= 0) { e = alive()[0]; C.target = C.en.indexOf(e); } return e; }
-function hitEnemy(e, amt, pierce, col) {
-  if (!pierce) { const ab = Math.min(e.block, amt); e.block -= ab; amt -= ab; }
-  amt = Math.min(amt, Math.max(0, e.hp));
-  e.hp -= amt;
-  fl(e, amt > 0 ? '-' + amt : '0', col || '#ff6a6a', amt > 0);
-  return amt;
-}
-async function cleanup() {
-  let dead = C.en.filter(e => e.hp <= 0);
-  while (dead.length) {
-    C.en = C.en.filter(e => e.hp > 0);
-    if (has('calavera') && C.en.length) {
-      for (let k = 0; k < dead.length; k++) for (const e of C.en) hitEnemy(e, 2, true, '#e0e0f0');
-      cRender(); await sleep(350);
-    }
-    dead = C.en.filter(e => e.hp <= 0);
-  }
-  if (C.target >= C.en.length) C.target = 0;
-  return C.en.length === 0;
-}
-async function act() {
-  if (C.busy || !C.rolled) return;
-  C.busy = true;
-  const eff = effFaces();
-  if (eff.combo) toast(eff.combo);
-  const step = async (ms = 330) => { cRender(); await sleep(ms); };
-  // 1) protección, cura y veneno
-  for (const f of eff.fs) {
-    if (blankF(f)) continue;
-    if (f.k === 'escudo' || f.k === 'espinas') { C.block += f.v; if (f.k === 'espinas') C.thorns += f.v; fl('hero', '+' + f.v, '#8ab8ff'); }
-    else if (f.k === 'luz') { const h = heal(f.v); if (h) fl('hero', '+' + h, '#7aea7a'); if (f.v > h) { C.block += f.v - h; fl('hero', '+' + (f.v - h), '#8ab8ff'); } }
-    else if (f.k === 'veneno') { const e = tgtEnemy(); e.poison += f.v + (has('seta') ? 1 : 0); fl(e, '+' + (f.v + (has('seta') ? 1 : 0)), '#7aea7a'); }
-    else if (f.k === 'nube') { for (const e of alive()) { e.poison += f.v + (has('seta') ? 1 : 0); fl(e, '+' + (f.v + (has('seta') ? 1 : 0)), '#7aea7a'); } }
-  }
-  if (fxq.length) await step();
-  // 2) daño
-  for (const f of eff.fs) {
-    const kw = KW[f.k];
-    if (!kw.dmg || f.v <= 0) continue;
-    for (let h = 0; h < eff.hits; h++) {
-      if (!alive().length) break;
-      const amt = f.v + eff.furia, targets = kw.all ? alive() : [tgtEnemy()];
-      fl('hero', '', null, false, 'lungeR');
-      for (const e of targets) { const dealt = hitEnemy(e, amt, kw.pierce, f.k === 'fuego' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); } }
-      await step();
-    }
-  }
-  if (await cleanup()) return winCombat();
-  // 3) el veneno hace daño
-  let pz = false;
-  for (const e of alive()) if (e.poison > 0) { hitEnemy(e, e.poison, true, '#7aea7a'); e.poison--; pz = true; }
-  if (pz) await step();
-  if (await cleanup()) return winCombat();
-  // 4) turno de los enemigos
-  await sleep(200);
-  for (const e of [...C.en]) {
-    if (e.hp <= 0) continue;
-    const it = e.intent;
-    if (it.a) {
-      let dmg = it.a + e.rage; const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
-      run.hp -= dmg; fl('hero', dmg > 0 ? '-' + dmg : 'BLOQUEO', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
-      fl(e, '', null, false, 'lungeL');
-      if (C.thorns) hitEnemy(e, C.thorns, true, '#c0d0ff');
-    }
-    if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p, '#7aea7a'); }
-    if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
-    if (it.r) { e.rage += it.r; fl(e, 'FURIA', '#ff7050'); }
-    if (it.s && alive().length < 3) { const m = makeEnemy(it.s); m.intent = parseFace('a0'); C.en.push(m); fl(m, '¡!', '#d0a0ff'); }
-    await step(380);
-    if (run.hp <= 0) return lose();
-  }
-  if (await cleanup()) return winCombat();
-  // 5) tu veneno
-  if (C.ppoison > 0) { run.hp -= C.ppoison; fl('hero', '-' + C.ppoison, '#7aea7a', true); C.ppoison--; await step(); if (run.hp <= 0) return lose(); }
-  startTurn(); C.busy = false; cRender();
+function tutorial() {
+  try { if (localStorage.getItem('mazmorra_tuto2')) return; localStorage.setItem('mazmorra_tuto2', '1'); } catch (e) { return; }
+  modal(`<div class="help col"><h3>Cómo se pelea</h3>
+  <p><b>1.</b> Los enemigos tiran primero. Encima de cada uno ves <b>lo que va a hacer</b>.</p>
+  <p><b>2.</b> Tira tus dados. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces).</p>
+  <p><b>3.</b> Usa cada dado: <b>tócalo y después toca su objetivo</b>. La protección para el ataque de un enemigo concreto.</p>
+  <p><b>4.</b> Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
+  <p>Pareja (dos números iguales): +1 a los dos. Trío: todo ×2.</p></div>`);
 }
 async function winCombat() {
-  await sleep(350);
+  if (!C || C.won) return; C.won = true;
+  await sleep(600);
   const kind = C.kind;
   let g = kind === 'jefe' ? 40 + run.floor * 10 : kind === 'elite' ? 20 + run.floor * 5 : R(6, 10) + run.floor * 3;
   if (has('bolsa')) g = Math.round(g * 1.5);
@@ -2111,7 +2295,7 @@ async function winCombat() {
   if (kind === 'elite') return relicChoice(`¡Élite vencido! +${g} de oro`, nextRoom);
   reward(g);
 }
-async function lose() { await sleep(500); C = null; gameOver(); }
+async function lose() { await sleep(600); C = null; gameOver(); }
 
 // ---------------------------------------------------------- acciones (botones)
 const G = {
@@ -2127,15 +2311,28 @@ const G = {
   },
   sfx: () => { Sfx.toggle(); title(); },
   roll: () => doRoll(),
-  rr: d => reroll(d),
-  act: () => act(),
-  tgt: i => {
-    if (!C || !C.en[i] || C.en[i].hp <= 0) return;
-    if (C.target === i || C.en.length === 1) {
-      const e = C.en[i];
-      modal(`<h3>${e.n}</h3><p class="t">Vida ${e.hp}/${e.max}. Sus caras:</p><div class="col">${e.f.map(s => `<p class="t" style="color:var(--txt)">· ${intentText(parseFace(s), e)}</p>`).join('')}</div>`);
-    } else { C.target = i; cRender(); }
+  reroll: () => rerollDice(),
+  ready: () => { if (C && C.phase === 'reroll' && !C.busy) toUse(); },
+  end: () => endTurn(),
+  use: t => { if (C && C.sel) useDie(C.sel, t); },
+  useAll: () => { if (C && C.sel) useDie(C.sel, alive()[0]); },
+  tapDie: d => { if (!C || C.busy) return; if (C.phase === 'reroll') toggleLock(d); else if (C.phase === 'use') selDie(d); else if (C.phase === 'roll') doRoll(); },
+  tapEnemy: i => {
+    const e = C && C.en[i]; if (!e || e.hp <= 0) return;
+    if (C.phase === 'use' && C.sel && !C.busy) {
+      const f = effFaces().fs[DKEYS.indexOf(C.sel)];
+      if (validTarget(f, e)) return useDie(C.sel, e);
+      return toast(targetType(f) === 'guard' ? 'Ese enemigo no ataca' : targetType(f) === 'self' ? 'Este dado es para ti' : 'Ahí no');
+    }
+    if (C.phase === 'roll') return doRoll();
+    modal(`<h3>${e.n}</h3>${hearts(e.hp, e.max, 10)}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>`);
   },
+  tapHero: () => {
+    if (!C) return;
+    if (C.phase === 'use' && C.sel && !C.busy) { const f = effFaces().fs[DKEYS.indexOf(C.sel)]; if (validTarget(f, 'hero')) return useDie(C.sel, 'hero'); return toast('Este dado va a un enemigo'); }
+    if (C.phase === 'roll') doRoll();
+  },
+  tapFloor: () => { if (C && C.phase === 'roll') doRoll(); },
   myDice: () => modal(`<h3>Tus dados</h3>${diceRows()}<p class="t">${run.dice.esp.concat(run.dice.atk, run.dice.def).filter(f => !blankF(f)).map(f => f.k).filter((k, i, a) => a.indexOf(k) === i).map(k => `<b style="color:${KW[k].col}">${KW[k].n}</b>: ${KW[k].x('N')}`).join('<br>')}</p>`),
   relic: k => modal(`<div class="row">${sp(RELICS[k].ico, 5, RELICS[k].sw)}<h3>${RELICS[k].n}</h3></div><p class="t">${RELICS[k].d}</p>`),
   pf: (d, i) => { const cfg = S.pf; if (cfg) cfg.on(d, i); },
