@@ -247,6 +247,40 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .cbtn{background:none;border:none;padding:0;cursor:pointer;font:inherit;color:inherit}
 .reveal{animation:flip .7s steps(7)}
 @keyframes flip{0%{transform:perspective(500px) rotateY(90deg) scale(.6)}100%{transform:none}}
+
+.eband{position:relative;height:var(--ebh,72px);background:linear-gradient(#0d0a12,#16111e);box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;flex:none;margin-bottom:-6px;z-index:3}
+.ecard{position:absolute;top:6px;transform:translateX(-50%);display:flex;flex-direction:column;gap:4px;padding:5px 6px;background:#000a;box-shadow:0 0 0 2px #000;cursor:pointer}
+.ecard{overflow:hidden}
+.ecard .ec-top{display:flex;justify-content:space-between;align-items:center;gap:4px;flex-wrap:wrap;row-gap:2px}
+.ecard .nm{font-size:7px;color:#e8e0f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ecard .intent{display:flex;gap:4px;font-size:9px;align-items:center;flex:none;margin-left:auto}
+.ecard .badges{min-height:0;justify-content:flex-start;font-size:7px}
+.ecard.pick{box-shadow:0 0 0 2px #000,0 0 0 4px var(--gold);animation:hlp .8s steps(2) infinite}
+.ecard.pick .nm{color:var(--gold)}
+.ecard.nope{opacity:.4}
+.pips.en i{width:4px;height:7px}
+.ov .nm{visibility:hidden}
+.danc{position:absolute;width:44px;height:50px;pointer-events:none}
+.dinfos{display:flex;flex-direction:column;gap:4px}
+.dinfo{display:flex;align-items:center;gap:8px;font-size:7px;line-height:1.6;color:var(--dim);background:#0006;box-shadow:0 0 0 2px #000;padding:3px 6px;cursor:pointer}
+.dinfo .lb{width:58px;flex:none;color:var(--txt);display:flex;align-items:center;gap:3px;font-size:6px}
+.dinfo .fs{display:flex;gap:3px}
+.dinfo .fs .fc{width:24px;height:24px;border-width:2px;font-size:7px;opacity:.55}
+.dinfo .fs .fc img{width:10px;height:10px}
+.dinfo .fs .fc.cur{opacity:1;box-shadow:0 0 0 2px var(--gold)}
+.dinfo.lk{box-shadow:0 0 0 2px #000,0 0 0 4px #9ac8ff}
+.dinfo.use .fc{width:28px;height:28px}
+.dinfo.use b{display:block;color:var(--txt);font-weight:normal}
+.dinfo.use i{font-style:normal;color:#ffb070}
+.dinfo.on{box-shadow:0 0 0 2px #000,0 0 0 4px var(--gold)}
+.dinfo.cb .fc{box-shadow:0 0 0 2px var(--gold)}
+.dinfo .tag{font-style:normal;color:#000;background:var(--gold);padding:1px 3px;margin-left:4px}
+
+.topbar{display:flex;align-items:center;margin-bottom:-2px}
+.topbar .back{font:inherit;font-size:9px;color:var(--txt);background:#2a2036;border:none;box-shadow:0 0 0 2px #000,0 0 0 4px #3a2e4a;padding:9px 12px;cursor:pointer}
+.topbar .back:active{transform:translateY(2px)}
+.modal .panel{position:relative;max-height:calc(100dvh - 40px);overflow:auto}
+.mclose{position:sticky;top:0;align-self:flex-end;margin:-4px -4px -30px 0;z-index:2;font:inherit;font-size:12px;width:34px;height:34px;color:var(--txt);background:#3a2e4a;border:none;box-shadow:0 0 0 2px #000;cursor:pointer;flex:none}
 </style>
 </head>
 <body>
@@ -1030,68 +1064,119 @@ const mirror = (cx, f) => { f(1, x => x); f(-1, x => 2 * cx - x); };
 
 // --- héroes
 function mKnight(M, o = {}) {
-  const ar = o.dark ? 'G' : 'g', ad = o.dark ? 'k' : 'G', tb = o.dark ? 'R' : 'b', bl = o.dark ? 'R' : 'w';
+  const pal = o.t1 === 'paladin', bar = o.t1 === 'barbaro';
+  const ar = o.dark ? 'G' : pal ? 'w' : 'g', ad = o.dark ? 'k' : pal ? 'g' : 'G', tb = o.dark ? 'R' : pal ? 'w' : 'b', bl = o.dark ? 'R' : 'w';
   if (o.dark) M.box(5, 4, 2, 10, 13, 3, 'R');                       // capa
-  M.box(5, 0, 5, 6, 5, 7, ad); M.box(9, 0, 5, 10, 5, 7, ad);         // piernas
-  M.box(5, 0, 7, 6, 1, 8, ar); M.box(9, 0, 7, 10, 1, 8, ar);         // botas
+  M.box(5, 0, 5, 6, 5, 7, bar ? 'N' : ad); M.box(9, 0, 5, 10, 5, 7, bar ? 'N' : ad);         // piernas
+  M.box(5, 0, 7, 6, 1, 8, bar ? 'n' : ar); M.box(9, 0, 7, 10, 1, 8, bar ? 'n' : ar);         // botas
+  if (bar) {   // Bárbaro: sin armadura, pieles, cuernos y hacha
+    M.ell(8, 9.5, 6, 3.6, 3.5, 2.7, 's'); M.box(7, 6, 8, 8, 12, 8, 'N'); M.px(6, 11, 8, 'N'); M.px(9, 11, 8, 'N');
+    M.box(5, 5, 4, 10, 6, 8, 'n');
+    M.ell(4.4, 12.4, 6, 2.1, 1.7, 2.2, 'n'); M.ell(11.6, 12.4, 6, 2.1, 1.7, 2.2, 'n');
+    M.cap(4.2, 11, 6, 3.8, 7.5, 7.6, 1.15, 's'); M.cap(11.8, 11, 6, 12.2, 8.5, 7.8, 1.15, 's');
+    M.ell(3.8, 7.3, 7.6, 1.2, 1.2, 1.2, 'N'); M.ell(12.2, 8.3, 7.8, 1.2, 1.2, 1.2, 'N');
+    M.ell(8, 15.2, 6, 2.5, 2.6, 2.5, 's'); M.ell(8, 13.9, 7.6, 2, 1.6, 1, 'n'); M.px(6, 15, 8, 'k'); M.px(9, 15, 8, 'k');
+    M.ell(8, 16.6, 6, 2.7, 1.4, 2.7, 'G', (x, y) => y > 16.4);
+    M.cap(5.6, 17, 6, 3.6, 19.6, 6.4, .5, 'w'); M.cap(10.4, 17, 6, 12.4, 19.6, 6.4, .5, 'w');
+    M.cap(12, 4, 9, 12, 17, 9, .45, 'n'); M.ell(12, 15.6, 10.6, .6, 2.2, 1.6, 'g'); M.ell(12, 15.6, 7.6, .6, 1.6, 1, 'g');
+    return;
+  }
   M.ell(8, 9.5, 6, 3.6, 3.5, 2.7, ar);                               // coraza
   M.box(6, 5, 8, 9, 11, 8, tb);                                      // sobreveste
+  if (pal) { M.box(7, 7, 9, 8, 10, 9, 'y'); M.box(6, 8, 9, 9, 9, 9, 'y'); M.ring(8, 11.6, 6, 3, .4, 'y'); }   // sol y ribete dorado
   M.box(5, 6, 4, 10, 6, 8, 'n'); M.px(7, 6, 8, 'y'); M.px(8, 6, 8, 'y');
   M.ell(4.4, 12.2, 6, 1.8, 1.5, 1.9, ar); M.ell(11.6, 12.2, 6, 1.8, 1.5, 1.9, ar);   // hombreras
+  if (pal) { M.px(4, 13, 7, 'y'); M.px(11, 13, 7, 'y'); }
   if (o.dark) { M.px(4, 14, 6, 'k'); M.px(11, 14, 6, 'k'); M.px(3, 13, 6, 'k'); M.px(12, 13, 6, 'k'); }
   M.cap(4.2, 11, 6, 3.8, 7.5, 7.6, 1.1, ad); M.cap(11.8, 11, 6, 12.2, 8.5, 7.8, 1.1, ad);  // brazos
   M.ell(3.8, 7.3, 7.6, 1.2, 1.2, 1.2, ar); M.ell(12.2, 8.3, 7.8, 1.2, 1.2, 1.2, ar);        // guanteletes
   M.ell(8, 15.3, 6, 2.7, 2.9, 2.7, ar);                              // yelmo
   M.box(6, 15, 8, 9, 15, 8, 'k');                                    // ranura
   if (o.dark) { M.px(6, 15, 8, 'r'); M.px(9, 15, 8, 'r'); }
-  M.box(7, 16, 8, 8, 17, 8, ad);
-  M.ell(8, 19, 5.4, .9, 1.6, 2.3, tb);                               // penacho
+  M.box(7, 16, 8, 8, 17, 8, pal ? 'y' : ad);
+  M.ell(8, 19, 5.4, .9, 1.6, 2.3, pal ? 'y' : tb);                   // penacho
   M.box(12, 9, 9, 12, o.dark ? 20 : 18, 9, bl); M.px(12, o.dark ? 21 : 19, 9, bl);      // espada
   M.box(11, 9, 9, 13, 9, 9, 'y'); M.box(12, 6, 9, 12, 8, 9, 'n'); M.px(12, 5, 9, 'y');
 }
-function mCleric(M) {
-  M.cone(8, 6, 0, 10, 3.9, 2.5, 'w'); M.cone(8, 6, 0, 0, 4, 4, 'y');
-  M.ell(8, 11.2, 6, 2.7, 2.4, 2.1, 'w');
-  M.ring(8, 8.6, 6, 2.9, .6, 'y');
+function mCleric(M, o = {}) {
+  const sac = o.t1 === 'sacerdotisa', inq = o.t1 === 'inquisidora', robe = inq ? 'R' : 'w';
+  M.cone(8, 6, 0, 10, 3.9, 2.5, robe); M.cone(8, 6, 0, 0, 4, 4, inq ? 'k' : 'y');
+  if (sac) { M.ring(8, 3, 6, 3.6, .45, 'y'); M.ring(8, 6, 6, 3.2, .45, 'y'); }
+  M.ell(8, 11.2, 6, 2.7, 2.4, 2.1, robe);
+  M.ring(8, 8.6, 6, 2.9, .6, inq ? 'k' : 'y');
   M.box(7, 9, 8, 8, 12, 8, 'y'); M.box(6, 11, 8, 9, 11, 8, 'y');    // símbolo
-  M.cap(5.3, 11.6, 6, 4.6, 8.2, 7.6, 1, 'w'); M.ell(4.6, 7.7, 7.8, .9, .9, .9, 's');
-  M.cap(10.7, 11.6, 6, 11.8, 9, 7.6, 1, 'w'); M.ell(11.8, 8.6, 7.8, .9, .9, .9, 's');
+  M.cap(5.3, 11.6, 6, 4.6, 8.2, 7.6, 1, robe); M.ell(4.6, 7.7, 7.8, .9, .9, .9, 's');
+  M.cap(10.7, 11.6, 6, 11.8, 9, 7.6, 1, robe); M.ell(11.8, 8.6, 7.8, .9, .9, .9, 's');
   M.ell(8, 14.8, 6, 2.8, 2.5, 2.5, 's');                             // cabeza
   M.ell(8, 15.6, 5.5, 3, 2.6, 2.7, 'n', (x, y, z) => z < 6.4 || y > 16.2);   // pelo
   M.cap(5.4, 15, 5, 5.2, 11.5, 5, .9, 'n'); M.cap(10.6, 15, 5, 10.8, 11.5, 5, .9, 'n');
   M.px(6, 15, 8, 'k'); M.px(9, 15, 8, 'k'); M.px(7, 13, 8, 'S'); M.px(8, 13, 8, 'S');
-  M.ring(8, 18.8, 5.6, 2.5, .5, 'y');                                // aureola
+  if (inq) { M.ell(8, 17.3, 6, 3.8, .5, 3.8, 'k'); M.cone(8, 6, 17, 19, 2.3, 1.7, 'k'); M.ring(8, 17.9, 6, 2.2, .4, 'R'); }
+  else M.ring(8, 18.8, 5.6, sac ? 3 : 2.5, .5, 'y');                 // aureola
+  if (sac) { M.cap(11.8, 1, 7.8, 11.8, 16, 7.8, .45, 'y'); M.ell(11.8, 17.2, 7.8, 1.3, 1.3, 1.3, 'w'); M.px(11, 19, 7, 'y'); M.px(12, 19, 8, 'y'); return; }
   M.cap(11.8, 5, 7.8, 11.8, 13, 7.8, .5, 'n');                       // maza
-  M.ell(11.8, 14.2, 7.8, 1.5, 1.5, 1.5, 'g');
-  M.px(13, 14, 7, 'G'); M.px(10, 14, 8, 'G'); M.px(11, 16, 7, 'G'); M.px(12, 14, 9, 'G');
+  M.ell(11.8, 14.2, 7.8, 1.5, 1.5, 1.5, inq ? 'o' : 'g');
+  M.px(13, 14, 7, inq ? 'y' : 'G'); M.px(10, 14, 8, inq ? 'y' : 'G'); M.px(11, 16, 7, inq ? 'y' : 'G'); M.px(12, 14, 9, inq ? 'y' : 'G');
 }
-function mRogue(M) {
+function mRogue(M, o = {}) {
+  const ase = o.t1 === 'asesina', alq = o.t1 === 'alquimista', cl = ase ? 'G' : alq ? 'E' : 'P';
   M.box(6, 0, 5, 7, 3, 7, 'N'); M.box(8, 0, 5, 9, 3, 7, 'N'); M.box(6, 0, 7, 7, 0, 8, 'k'); M.box(8, 0, 7, 9, 0, 8, 'k');
-  M.cone(8, 6, 2, 11, 3.7, 2.6, 'P');                                // capa
+  M.cone(8, 6, 2, 11, 3.7, 2.6, cl);                                 // capa
   M.box(7, 4, 8, 8, 10, 8, 'N'); M.box(5, 6, 4, 10, 6, 8, 'n'); M.px(6, 5, 8, 'e'); M.px(9, 5, 8, 'e');
-  M.cap(5.2, 11, 6, 3.8, 8.2, 8, 1, 'P'); M.cap(10.8, 11, 6, 12.2, 8.2, 8, 1, 'P');
+  if (alq) { M.px(5, 5, 7, 'p'); M.px(7, 5, 9, 'o'); M.px(8, 5, 9, 'c'); M.px(10, 5, 7, 'p'); M.ell(2.6, 9.4, 9, 1.4, 1.4, 1.4, 'e'); }
+  M.cap(5.2, 11, 6, 3.8, 8.2, 8, 1, cl); M.cap(10.8, 11, 6, 12.2, 8.2, 8, 1, cl);
   M.ell(3.7, 8, 8.2, .8, .8, .8, 's'); M.ell(12.3, 8, 8.2, .8, .8, .8, 's');
-  M.cap(3.6, 7.8, 8.8, 2.4, 4.2, 10.8, .45, 'w'); M.cap(12.4, 7.8, 8.8, 13.6, 4.2, 10.8, .45, 'w');   // dagas
+  const L = ase ? 2.6 : 0;   // dagas más largas
+  M.cap(3.6, 7.8, 8.8, 2.4, 4.2 - L * .4, 10.8 + L * .4, .45, 'w'); M.cap(12.4, 7.8, 8.8, 13.6, 4.2 - L * .4, 10.8 + L * .4, .45, 'w');
   M.px(2, 3, 11, 'e'); M.px(13, 3, 11, 'e');
-  M.ell(8, 14.2, 6, 3, 3.1, 3, 'P');                                 // capucha
+  M.ell(8, 14.2, 6, 3, 3.1, 3, cl);                                  // capucha
   M.ell(8, 13.8, 8, 2, 1.8, 1.3, 's');
-  M.box(6, 15, 9, 9, 15, 9, 'P'); M.box(6, 14, 9, 9, 14, 9, 'k'); M.px(6, 14, 9, 'e'); M.px(9, 14, 9, 'e');
-  M.ell(8, 16.6, 4.6, 1.3, 1.6, 1.4, 'P'); M.ell(8, 17.4, 3.6, .8, 1, 1, 'P');
+  M.box(6, 15, 9, 9, 15, 9, cl); M.box(6, 14, 9, 9, 14, 9, 'k'); M.px(6, 14, 9, 'e'); M.px(9, 14, 9, 'e');
+  if (ase) M.box(6, 12, 9, 9, 13, 9, 'R');                           // pañuelo
+  if (alq) { M.box(6, 15, 9, 9, 15, 9, 'y'); M.px(6, 15, 9, 'c'); M.px(9, 15, 9, 'c'); }   // gafas
+  M.ell(8, 16.6, 4.6, 1.3, 1.6, 1.4, cl); M.ell(8, 17.4, 3.6, .8, 1, 1, cl);
 }
-function mPyro(M) {
-  M.cone(8, 6, 0, 10, 3.9, 2.6, 'r'); M.cone(8, 6, 0, 1, 4, 3.8, 'R');
-  M.ell(8, 11.2, 6, 2.7, 2.3, 2.1, 'r'); M.ring(8, 9, 6, 2.8, .55, 'y');
-  M.cap(5.3, 11.6, 6, 4.4, 8.2, 7.6, 1, 'r'); M.ell(4.4, 7.8, 7.8, .9, .9, .9, 's');
-  M.cap(10.7, 11.6, 6, 12, 9.6, 7.6, 1, 'r'); M.ell(12.1, 9.4, 7.8, .9, .9, .9, 's');
+function mPyro(M, o = {}) {
+  const arc = o.t1 === 'archimago', inc = o.t1 === 'incendiario', rb = arc ? 'P' : 'r', rd = arc ? 'B' : 'R';
+  M.cone(8, 6, 0, 10, 3.9, 2.6, rb); M.cone(8, 6, 0, 1, 4, 3.8, inc ? 'k' : rd);
+  if (arc) for (const [x, y] of [[6, 4], [9, 6], [7, 8], [5, 7]]) M.px(x, y, 9, 'y');
+  M.ell(8, 11.2, 6, 2.7, 2.3, 2.1, rb); M.ring(8, 9, 6, 2.8, .55, 'y');
+  M.cap(5.3, 11.6, 6, 4.4, 8.2, 7.6, 1, rb); M.ell(4.4, 7.8, 7.8, .9, .9, .9, 's');
+  if (inc) { M.ell(4.2, 6.6, 8.6, 1, 1, 1, 'k'); M.px(4, 7, 9, 'o'); M.px(4, 8, 9, 'y'); }   // bomba
+  M.cap(10.7, 11.6, 6, 12, 9.6, 7.6, 1, rb); M.ell(12.1, 9.4, 7.8, .9, .9, .9, 's');
   M.ell(8, 14.2, 6, 2.6, 2.3, 2.3, 's');
   M.ell(8, 12.2, 7.6, 2, 2.5, 1.2, 'w');                             // barba
   M.px(6, 14, 8, 'k'); M.px(9, 14, 8, 'k'); M.box(6, 15, 8, 9, 15, 8, 'g');
-  M.ell(8, 15.9, 6, 4, .7, 4, 'R');                                  // ala del sombrero
-  M.cone(8, 6, 16, 21, 2.7, .6, 'R'); M.ring(8, 16.6, 6, 2.5, .5, 'y');
-  M.cap(8, 21, 6, 9.6, 22.4, 4.6, .6, 'R');
+  M.ell(8, 15.9, 6, 4, .7, 4, rd);                                   // ala del sombrero
+  M.cone(8, 6, 16, 21, 2.7, .6, rd); M.ring(8, 16.6, 6, 2.5, .5, 'y');
+  M.cap(8, 21, 6, 9.6, 22.4, 4.6, .6, rd);
+  if (inc) for (const [x, z] of [[4, 6], [12, 6], [8, 10], [8, 2], [5, 9], [11, 3]]) { M.px(x, 16, z, 'o'); M.px(x, 17, z, 'y'); }   // sombrero en llamas
   M.cap(12.1, 0, 7.8, 12.1, 15, 7.8, .5, 'n');                       // bastón
-  M.ell(12.1, 17, 7.8, 1.3, 2.1, 1.3, 'o'); M.ell(12.1, 16.6, 7.8, .7, 1.1, .7, 'y');
+  if (arc) { M.ell(12.1, 16.6, 7.8, 1.3, 1.3, 1.3, 'c'); M.ell(12.1, 16.6, 7.8, .6, .6, .6, 'w'); }
+  else { M.ell(12.1, 17, 7.8, 1.3, 2.1, 1.3, 'o'); M.ell(12.1, 16.6, 7.8, .7, 1.1, .7, 'y'); }
 }
+// piezas que añade la segunda evolución (encima de la primera)
+const EVO_ACC = {
+  campeon: M => { M.box(5, 3, 2, 10, 13, 3, 'R'); M.box(4, 12, 3, 11, 13, 4, 'R'); M.ring(8, 17.8, 6, 2.7, .45, 'e'); },
+  senordelaguerra: M => { M.cap(10.6, 5, 2.4, 10.6, 23, 2.4, .4, 'n'); M.box(11, 18, 2, 14, 22, 2, 'R'); M.px(12, 20, 2, 'y'); M.px(13, 20, 2, 'y'); M.px(4, 14, 6, 'k'); M.px(11, 14, 6, 'k'); },
+  santa: M => mirror(8, (s, X) => { M.ell(X(2.4), 13.2, 3.2, 2.4, 4.4, .6, 'y', (x, y) => y > 9.4); M.ell(X(2), 15, 3.2, 1.4, 2.4, .6, 'w', (x, y) => y > 13); }),
+  martillosagrado: M => { M.box(10, 14, 6, 14, 17, 9, 'g'); M.box(10, 17, 6, 14, 17, 9, 'w'); M.px(12, 15, 10, 'y'); M.ell(4.8, 12.8, 6, 1.7, 1.2, 1.7, 'g'); M.ell(11.2, 12.8, 6, 1.7, 1.2, 1.7, 'g'); },
+  sombra: M => { M.ell(8, 1.2, 6, 4.6, 1.8, 4.6, 'P'); M.ell(8, 3, 6, 3.6, 1, 3.6, 'P', (x, y, z) => (Math.floor(x) + Math.floor(z)) % 2 === 0); M.px(6, 14, 9, 'c'); M.px(9, 14, 9, 'c'); },
+  plaga: M => { M.cap(8, 13.6, 9.4, 8, 12.4, 11.6, .75, 'w'); M.ell(8, 17.8, 6, 3.6, .5, 3.6, 'k'); M.cone(8, 6, 18, 20, 2, 1.4, 'k'); for (const [x, y, z] of [[3, 15, 8], [13, 13, 9], [2, 11, 6], [14, 16, 5]]) M.px(x, y, z, 'k'); },
+  tormenta: M => { M.ell(12.1, 21.4, 7.8, 2, .9, 1.4, 'G'); for (const [x, y] of [[13, 20], [12, 19], [13, 18], [11, 13], [10, 12], [11, 11], [3, 12], [4, 11], [3, 10]]) M.px(x, y, 9, 'c'); },
+  fenix: M => mirror(8, (s, X) => { M.ell(X(2.6), 13, 3.4, 2.6, 4.6, .6, 'o', (x, y) => y > 8.8); M.ell(X(2.4), 14.8, 3.4, 1.6, 2.8, .6, 'y', (x, y) => y > 12); }),
+};
+const evoId = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+const HERO_BASE = { caballero: mKnight, clerigo: mCleric, picaro: mRogue, piromante: mPyro };
+// modelo 3D del héroe según sus evoluciones (se crea la primera vez que hace falta)
+function skinFor(hero, evos) {
+  const base = HEROES[hero].spr;
+  if (!evos || !evos.length) return base;
+  const key = hero + '_' + evos.join('_');
+  if (!MODEL_DEFS[key]) { const d = MODEL_DEFS[base]; MODEL_DEFS[key] = [d[0], d[1] + 3, d[2], M => { HERO_BASE[hero](M, { t1: evos[0] }); evos.slice(1).forEach(id => EVO_ACC[id] && EVO_ACC[id](M)); }]; }
+  return key;
+}
+const heroSkin = () => skinFor(run.hero, run.evo || []);
 // --- enemigos
 function mRat(M, o = {}) {
   M.ell(6, 3.8, 8, 3.2, 2.8, 5, 'g'); M.ell(6, 5.3, 7.4, 2.2, 1.4, 4, 'G');
@@ -1595,9 +1680,8 @@ function cardReveal(c, after) {
 function albumScreen() {
   S = { scr: 'album' };
   const own = albumGet();
-  app.innerHTML = `<h2 class="c">Álbum de criaturas</h2><p class="t c">${own.size} de ${CARDS.length} cartas. Se encuentran en los cofres, con mucha suerte.</p>
-    <div class="cgrid">${CARDS.map(c => `<button class="cbtn" onclick="G.cardView('${c.id}')">${cardHTML(c, false, own.has(c.id))}</button>`).join('')}</div>
-    <button class="btn small" onclick="G.title()">Volver</button>`;
+  app.innerHTML = `${topbar('Volver', 'G.title()')}<h2 class="c">Álbum de criaturas</h2><p class="t c">${own.size} de ${CARDS.length} cartas. Se encuentran en los cofres, con mucha suerte.</p>
+    <div class="cgrid">${CARDS.map(c => `<button class="cbtn" onclick="G.cardView('${c.id}')">${cardHTML(c, false, own.has(c.id))}</button>`).join('')}</div>`;
 }
 
 const V3D = {
@@ -1792,7 +1876,7 @@ const Scene = {
   // posición en pantalla (px css dentro de la escena) de un punto del mundo
   css(p) { const q = proj(this.cam, p), k = this.s.cv.offsetWidth / this.s.W; return [q[0] * k, q[1] * k]; },
   figOf(ref) {
-    if (ref === 'hero') return { ref, name: H().spr, x: HERO_POS[0], z: HERO_POS[2], v: .092, yaw: .55, fx: this.hfx, ph: 1.3 };
+    if (ref === 'hero') return { ref, name: heroSkin(), x: HERO_POS[0], z: HERO_POS[2], v: .092, yaw: .55, fx: this.hfx, ph: 1.3 };
     const n = C.en.length, i = C.en.indexOf(ref), tx = slotX(i, n);
     if (ref._x === undefined) ref._x = tx;
     return { ref, name: MODEL_DEFS[ref.key] ? ref.key : ref.spr, x: ref._x, tx, z: EN_Z, v: voxSize(ref), yaw: -.45, fx: ref._fx || (ref._fx = {}), ph: i * 2.1 };
@@ -2043,7 +2127,7 @@ const RELICS = {
   escudo:   { n: 'Escudo viejo', ico: 'escudo', d: 'Empiezas cada turno con 1 de protección' },
   bolsa:    { n: 'Bolsa de oro', ico: 'moneda', d: 'Ganas un 50% más de oro' },
   brasa:    { n: 'Brasa eterna', ico: 'fuego', d: 'En el primer turno de cada combate, +2 a cada golpe' },
-  seta:     { n: 'Seta rara', ico: 'seta', d: 'El veneno que pones es +1' },
+  seta:     { n: 'Seta rara', ico: 'seta', d: 'El veneno que pones es +1', req: r => hasKw(r, ['veneno', 'nube']) },
   calavera: { n: 'Calavera', ico: 'calavera', d: 'Cuando muere un enemigo, los demás reciben 2 de daño' },
   cargado:  { n: 'Dado cargado', ico: 'dado', sw: 'rojo', d: 'Si sacas una cara vacía, se vuelve a tirar sola' },
 };
@@ -2056,7 +2140,7 @@ const ROOMS = {
   altar:    { n: 'Altar', ico: 'altar', d: 'Un dado entero +1' },
   evento:   { n: '¿?', ico: 'pregunta', d: 'Una sorpresa: puede salir bien o mal' },
   descanso: { n: 'Hoguera', ico: 'fuego', d: 'Cura o entrena' },
-  tienda:   { n: 'Tienda', ico: 'moneda', d: 'Caras y reliquias' },
+  tienda:   { n: 'Tienda', ico: 'moneda', d: 'Tienda de mejoras y reliquias' },
   jefe:     { n: 'Jefe', ico: 'corona', d: '¡Cuidado!' },
 };
 
@@ -2064,6 +2148,8 @@ const ROOMS = {
 let run = null, C = null, S = { scr: 'title' };
 const H = () => HEROES[run.hero];
 const has = k => run && run.relics.includes(k);
+const hasKw = (r, ks) => DKEYS.some(d => r.dice[d].some(f => ks.includes(f.k)));
+const relicOk = k => !has(k) && (!RELICS[k].req || RELICS[k].req(run));
 const DN = d => d === 'atk' ? 'Ataque' : d === 'def' ? 'Protección' : H().espN;
 const heal = n => { const h = Math.max(0, Math.min(n, run.maxHp - run.hp)); run.hp += h; return h; };
 const hurt = n => { run.hp -= n; };
@@ -2128,8 +2214,8 @@ const Coach = {
     if (FAST) return;
     if (Tuto.on && C && C.busy) return;
     let st = null;
-    if (Tuto.on) { st = Tuto.steps[Tuto.step]; if (st) { const el = typeof st.el === 'function' ? st.el() : st.el; st = { t: typeof st.t === 'function' ? st.t() : st.t, el, ok: !st.on, tuto: 1, dy: el && el.startsWith('#ov-e') ? 64 : 0 }; } }
-    else if (Tips.cur) st = { t: Tips.cur.t, el: Tips.cur.el, ok: 1, dy: Tips.cur.el && Tips.cur.el.startsWith('#ov-e') ? 64 : 0 };
+    if (Tuto.on) { st = Tuto.steps[Tuto.step]; if (st) { const el = typeof st.el === 'function' ? st.el() : st.el; st = { t: typeof st.t === 'function' ? st.t() : st.t, el, ok: !st.on, tuto: 1, dy: 0 }; } }
+    else if (Tips.cur) st = { t: Tips.cur.t, el: Tips.cur.el, ok: 1, dy: 0 };
     if (!st) return;
     const el = st.el ? document.querySelector(st.el) : null;
     if (st.el && !el) return;
@@ -2160,18 +2246,18 @@ const Tuto = {
   build() {
     const esp = run.dice.esp[this.rig.esp[1]] || run.dice.esp[5], k = esp.k, buff = k === 'furia' || k === 'doble';
     const espName = k === 'doble' ? 'el rayo' : k === 'furia' ? 'tu furia' : `tu dado de ${DN('esp')}`;
-    const espSel = { el: '.dchip[data-d="esp"]', t: buff ? (k === 'doble' ? 'Primero el rayo: hará que tu ataque pegue 2 veces.' : 'Primero tu furia: sumará a tu ataque.') : `Por último, ${espName}.`, on: 'sel:esp' };
-    const espUse = { el: () => targetType(effFaces().fs[2]) === 'self' ? '#btn-self' : '#ov-e0', t: () => targetType(effFaces().fs[2]) === 'self' ? (buff ? 'Úsalo en ti.' : 'Este es para ti.') : 'Úsalo en la rata.', on: 'use:esp' };
-    const atk = [{ el: '.dchip[data-d="atk"]', t: buff ? (k === 'doble' ? 'Ahora sí: toca tu ataque. ¡Pegará 2 veces!' : 'Ahora sí: toca tu ataque, que vale más.') : 'Toca tu ataque.', on: 'sel:atk' },
-      { el: '#ov-e0', t: 'Y ahora toca a la rata.', on: 'use:atk' }];
+    const espSel = { el: '#dz-esp', t: buff ? (k === 'doble' ? 'Primero el rayo: hará que tu ataque pegue 2 veces.' : 'Primero tu furia: sumará a tu ataque.') : `Por último, ${espName}.`, on: 'sel:esp' };
+    const espUse = { el: () => targetType(effFaces().fs[2]) === 'self' ? '#btn-self' : '#ec-0', t: () => targetType(effFaces().fs[2]) === 'self' ? (buff ? 'Úsalo en ti.' : 'Este es para ti.') : 'Úsalo en la rata.', on: 'use:esp' };
+    const atk = [{ el: '#dz-atk', t: buff ? (k === 'doble' ? 'Ahora sí: toca tu ataque. ¡Pegará 2 veces!' : 'Ahora sí: toca tu ataque, que vale más.') : 'Toca tu ataque.', on: 'sel:atk' },
+      { el: '#ec-0', t: 'Y ahora toca a la rata.', on: 'use:atk' }];
     this.steps = [
-      { el: '#ov-e0 .intent', t: 'Esta rata te va a pegar 2.' },
+      { el: '#ec-0 .intent', t: 'Esta rata te va a pegar 2.' },
       { el: '#hbar', t: 'Tu barra lo avisa: 2 puntitos en amarillo.' },
       { el: '#btn-roll', t: 'Tira tus dados.', on: 'roll' },
-      { el: '.dchip[data-d="atk"]', t: 'Buen ataque. Tócalo para guardarlo.', on: 'lock:atk' },
+      { el: '#dz-atk', t: 'Buen ataque. Tócalo para guardarlo.', on: 'lock:atk' },
       { el: '#btn-rr', t: 'Vuelve a tirar los demás.', on: 'reroll' },
       { el: '#btn-ready', t: '¡Mejor! Ahora, a usarlos.', on: 'ready' },
-      { el: '.dchip[data-d="def"]', t: 'Toca tu protección.', on: 'sel:def' },
+      { el: '#dz-def', t: 'Toca tu protección.', on: 'sel:def' },
       { el: '#btn-self', t: 'Úsala en ti.', on: 'use:def' },
       { el: '#hbar', t: 'Lo amarillo pasa a azul: ese golpe ya está parado.' },
       ...(buff ? [espSel, espUse, ...atk] : [...atk, espSel, espUse]),
@@ -2224,10 +2310,11 @@ function relicsHTML() {
   if (!run.relics.length) return '<p class="t">Sin reliquias</p>';
   return `<div class="relics">${run.relics.map(k => `<button onclick="G.relic('${k}')">${sp(RELICS[k].ico, 3, RELICS[k].sw)}</button>`).join('')}</div>`;
 }
+const topbar = (label, fn) => `<div class="topbar"><button class="back" onclick="${fn}">← ${label}</button></div>`;
 function toast(t) { if (FAST) return; const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
 function modal(html) {
   const m = document.createElement('div'); m.className = 'modal';
-  m.innerHTML = `<div class="panel">${html}<button class="btn" onclick="this.closest('.modal').remove()">Cerrar</button></div>`;
+  m.innerHTML = `<div class="panel"><button class="mclose" onclick="this.closest('.modal').remove()" aria-label="Cerrar">✕</button>${html}</div>`;
   m.onclick = e => { if (e.target === m) m.remove(); };
   document.body.appendChild(m);
 }
@@ -2285,20 +2372,20 @@ function title() {
 function chooseHero() {
   S = { scr: 'choose' };
   const b = best();
-  app.innerHTML = `<h2 class="c">Elige tu héroe</h2>${Object.entries(HEROES).map(([k, h]) => {
+  app.innerHTML = `${topbar('Volver', 'G.title()')}<h2 class="c">Elige tu héroe</h2>${Object.entries(HEROES).map(([k, h]) => {
     const rec = b[k] ? `Récord: piso ${Math.floor(b[k].p / STEPS) + 1}${b[k].w ? ` · ${b[k].w} victoria${b[k].w > 1 ? 's' : ''}` : ''}` : '';
     return `<button class="btn hero-card" style="--dc:${h.dc}" onclick="G.start('${k}')">${fig(sp3(h.spr, 5, '', .4))}<div class="info">
       <h3>${h.n}</h3>${hearts(h.hp, h.hp)}
       <small>${h.d}</small>
       <div class="drow">${h.esp.map(f => faceHTML(f, 'esp')).join('')}</div>
       ${rec ? `<small style="color:var(--gold)">${rec}</small>` : ''}</div></button>`;
-  }).join('')}<button class="btn small" onclick="G.title()">Volver</button>`;
+  }).join('')}`;
 }
 function help() {
   modal(`<div class="help col"><h3>Cómo se juega</h3>
   <p>Tienes <b>3 dados</b>: Ataque, Protección y Especial (cambia según el héroe). Cada turno los tiras todos a la vez.</p>
   <p>La vida es una <b>barra de puntitos</b>. En la tuya, <b>amarillo</b> es lo que te van a quitar los golpes, <b>azul</b> lo que has bloqueado y <b>verde</b> el veneno.</p>
-  <p>Los enemigos <b>tiran sus dados primero</b>: encima de cada uno ves lo que va a hacer.</p>
+  <p>Los enemigos <b>tiran sus dados primero</b>: en la franja de arriba ves lo que va a hacer cada uno.</p>
   <p>Después tiras los tuyos. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces por turno).</p>
   <p>Luego <b>usa cada dado</b>: tócalo y toca su objetivo. El ataque va al enemigo que elijas; la protección es para ti y para los golpes (el veneno la atraviesa).</p>
   <p>Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
@@ -2324,7 +2411,7 @@ function map() {
     <div class="view" id="view"><div class="view-t">${run.doors.length > 1 ? 'Toca una puerta' : run.doors[0] === 'jefe' ? 'El jefe te espera' : 'Toca la puerta'}</div>
     </div>
     <button class="btn small" id="btn-leg" onclick="G.legend()">${sp('pregunta', 2)} Leyenda de símbolos</button>
-    <div class="panel row">${fig(sp3(H().spr, 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${hearts(run.hp, run.maxHp)}${relicsHTML()}</div></div>
+    <div class="panel row">${fig(sp3(heroSkin(), 5, '', .4))}<div class="col" style="flex:1"><h3>${run.cls}</h3>${hearts(run.hp, run.maxHp)}${relicsHTML()}</div></div>
     <div class="panel">${diceRows()}</div>
     <button class="btn small" onclick="G.title()">Guardar y salir</button>`;
   if (!FAST) Corr.build($('#view'), run.doors, run.floor);
@@ -2347,10 +2434,9 @@ function enter(t) {
 // --- elegir cara (forja, entrenar, pegatinas)
 function pickFace(cfg) {
   S = { scr: 'pick', pf: cfg };
-  app.innerHTML = `${hud()}<div class="panel c col">${cfg.ico ? `<div class="row" style="justify-content:center">${sp(cfg.ico, 6)}</div>` : ''}<h2>${cfg.title}</h2><p class="t">${cfg.sub}</p>
+  app.innerHTML = `${cfg.cancel ? topbar('Cancelar', 'G.pfCancel()') : ''}${hud()}<div class="panel c col">${cfg.ico ? `<div class="row" style="justify-content:center">${sp(cfg.ico, 6)}</div>` : ''}<h2>${cfg.title}</h2><p class="t">${cfg.sub}</p>
     ${cfg.face ? `<div class="row" style="justify-content:center">${faceHTML(cfg.face, cfg.dice[0])}</div>` : ''}</div>
-    <div class="panel">${diceRows({ pick: cfg.dice })}</div>
-    ${cfg.cancel ? `<button class="btn small" onclick="G.pfCancel()">Cancelar</button>` : ''}`;
+    <div class="panel">${diceRows({ pick: cfg.dice })}</div>`;
 }
 function forge(n) {
   pickFace({ title: 'Forja', ico: 'yunque', sub: `El herrero sube +1 la cara que elijas.<br>Te queda${n > 1 ? 'n' : ''} ${n}.`, dice: ['atk', 'def', 'esp'],
@@ -2380,7 +2466,7 @@ function stickerFlow(st, after, cancel) {
 }
 function shop() {
   if (!S.shop) {
-    const st = shuffle(stickers()).slice(0, 2), rel = shuffle(Object.keys(RELICS).filter(k => !has(k)))[0];
+    const st = shuffle(stickers()).slice(0, 2), rel = shuffle(Object.keys(RELICS).filter(relicOk))[0];
     S = { scr: 'shop', shop: [
       ...st.map(s => ({ t: 'st', s, p: 18 + run.floor * 6 })),
       { t: 'up', p: 14 + run.floor * 4 },
@@ -2388,13 +2474,13 @@ function shop() {
       ...(rel ? [{ t: 'relic', k: rel, p: 45 + run.floor * 10 }] : [])] };
   }
   S.scr = 'shop';
-  const lbl = it => it.t === 'st' ? [faceHTML(it.s.f, it.s.d), `Cara de ${DN(it.s.d)}`, `${KW[it.s.f.k].n} ${it.s.f.v}: ${KW[it.s.f.k].x(it.s.f.v)}`]
+  const lbl = it => it.t === 'st' ? [faceHTML(it.s.f, it.s.d), `Nueva cara para tu dado de ${DN(it.s.d)}`, `${KW[it.s.f.k].n} ${it.s.f.v}: ${KW[it.s.f.k].x(it.s.f.v)}`]
     : it.t === 'up' ? [sp('yunque', 4), 'Mejora', '+1 a una cara que elijas']
     : it.t === 'heal' ? [sp('corazon', 4), 'Poción', `Te curas ${it.n}`]
     : [sp(RELICS[it.k].ico, 4, RELICS[it.k].sw), RELICS[it.k].n, RELICS[it.k].d];
-  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('moneda', 6)}</div><h2>Tienda</h2><p class="t">Un mercader encapuchado te enseña sus cosas.</p></div>
+  app.innerHTML = `${topbar('Salir de la tienda', 'G.leaveShop()')}${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('moneda', 6)}</div><h2>Tienda</h2><p class="t">Un mercader encapuchado te enseña sus cosas.</p></div>
     ${S.shop.map((it, i) => { const [ic, n, d] = lbl(it); return `<button class="btn opt" ${it.sold || run.gold < it.p ? 'disabled' : ''} onclick="G.buy(${i})">${ic}<span>${n}<small>${d}</small></span><span class="price">${it.sold ? 'VENDIDO' : it.p}</span></button>`; }).join('')}
-    <button class="btn" onclick="G.leaveShop()">Salir</button>`;
+`;
 }
 function event() {
   let pool = EVENTS.filter(e => !run.seen.includes(e.id));
@@ -2458,14 +2544,14 @@ function genOffers() {
 function reward(gold) {
   S = { scr: 'reward', offers: genOffers() };
   const lbl = o => o.t === 'up' ? [sp(KW[run.dice[o.d][0].k].ico, 4), `Mejorar ${DN(o.d)}`, '+1 a una cara que elijas']
-    : o.t === 'st' ? [faceHTML(o.s.f, o.s.d), `Cara de ${DN(o.s.d)}`, `${KW[o.s.f.k].n} ${o.s.f.v}: ${KW[o.s.f.k].x(o.s.f.v)}`]
+    : o.t === 'st' ? [faceHTML(o.s.f, o.s.d), `Nueva cara para tu dado de ${DN(o.s.d)}`, `${KW[o.s.f.k].n} ${o.s.f.v}: ${KW[o.s.f.k].x(o.s.f.v)}`]
     : o.t === 'heal' ? [sp('corazon', 4), 'Curarte', `Recuperas ${o.n} de vida`]
     : [sp('corazon', 4, 'piedra'), 'Más vida', `+${o.n} de vida máxima`];
   app.innerHTML = `${hud()}<div class="panel c col"><h1 style="font-size:16px">¡VICTORIA!</h1><p class="t">+${gold} de oro. Elige una mejora:</p></div>
     ${S.offers.map((o, i) => { const [ic, n, d] = lbl(o); return `<button class="btn opt" onclick="G.offer(${i})">${ic}<span>${n}<small>${d}</small></span></button>`; }).join('')}`;
 }
 function relicChoice(title, after) {
-  const opts = shuffle(Object.keys(RELICS).filter(k => !has(k))).slice(0, 3);
+  const opts = shuffle(Object.keys(RELICS).filter(relicOk)).slice(0, 3);
   if (!opts.length) { run.gold += 30; return after(); }
   S = { scr: 'relic', opts, after };
   app.innerHTML = `${hud()}<div class="panel c col"><h2>${title}</h2><p class="t">Elige una reliquia. Te ayuda toda la partida.</p></div>
@@ -2474,8 +2560,8 @@ function relicChoice(title, after) {
 function evolve(after) {
   const opts = H().evo[run.floor];
   S = { scr: 'evolve', opts, after };
-  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${fig(sp3(H().spr, 7, '', .4))}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
-    ${opts.map((o, i) => `<button class="btn opt" onclick="G.evolve(${i})">${sp('corona', 4)}<span>${o.n}<small>${o.d}</small></span></button>`).join('')}`;
+  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${fig(sp3(heroSkin(), 7, '', .4))}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
+    ${opts.map((o, i) => `<button class="btn opt" onclick="G.evolve(${i})">${sp3(skinFor(run.hero, (run.evo || []).concat(evoId(o.n))), 4, '', .5)}<span>${o.n}<small>${o.d}</small></span></button>`).join('')}`;
 }
 function nextFloor() {
   run.floor++; run.step = 0; run.doors = genDoors(0); save(); floorIntro();
@@ -2491,7 +2577,7 @@ function gameOver() {
 function victory() {
   run.step = STEPS; recordBest(true); clearSave();
   S = { scr: 'win' };
-  app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(H().spr, 10, '', .4))}${sp('corona', 6)}
+  app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(heroSkin(), 10, '', .4))}${sp('corona', 6)}
     <p class="t">${run.cls} ha vencido al Dragón y sale de la mazmorra con ${run.gold} de oro.</p>
     <div class="panel" style="width:100%">${diceRows()}</div>
     <button class="btn pri" onclick="G.choose()">Jugar otra vez</button></div>`;
@@ -2709,7 +2795,7 @@ async function endTurn() {
     }
     if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p + ' veneno', '#7aea7a'); }
     if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
-    if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); Tips.show('rage', 'Se ha enfurecido: desde ahora sus golpes suman ' + e.rage + ' más (el número rojo pequeño).', '#ov-e' + C.en.indexOf(e) + ' .intent'); }
+    if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); Tips.show('rage', 'Se ha enfurecido: desde ahora sus golpes suman ' + e.rage + ' más (el número rojo pequeño).', '#ec-' + C.en.indexOf(e) + ' .intent'); }
     if (it.s && alive().length < 3) { const m = makeEnemy(it.s); C.en.push(m); fl(m, '¡Aparece!', '#d0a0ff'); }
     e.acted = true;
     cRender(); await sleep(480);
@@ -2751,18 +2837,23 @@ function dieText(f) {
   if (f.k === 'doble') return `tus golpes de este turno pegan 2 veces${f.v ? ` y +${f.v}` : ''}`;
   return kw.x(f.v);
 }
-const sceneH = () => Math.max(330, Math.min(430, Math.round(window.innerHeight * .5)));
+const sceneH = () => Math.max(300, Math.min(400, Math.round(window.innerHeight * .45)));
 function phaseBox(eff) {
   const ph = C.phase;
   const left = eff ? eff.fs.filter(f => !C.used[f.d]) : [];
-  const chips = left.length ? `<div class="dchips">${left.map(f => `<button class="dchip ${C.sel === f.d ? 'on' : ''} ${C.locked[f.d] ? 'lk' : ''} ${f.tag ? 'cb' : ''}" data-d="${f.d}" onclick="G.tapDie('${f.d}')">${faceHTML({ k: f.k, v: f.o }, f.d)}<span><b>${DN(f.d)}${f.tag ? ` <em class="tag">${f.tag}</em>` : ''}</b>${dieText(f)}</span></button>`).join('')}</div>` : '';
+  // mientras se puede volver a tirar: las 6 caras de cada dado (la que salió, marcada)
+  const allFaces = `<div class="dinfos">${DKEYS.map(d => `<div class="dinfo ${C.locked[d] ? 'lk' : ''}" data-d="${d}" onclick="G.tapDie('${d}')"><div class="lb">${DN(d)}${C.locked[d] ? sp('candado', 1) : ''}</div><div class="fs">${run.dice[d].map((f, i) => faceHTML(f, d, { cls: C.rolled && C.rolled[d] && i === C.rolled[d].i ? 'cur' : '' })).join('')}</div></div>`).join('')}</div>`;
+  // al usar: lo que va a hacer cada dado, con todo sumado
+  const buffs = eff ? eff.fs.filter(f => !C.used[f.d] && (f.k === 'furia' || f.k === 'doble') && !blankF(f)) : [];
+  const willDo = f => { let t = dieText(f); if (KW[f.k].dmg && buffs.length) { const add = buffs.reduce((a, b) => a + b.v, 0), x2 = C.hits > 1 || buffs.some(b => b.k === 'doble'); t += ` <i>· con ${buffs[0].k === 'doble' ? 'el rayo' : 'la furia'} antes: ${KW[f.k].x(f.v + C.furia + add)}${x2 ? ' ×2' : ''}</i>`; } return t; };
+  const chips = left.length ? `<div class="dinfos">${left.map(f => `<div class="dinfo use ${C.sel === f.d ? 'on' : ''} ${f.tag ? 'cb' : ''}" data-d="${f.d}" onclick="G.tapDie('${f.d}')">${faceHTML({ k: f.k, v: f.o }, f.d)}<span><b>${DN(f.d)}${f.tag ? ` <em class="tag">${f.tag}</em>` : ''}</b>${willDo(f)}</span></div>`).join('')}</div>` : '';
   if (ph === 'enemy') return { t: 'Turno de los enemigos', d: 'Están tirando sus dados…', b: '' };
   if (ph === 'rolling') return { t: 'Tirando…', d: '', b: '' };
   if (ph === 'resolve') return { t: 'Los enemigos actúan', d: 'Cada enemigo vivo hace lo que sacó en su dado.', b: '' };
-  if (ph === 'roll') return { t: 'Tu turno', d: 'Arriba de cada enemigo ves lo que va a hacer. Tira tus dados.', b: `<button class="btn pri" id="btn-roll" onclick="G.roll()">Tirar dados</button>` };
+  if (ph === 'roll') return { t: 'Tu turno', d: 'Arriba ves lo que va a hacer cada enemigo. Tira tus dados.', b: `<button class="btn pri" id="btn-roll" onclick="G.roll()">Tirar dados</button>` };
   if (ph === 'reroll') {
     const any = DKEYS.some(k => !C.locked[k]);
-    return { t: `Guarda o vuelve a tirar${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca los dados que quieras <b>guardar</b> (llevan candado) y vuelve a tirar los demás.', c: chips,
+    return { t: `Guarda o vuelve a tirar${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca en la mesa los dados que quieras <b>guardar</b> y vuelve a tirar los demás. Aquí abajo ves todas las caras de cada dado.', c: allFaces,
       b: `<div class="row2"><button class="btn" id="btn-rr" ${any ? '' : 'disabled'} onclick="G.reroll()">Volver a tirar (${C.rerolls})</button><button class="btn pri" id="btn-ready" onclick="G.ready()">Usar dados</button></div>` };
   }
   // usar
@@ -2773,7 +2864,7 @@ function phaseBox(eff) {
     return { t: `${DN(C.sel)}: ${dieText(f)}`, d: how, c: chips, b: `<div class="row2">${btn}<button class="btn" onclick="G.tapDie('${C.sel}')">Cancelar</button></div>` };
   }
   const blanks = eff.fs.filter(f => blankF(f)).map(f => DN(f.d));
-  return { t: `Usa tus dados${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca un dado y después su objetivo. <b>Si matas a un enemigo, su dado ya no hace nada.</b>' + (blanks.length ? `<br>Salieron vacíos (no hacen nada): ${blanks.join(' y ')}.` : ''), c: chips,
+  return { t: `Usa tus dados${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca un dado en la mesa y después su objetivo. <b>Si matas a un enemigo, su dado ya no hace nada.</b>' + (blanks.length ? `<br>Salieron vacíos (no hacen nada): ${blanks.join(' y ')}.` : ''), c: chips,
     b: `<button class="btn" onclick="G.end()">Terminar turno</button>` };
 }
 function cRender() {
@@ -2783,20 +2874,29 @@ function cRender() {
   if (eff) eff.fs.forEach((f, i) => { const sd = Scene.pdie(f.d); if (sd) sd.boost = f.tag || null; });
   const pb = phaseBox(eff);
   app.innerHTML = `${hud()}
+  <div class="eband" id="eband"></div>
   <div class="scene" id="scene" style="height:${sceneH()}px"><div id="ovs"></div></div>
   <div class="phase"><div class="ph-t">${pb.t}</div>${pb.d ? `<div class="ph-d">${pb.d}</div>` : ''}${pb.c || ''}</div>
   <div class="acts">${pb.b}<button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
   Scene.attach($('#scene'));
   // etiquetas flotando sobre cada personaje y candados sobre los dados guardados
   const f = eff && C.sel ? eff.fs[DKEYS.indexOf(C.sel)] : null;
-  let ov = '';
+  let ov = '', band = '';
+  const live = C.en.filter(e => e.hp > 0), bw = $('#scene').clientWidth;
   C.en.forEach((e, i) => {
     if (e.hp <= 0) return;
-    const [x, y0] = Scene.headCss(e), y = Math.max(y0, 84), can = f && validTarget(f, targetType(f) === 'all' ? e : e);
-    ov += `<div class="ov ${can ? 'pick' : f ? 'nope' : ''}" id="ov-e${i}" style="left:${x}px;top:${y}px">
-      <div class="intent">${intentHTML(e)}</div><div class="nm">${e.n}</div>${pips(e.hp, e.max, { blk: e.block })}
-      <div class="badges">${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', e.rage, '#ff7050') : ''}</div></div>`;
+    const [x, y] = Scene.headCss(e), can = f && validTarget(f, e);
+    // ancla invisible sobre la cabeza (para los números que saltan) y cartel en la franja de arriba
+    ov += `<div class="ov ${can ? 'pick' : ''}" id="ov-e${i}" style="left:${x}px;top:${Math.max(y, 24)}px"><div class="nm">&nbsp;</div></div>`;
+    const n = live.length, k = live.indexOf(e), w = n === 1 ? Math.min(bw - 16, 300) : n === 2 ? Math.min(170, bw / 2 - 16) : bw / 3 - 14;
+    const cx = n === 1 ? bw / 2 : bw * (k + .5) / n;
+    const row = e.max <= 12 ? e.max : live.length === 1 ? 35 : live.length === 2 ? 25 : 16;
+    band += `<div class="ecard ${can ? 'pick' : f ? 'nope' : ''}" id="ec-${i}" style="left:${cx}px;width:${w}px" onclick="G.tapEnemy(${i})">
+      <div class="ec-top"><span class="nm">${e.n}</span><span class="intent">${intentHTML(e)}</span></div>
+      ${pips(e.hp, e.max, { blk: e.block, row, cls: 'en' })}
+      <div class="badges">${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.rage ? badge('furia', '+' + e.rage, '#ff7050') : ''}</div></div>`;
   });
+  $('#eband').innerHTML = band;
   const [hx, hy] = Scene.headCss('hero'), hcan = f && validTarget(f, 'hero');
   ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px"><div class="nm">&nbsp;</div></div>`;
   const inc = incoming();
@@ -2809,13 +2909,14 @@ function cRender() {
     if (DFLAT && sd.rest) { const k = Scene.s.cv.offsetWidth / Scene.s.W; [x, y] = Scene.css(sd.pos); y -= (TS / 2 + 4) * k; }
     ov += `<div class="dov" style="left:${x}px;top:${y}px">${lk ? `<span class="dlk">${sp('candado', 2)}</span>` : ''}${f.tag ? `<span class="dtag">${f.tag}</span>` : ''}</div>`;
   });
+  if (C.rolled && ['reroll', 'use'].includes(C.phase)) DKEYS.forEach(d => { const sd = Scene.pdie(d); if (!sd || C.used[d] || sd.fly || !sd.pos) return; const [x, y] = Scene.css(sd.pos); ov += `<div class="danc" id="dz-${d}" style="left:${x - 22}px;top:${y - 26}px"></div>`; });
   if (C.phase === 'roll' && !Tuto.on) ov += `<div class="tap-hint">Toca para tirar tus dados</div>`;
   $('#ovs').innerHTML = ov;
   flushFx();
   // pistas de la primera vez
-  if (eff && eff.combo && (C.phase === 'reroll' || C.phase === 'use')) Tips.show(eff.combo === '¡Trío!' ? 'trio' : 'pareja', eff.combo === '¡Trío!' ? '¡Trío! Tres dados con el mismo número: los tres valen el doble.' : '¡Pareja! Dos dados con el mismo número: cada uno suma +1.', '.dchip.cb');
-  if (C.phase === 'roll') { const i = C.en.findIndex(e => e.hp > 0 && e.intent && e.intent.b); if (i >= 0) Tips.show('eblock', 'Este enemigo se protege (azul): tu daño primero rompe esos cuadraditos.', '#ov-e' + i + ' .pipw'); }
-  if (C.phase === 'use' && C.sel === 'atk' && eff && eff.fs.some(f => (f.k === 'furia' || f.k === 'doble') && !C.used[f.d] && !blankF(f))) Tips.show('order', 'Consejo: usa antes la furia o el rayo, y así este ataque valdrá más. Toca "Cancelar" si quieres cambiar.', '.dchip[data-d="esp"]');
+  if (eff && eff.combo && (C.phase === 'reroll' || C.phase === 'use')) Tips.show(eff.combo === '¡Trío!' ? 'trio' : 'pareja', eff.combo === '¡Trío!' ? '¡Trío! Tres dados con el mismo número: los tres valen el doble.' : '¡Pareja! Dos dados con el mismo número: cada uno suma +1.', '.dinfo.cb .tag');
+  if (C.phase === 'roll') { const i = C.en.findIndex(e => e.hp > 0 && e.intent && e.intent.b); if (i >= 0) Tips.show('eblock', 'Este enemigo se protege (azul): tu daño primero rompe esos cuadraditos.', '#ec-' + i + ' .pipw'); }
+  if (C.phase === 'use' && C.sel === 'atk' && eff && eff.fs.some(f => (f.k === 'furia' || f.k === 'doble') && !C.used[f.d] && !blankF(f))) Tips.show('order', 'Consejo: usa antes la furia o el rayo, y así este ataque valdrá más. Toca "Cancelar" si quieres cambiar.', '#dz-esp');
   if (C.phase === 'roll' && inc.poi) Tips.show('poison', 'Lo verde es veneno: te quita vida al final del turno y la protección no lo para.', '#hbar');
   if ((C.phase === 'reroll' || C.phase === 'use') && run.hp > 0 && inc.inc - C.block + inc.poi >= run.hp) Tips.show('skull', '¡Cuidado! La calavera avisa: si no te proteges o matas a alguien, mueres este turno.', '#hbar');
   Coach.draw();
@@ -2922,7 +3023,7 @@ const G = {
     nextRoom();
   },
   takeRelic: k => { const after = S.after; run.relics.push(k); RELICS[k].on && RELICS[k].on(run); toast(RELICS[k].n); after(); },
-  evolve: i => { const o = S.opts[i], after = S.after; o.a(run); run.cls = o.n; toast(`¡${o.n}!`); after(); },
+  evolve: i => { const o = S.opts[i], after = S.after; o.a(run); run.cls = o.n; run.evo = (run.evo || []).concat(evoId(o.n)); toast(`¡${o.n}!`); after(); },
   // para el bot de pruebas
   _s: () => ({ S, C, run }),
   _fast: v => { FAST = v; },
