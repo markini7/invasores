@@ -180,7 +180,7 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .ov.pick .nm{color:var(--gold)}
 .ov.nope{opacity:.45}
 .dk{position:absolute;transform:translate(-50%,-100%)}
-.tap-hint{position:absolute;left:0;right:0;bottom:64px;text-align:center;font-size:9px;text-shadow:2px 2px 0 #000;animation:blink 1.2s steps(2) infinite}
+.tap-hint{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:9px;text-shadow:2px 2px 0 #000;animation:blink 1.2s steps(2) infinite}
 .phase{background:var(--panel);box-shadow:0 0 0 2px #000,0 0 0 5px #3a2e4a,0 0 0 7px #000;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
 .ph-t{font-size:8px;color:var(--gold);line-height:1.5}
 .ph-t .gold{color:#fff4a0}
@@ -208,7 +208,8 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .pips i.x{background:#9ac8ff}
 @keyframes pipb{50%{filter:brightness(.55)}}
 .skull{animation:blink .6s steps(2) infinite}
-.hbar{position:absolute;left:8px;right:8px;bottom:8px;background:#000c;box-shadow:0 0 0 2px #000,0 0 0 4px #3a2e4a;padding:6px 8px;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.hbarw{flex:none;margin-top:-4px}
+.hbar{position:relative;background:#000c;box-shadow:0 0 0 2px #000,0 0 0 4px #3a2e4a;padding:6px 8px;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .hb-top{display:flex;justify-content:space-between;align-items:center;font-size:7px;color:#e8e0f0}
 .hb-top .badges{min-height:0}
 .dtag{position:absolute;transform:translate(-50%,-100%);font-size:9px;color:#000;background:var(--gold);padding:2px 4px;box-shadow:0 0 0 2px #000;animation:blink 1s steps(2) infinite}
@@ -304,7 +305,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.15'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.16'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -851,7 +852,7 @@ const Corr = {
 
 // ---------- bandeja de dados con físicas
 const TD = { X: 2.7, Z: 1.35, D: .55 };   // medio ancho, medio fondo y hondo de la bandeja
-const DS = .42; // medio lado del dado
+const DS = .375; // medio lado del dado
 const CUBE_V = []; for (const a of [-DS, DS]) for (const b of [-DS, DS]) for (const c of [-DS, DS]) CUBE_V.push([a, b, c]);
 // caras del cubo: normal, eje "a" (derecha de la textura) y eje "b" (arriba de la textura), con a×b = normal
 const CUBE_F = [
@@ -866,7 +867,7 @@ function dieCols(d) {
   if (d === 'def') return ['#132044', '#4a8ae8'];
   const c = hexRGB(H().dc); return ['#' + c.map(v => Math.round(v * .3).toString(16).padStart(2, '0')).join(''), H().dc];
 }
-const TS = 20; // lado de la textura de cada cara
+const TS = 18; // lado de la textura de cada cara
 // estilo de las caras: A = icono y número, B = número grande, E = placa de color (se prueban en el laboratorio)
 let DSTYLE = { p: 'A', e: 'A' };
 try { const ds = JSON.parse(localStorage.getItem('mazmorra_dstyle')); if (ds && ds.p && ds.e) DSTYLE = ds; } catch (e) {}
@@ -895,25 +896,25 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p') {
   };
   const cen = st => Math.round((N - (st.length * 6 - 1)) / 2);
   const big = (st, col) => { // número al doble (10x14), a la derecha; si tiene dos cifras, normal
-    if (st.length > 1) return num(st, cen(st), 11, col);
+    if (st.length > 1) return num(st, cen(st), N - 8, col);
     const g = DIG5[+st], c = hexRGB(col), on = (x, y) => x >= 0 && y >= 0 && x < 10 && y < 14 && g[(y >> 1) * 5 + (x >> 1)] === '1';
-    for (let y = -1; y <= 14; y++) for (let x = -1; x <= 10; x++) { if (on(x, y)) put(8 + x, 3 + y, c); else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1)) put(8 + x, 3 + y, [8, 5, 7]); }
+    for (let y = -1; y <= 14; y++) for (let x = -1; x <= 10; x++) { if (on(x, y)) put(N - 11 + x, 2 + y, c); else if (on(x - 1, y) || on(x + 1, y) || on(x, y - 1) || on(x, y + 1)) put(N - 11 + x, 2 + y, [8, 5, 7]); }
   };
   if (style === 'E' && parts.length) {
-    parts.slice(0, 2).forEach(([ic], r) => { const c = hexRGB(PLATE[ic] || '#55556a'); for (let y = 1; y < N - 1; y++) { if (parts.length > 1 && (r === 0 ? y >= 10 : y < 10)) continue; for (let x = 1; x < N - 1; x++) px[y * N + x] = c.map(v => Math.min(255, v * (y === 1 || x === 1 ? 1.25 : y === N - 2 || x === N - 2 ? .7 : 1))); } });
-    if (parts.length > 1) for (let x = 1; x < N - 1; x++) px[10 * N + x] = [8, 5, 7];
+    parts.slice(0, 2).forEach(([ic], r) => { const c = hexRGB(PLATE[ic] || '#55556a'); for (let y = 1; y < N - 1; y++) { if (parts.length > 1 && (r === 0 ? y >= N / 2 : y < N / 2)) continue; for (let x = 1; x < N - 1; x++) px[y * N + x] = c.map(v => Math.min(255, v * (y === 1 || x === 1 ? 1.25 : y === N - 2 || x === N - 2 ? .7 : 1))); } });
+    if (parts.length > 1) for (let x = 1; x < N - 1; x++) px[(N / 2) * N + x] = [8, 5, 7];
   }
-  if (!parts.length) { for (const [x, y] of [[9, 9], [10, 9], [9, 10], [10, 10]]) put(x, y, rim); }
+  if (!parts.length) { for (const [x, y] of [[N / 2 - 1, N / 2 - 1], [N / 2, N / 2 - 1], [N / 2 - 1, N / 2], [N / 2, N / 2]]) put(x, y, rim); }
   else if ((style === 'B' || style === 'E') && parts.length === 1 && parts[0][1] !== '') {
     const [ic, n, c] = parts[0];
-    icon(ic, 1, 7); big(String(n), style === 'E' ? '#ffffff' : gold ? '#f8d84a' : '#f4f0e8');
+    icon(ic, 1, Math.round((N - 7) / 2)); big(String(n), style === 'E' ? '#ffffff' : gold ? '#f8d84a' : '#f4f0e8');
   } else if (style === 'E' && parts.length > 1) {
-    parts.slice(0, 2).forEach(([ic, n], r) => { icon(ic, 2, 2 + r * 9); if (n !== '') num(String(n), 11, 2 + r * 9, '#ffffff'); });
+    parts.slice(0, 2).forEach(([ic, n], r) => { icon(ic, 2, 1 + r * (N / 2)); if (n !== '') num(String(n), N - 8, 1 + r * (N / 2), '#ffffff'); });
   } else if (parts.length === 1) {
     const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
-    icon(ic, 6, st ? 2 : 6);
-    if (st) num(st, cen(st), 11, gold ? '#f8d84a' : c);
-  } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 2, 2 + r * 9); if (n !== '') num(String(n), 11, 2 + r * 9, c); });
+    icon(ic, Math.floor((N - 7) / 2), st ? 2 : Math.floor((N - 7) / 2));
+    if (st) num(st, cen(st), N - 8, gold ? '#f8d84a' : c);
+  } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 2, 1 + r * (N / 2)); if (n !== '') num(String(n), N - 8, 1 + r * (N / 2), c); });
   return texCache[key] = [.5, .74, 1.02].map(k => Uint32Array.from(px, c => pack(Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0)));
 }
 function faceTex(d, f, gold) {
@@ -2341,6 +2342,8 @@ function flushFx() {
       d.className = 'fl'; d.textContent = q.txt; d.style.color = q.col || '#fff';
       d.style.left = (r.left + r.width / 2 + R(-10, 10)) + 'px'; d.style.top = (r.bottom - 6) + 'px';
       fxl.appendChild(d); setTimeout(() => d.remove(), 950);
+      const hw = d.offsetWidth / 2 + 6, vw = window.innerWidth;
+      d.style.left = Math.max(hw, Math.min(vw - hw, parseFloat(d.style.left))) + 'px';
     }
   }
   fxq = [];
@@ -2841,7 +2844,7 @@ function dieText(f) {
   if (f.k === 'doble') return `tus golpes de este turno pegan 2 veces${f.v ? ` y +${f.v}` : ''}`;
   return kw.x(f.v);
 }
-const sceneH = () => Math.max(300, Math.min(400, Math.round(window.innerHeight * .45)));
+const sceneH = () => Math.max(280, Math.min(370, Math.round(window.innerHeight * .4)));
 function phaseBox(eff) {
   const ph = C.phase;
   const left = eff ? eff.fs.filter(f => !C.used[f.d]) : [];
@@ -2880,6 +2883,7 @@ function cRender() {
   app.innerHTML = `${hud()}
   <div class="eband" id="eband"></div>
   <div class="scene" id="scene" style="height:${sceneH()}px"><div id="ovs"></div></div>
+  <div class="hbarw" id="hbarw"></div>
   <div class="phase"><div class="ph-t">${pb.t}</div>${pb.c || ''}</div>
   <div class="acts">${pb.b}<button class="btn small" onclick="G.myDice()">Ver mis dados</button></div>`;
   Scene.attach($('#scene'));
@@ -2904,7 +2908,7 @@ function cRender() {
   const [hx, hy] = Scene.headCss('hero'), hcan = f && validTarget(f, 'hero');
   ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px"><div class="nm">&nbsp;</div></div>`;
   const inc = incoming();
-  ov += `<div class="hbar" id="hbar"><div class="hb-top"><span>${run.cls}</span><span class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</span></div>
+  $('#hbarw').innerHTML = `<div class="hbar" id="hbar"><div class="hb-top"><span>${run.cls}</span><span class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}</span></div>
     ${pips(run.hp, run.maxHp, { inc: inc.inc, poi: inc.poi, blk: C.block, row: 20, cls: 'big' })}</div>`;
   if (eff && C.phase !== 'resolve') eff.fs.forEach(f => {
     const sd = Scene.pdie(f.d), lk = C.phase === 'reroll' && C.locked[f.d];
