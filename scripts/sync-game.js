@@ -42,7 +42,10 @@ function buildMazmorra() {
   const head = '<meta name="apple-mobile-web-app-title" content="Mazmorra">\n' +
     '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">\n' +
     '<meta name="theme-color" content="#120e18">\n';
-  const out = fs.readFileSync(src2, 'utf8').replace('<title>Mazmorra de Dados</title>', '<title>Mazmorra de Dados</title>\n' + head);
+  // número de versión: v0.N, donde N es el siguiente cambio de la carpeta mazmorra/ en git
+  let ver = 'v0.dev';
+  try { ver = 'v0.' + (parseInt(require('child_process').execSync('git rev-list --count HEAD -- mazmorra', { cwd: path.join(__dirname, '..') }).toString(), 10) + 1); } catch (e) {}
+  const out = fs.readFileSync(src2, 'utf8').replace('<title>Mazmorra de Dados</title>', '<title>Mazmorra de Dados</title>\n' + head).replace("const VERSION = 'v0.dev';", `const VERSION = '${ver}';`);
   const dir = path.join(__dirname, '..', 'docs', 'mazmorra');
   fs.mkdirSync(dir, { recursive: true });
   const dst = path.join(dir, 'index.html');

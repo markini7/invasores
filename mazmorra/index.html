@@ -278,6 +278,7 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .topbar .back:active{transform:translateY(2px)}
 .modal .panel{position:relative;max-height:calc(100dvh - 40px);overflow:auto}
 .mclose{position:sticky;top:0;align-self:flex-end;margin:-4px -4px -30px 0;z-index:2;font:inherit;font-size:12px;width:34px;height:34px;color:var(--txt);background:#3a2e4a;border:none;box-shadow:0 0 0 2px #000;cursor:pointer;flex:none}
+.version{font-size:7px;opacity:.7}
 </style>
 </head>
 <body>
@@ -299,6 +300,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
+const VERSION = 'v0.dev'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -2363,6 +2365,7 @@ function title() {
     <button class="btn gold" onclick="G.album()">Álbum de criaturas · ${albumGet().size}/${CARDS.length}</button>
     <button class="btn" onclick="G.help()">Cómo se juega</button>
     <button class="btn small" onclick="G.sfx()">Sonido: ${Sfx.on ? 'sí' : 'no'}</button>
+    <p class="t c version">${VERSION}</p>
   </div>`;
   Corr.build($('#bgview'), ['jefe'], 0, { title: true });
 }
