@@ -18,30 +18,32 @@ Documento para retomar el trabajo en una conversación nueva. Léelo entero ante
 - Tras cada cambio: comprobar con capturas (Playwright, 390×844) y con el bot de pruebas; después publicar en `main` y decir qué versión (`v0.N`) deben ver en el menú.
 - Nada de botones abajo para volver: **"← Volver" arriba** y **✕ arriba** en las ventanas.
 
-## El juego hoy (v0.27)
+## El juego hoy (v0.29)
 
 - **Héroes**: Caballero (Furia y Doble), Clériga (Luz), Pícara (Veneno), Piromante (Fuego). Cada uno con 3 dados: Ataque, Protección y Especial. Evolucionan al vencer a los jefes de los pisos 1 y 2 (2 caminos cada vez); cada evolución tiene su skin 3D (variantes del héroe base) y la pantalla muestra cómo cambian los dados.
 - **Mazmorra**: 3 pisos (Cripta, Cuevas, Abismo) de 8 salas. Se elige puerta tocándola en un pasillo 3D en primera persona; las puertas solo llevan su símbolo y hay botón de leyenda. Salas: combate, élite, forja, altar, evento, hoguera, tienda ("Tienda de mejoras y reliquias") y jefe.
-- **Combate** (una sola escena 3D): los enemigos tiran su dado primero (su intención se ve en la franja de carteles de arriba, con barra de puntitos y número de vida "24/35"). Tú tiras 3 dados, tocas en la mesa los que quieres guardar y vuelves a tirar el resto (2 veces), y luego usas cada dado tocándolo y tocando su objetivo. La protección siempre es para ti y para los golpes (el veneno la atraviesa). Si matas a un enemigo antes de que actúe, su dado se cancela.
-- **Colores (palos)**: cada cara tiene un color (verde, morado o amarillo, paleta Joyas; borde y fondo del color y número en blanco; el lateral del dado muestra su tipo). **Las parejas y los tríos van por color**: pareja +1 a cada dado, trío ×2. Cada dado empieza con 2 caras de cada color. Las caras nuevas heredan el color de la que sustituyen.
+- **Combate** (una sola escena 3D): los enemigos tiran su dado primero (su intención se ve en la franja de carteles de arriba, con barra de puntitos y número de vida "24/35"). Tú tiras 3 dados, tocas en la mesa los que quieres guardar y vuelves a tirar el resto (2 veces), y luego usas cada dado tocándolo y tocando su objetivo. La protección siempre es para ti y para los golpes (el veneno la atraviesa). Si matas a un enemigo antes de que actúe, su dado se cancela. El botón **«Auto»** (antes «Terminar turno») usa los dados que quedan en orden: furia y doble, luego cura y protección, después los que dan a todos y por último los ataques a un enemigo al azar; luego termina el turno.
+- **Enemigos por combate**: el primer combate de cada piso tiene uno; los demás, siempre 2 (3 a veces: 25% en el piso 1 y 45% después). Las élites vienen con un acompañante.
+- **Colores (palos)**: cada cara tiene un color (verde, morado, amarillo o rosa, paleta Joyas; borde y fondo del color y número en blanco; el lateral del dado muestra su tipo). **Las parejas y los tríos van por color**: pareja +1 a cada dado, trío ×2. Cada dado empieza con dos colores repetidos (2 caras cada uno) y dos colores sueltos (1 cara cada uno). Las caras nuevas heredan el color de la que sustituyen.
 - **Tu vida**: barra de puntitos fija debajo de la escena con previsión (amarillo lo que te van a quitar, azul lo bloqueado, verde el veneno, calavera si mueres ese turno). Los textos que te afectan salen centrados sobre esa barra.
 - **Panel de abajo en combate**: mientras puedes volver a tirar, las 6 caras de cada dado (la que salió marcada); al usar, lo que hará cada dado con todo sumado. Tocar una cara muestra lo que hace (también fuera de combate).
 - **Dados 3D con físicas**: ruedan por el suelo; al pararse dan un saltito y su cara de arriba pasa a dibujarse recta píxel a píxel (sin diagonales).
 - **Personajes y enemigos**: modelos de vóxeles hechos con piezas en código (`MODEL_DEFS`), dibujados con luz tramada y contorno. 20 enemigos + 25 criaturas solo de cartas.
 - **Reliquias**: 32. Las de un tipo concreto (veneno, fuego, luz, furia) solo salen si te sirven.
-- **Cartas coleccionables**: 45 criaturas en 4 rarezas; salen de cofres (evento del cofre 20%, élites 7%, jefes 15%) y no se repiten. Álbum en el menú (las que faltan, en sombra). La carta grande se gira con el dedo.
+- **Eventos con escena**: cada evento sale en una salita 3D con su figura (cofre, fuente, altar, goblin, estatua, aventurero herido, espectro herrero, seta). El resultado aparece en la misma pantalla. En la apuesta del goblin se tira de verdad tu dado de ataque. **Cofres**: al abrirlos tiemblan y 23% de las veces son un **mímico** (combate; da 30+ de oro y 40% de carta); si no, 25 de oro.
+- **Cartas coleccionables**: 45 criaturas en 4 rarezas; salen de cofres (evento del cofre 20%, mímicos 40%, élites 7%, jefes 15%) y no se repiten. Álbum en el menú (las que faltan, en sombra). La carta grande se gira con el dedo.
 - **Menú de inicio**: Nueva partida, Álbum (amarillo), Estadísticas (por héroe: partidas, ganadas, enemigos derrotados, daño total, mejor piso), Cómo se juega, Sonido y número de versión.
 - **"Tu build"**: debajo de premios, reliquias, evolución, tienda, hoguera y eventos se ven tus dados y reliquias.
 - **Tutorial**: primer combate preparado (una rata), bocadillo con flecha que señala una cosa cada vez, con una pareja de color preparada; se puede saltar. Se guarda que ya se vio en `localStorage` (`mazmorra_tuto3`).
 
 ## Pruebas
 
-- **Bot**: juega partidas enteras en modo rápido (`G._fast(true)`) usando las funciones del juego; sirve para buscar errores y medir dificultad. Con el bot (que juega mal) ahora se gana aproximadamente: Caballero y Clériga 2 de cada 3, Pícara 1 de cada 5 y Piromante 1 de cada 3.
-- Las funciones globales útiles para probar: `G.start(héroe)`, `startCombat('combate'|'elite'|'jefe')`, `G.roll()`, `G.ready()`, `useDie(d, objetivo)`, `G.end()`, `G._s()` (estado).
+- **Bot**: juega partidas enteras en modo rápido (`G._fast(true)`) usando las funciones del juego; sirve para buscar errores y medir dificultad. Con el bot (que juega mal) con más enemigos (v0.29) se gana aproximadamente 1 de cada 3 con el Caballero y entre 1 de cada 4 y 1 de cada 7 con los demás.
+- Las funciones globales útiles para probar: `G.start(héroe)`, `startCombat('combate'|'elite'|'jefe')`, `G.roll()`, `G.ready()`, `useDie(d, objetivo)`, `G.auto()`, `G.end()`, `G._s()` (estado).
 
 ## Pendiente de decidir (ver IDEAS.md)
 
 - Rehacer los dados de cada clase con caras variadas (Aturdir, Debilitar, Marcar, Esquivar, Robar, Rapidez, Drenar, Bendición), Brujo en vez de Piromante y nuevo Doctor de la Plaga.
 - Dado de "una vez por combate", posiblemente ligado a compañeros (perro, mercenario, búho…).
-- Dificultad: con las parejas por color el +1 es casi constante; quizá afinar.
+- Dificultad: subida en v0.29 (más enemigos, 4 colores); ver qué tal se siente jugando.
 - Cartas con ilustración (prueba de la Gárgola con ChatGPT) y packs de vóxeles `.vox` (habría que escribir un importador).

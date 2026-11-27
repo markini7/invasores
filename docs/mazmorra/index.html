@@ -325,6 +325,11 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .evo-scr .build .col{gap:6px}
 .evo-scr .relics button{padding:3px}
 .fc .gem{position:absolute;top:2px;right:2px;width:6px;height:6px;transform:rotate(45deg);box-shadow:0 0 0 1px #000}
+.evstage{position:relative;width:100%;height:230px;background:#000;box-shadow:0 0 0 3px #000,0 0 0 6px #3a2e4a,0 0 0 8px #000;overflow:hidden;flex:none}
+.evstage>canvas{position:absolute;left:0;top:0}
+.ev-fig.side{left:36%}
+.ev-fig{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);z-index:1}
+.fig.shake>*{animation:sh .3s steps(3)}
 </style>
 </head>
 <body>
@@ -346,7 +351,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.27'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.29'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -934,7 +939,7 @@ const TS = 18; // lado de la textura de cada cara
 let DSTYLE = { p: 'A', e: 'A' };
 // palos (prueba del laboratorio): si SUITS tiene valor, las parejas y tríos van por color y no por número
 let SUITS = 'ambos';   // las parejas y tríos van por color (palo): verde, morado y amarillo
-let SUIT_COL = ['#3ac060', '#a060e8', '#e8c030']; const SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
+let SUIT_COL = ['#3ac060', '#a060e8', '#e8c030', '#e8509a']; const SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
 const suitOf = f => SUITS && f && f.s !== undefined && !blankF(f) ? f.s : null;
 const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
 const DIG5 = ['01110100011001110101110011000101110', '00100011000010000100001000010001110', '01110100010000100010001000100011111', '11110000010000101110000010000111110', '00010001100101010010111110001000010', '11111100001111000001000011000101110', '00110010001000011110100011000101110', '11111000010001000100010000100001000', '01110100011000101110100011000101110', '01110100011000101111000010001001100'];
@@ -1663,7 +1668,26 @@ function mLich(M) {
   M.ring(9, 20.6, 6, 2.2, .4, 'c');
   M.cap(14, 0, 8.4, 14, 19, 8.4, .45, 'G'); M.ell(14, 20.2, 8.4, 1.2, 1.2, 1.2, 'w'); M.ell(14, 22, 8.4, .8, 1.2, .8, 'c');
 }
+function mChest(M) {
+  M.box(1, 0, 2, 12, 5, 9, 'n'); M.box(1, 2, 9, 12, 2, 9, 'Y'); M.box(1, 0, 2, 1, 5, 9, 'N'); M.box(12, 0, 2, 12, 5, 9, 'N');
+  M.ell(6.5, 6, 5.5, 6, 2.6, 3.8, 'n', (x, y) => y >= 6); M.box(1, 6, 9, 12, 6, 9, 'Y');
+  M.box(6, 4, 10, 7, 6, 10, 'y'); M.px(6, 5, 10, 'k');
+}
+function mFountain(M) {
+  M.cone(8, 8, 0, 3, 7, 6.4, 'G'); M.cone(8, 8, 3, 3, 6.6, 6.6, 'g'); M.cone(8, 8, 2, 3, 5.6, 5.6, 'c');
+  M.cap(8, 3, 8, 8, 8, 8, 1, 'g'); M.cone(8, 8, 8, 9, 2.6, 2.6, 'g'); M.ell(8, 9.4, 8, 1.8, .6, 1.8, 'c');
+  M.ell(8, 10.6, 8, .6, 1, .6, 'b'); for (const [x, z] of [[5, 6], [11, 10], [6, 11], [10, 5]]) M.px(x, 3, z, 'w');
+}
+function mAltar(M) {
+  M.box(2, 0, 3, 13, 3, 9, 'G'); M.box(1, 4, 2, 14, 5, 10, 'R'); M.box(4, 1, 10, 11, 2, 10, 'k'); M.px(6, 2, 10, 'r'); M.px(9, 2, 10, 'r');
+  for (const x of [3, 12]) { M.box(x, 6, 4, x, 8, 4, 'w'); M.px(x, 9, 4, 'o'); M.px(x, 10, 4, 'y'); }
+  M.px(5, 3, 10, 'r'); M.px(10, 2, 10, 'r'); M.px(7, 4, 10, 'r');
+  M.ell(7.5, 6.6, 6, 1.6, 1.4, 1.4, 'w'); M.px(6, 7, 7, 'k'); M.px(8, 7, 7, 'k');
+}
+Object.assign(SWAPS, { estatua: { P: 'G', p: 'g', k: 'G', r: 'w', y: 'g', s: 'g', g: 'G' }, aventurero: { b: 'n', g: 'G', y: 'n' } });
 Object.assign(MODEL_DEFS, {
+  cofre3d: [14, 10, 12, mChest], fuente3d: [16, 12, 16, mFountain], altar3d: [16, 12, 12, mAltar],
+  estatua: [16, 19, 12, mCultist, 'estatua'], aventurero: [16, 22, 12, mKnight, 'aventurero'],
   kobold: [14, 15, 10, mKobold], zombi: [16, 18, 12, mZombie], lobo: [12, 12, 18, mWolf], cuervo: [14, 12, 12, mRaven],
   sapo: [16, 9, 16, mToad], serpiente: [16, 14, 16, mSnake], momia: [16, 19, 12, mMummy], fuegofatuo: [12, 14, 12, mWisp],
   arpia: [20, 17, 10, mHarpy], sirena: [16, 17, 12, mSiren], troll: [18, 20, 12, mTroll], minotauro: [18, 23, 12, mMinotaur],
@@ -1675,7 +1699,7 @@ Object.assign(MODEL_DEFS, {
 // ---------- cartas coleccionables
 // rareza: 0 común · 1 rara · 2 épica · 3 legendaria
 const RAREZA = [{ n: 'Común', c: '#9a9aac' }, { n: 'Rara', c: '#4a8ae8' }, { n: 'Épica', c: '#b070e0' }, { n: 'Legendaria', c: '#f8d84a' }];
-const CARD_CHANCE = { cofre: .2, elite: .07, jefe: .15 };   // probabilidad de que un cofre tenga carta
+const CARD_CHANCE = { cofre: .2, elite: .07, jefe: .15, mimico: .4 };   // probabilidad de que un cofre tenga carta
 const CARDS = [
   ['rata', 'Rata de cripta', 0, 'Roe huesos viejos y oye todo lo que pasa en la mazmorra.'],
   ['murcielago', 'Murciélago', 0, 'Duerme cabeza abajo y caza al oír el latido de los vivos.'],
@@ -2135,7 +2159,8 @@ const lowIdx = (r, d, cnt) => r.dice[d].map((f, i) => [f.v, i]).sort((a, b) => a
 const lowUp = (d, cnt) => r => lowIdx(r, d, cnt).forEach(i => r.dice[d][i].v++);
 const setLow = (d, cnt, k, v) => r => lowIdx(r, d, cnt).forEach(i => { r.dice[d][i] = { ...F(k, Math.max(v, r.dice[d][i].v + 1)), s: r.dice[d][i].s }; });
 // cada dado tiene dos caras de cada color, repartidas al azar
-const giveSuits = r => DKEYS.forEach(d => { if (r.dice[d].every(f => f.s !== undefined)) return; const su = shuffle([0, 0, 1, 1, 2, 2]); r.dice[d].forEach((f, i) => { f.s = su[i]; }); });
+// cada dado: dos colores con dos caras y dos colores con una, repartidos al azar
+const giveSuits = r => DKEYS.forEach(d => { if (r.dice[d].every(f => f.s !== undefined)) return; const c = shuffle([0, 1, 2, 3]), su = shuffle([c[0], c[0], c[1], c[1], c[2], c[3]]); r.dice[d].forEach((f, i) => { f.s = su[i]; }); });
 const hpUp = n => r => { r.maxHp += n; r.hp += n; };
 const all = (...fns) => r => fns.forEach(f => f(r));
 
@@ -2204,6 +2229,9 @@ const EN = {
   espectro:    { n: 'Espectro', hp: 13, f: ['a4', 'a2p3', 'a5', 'a3', 'p4', 'a4'] },
   cultista:    { n: 'Cultista', hp: 14, f: ['h4', 'r2', 'a3', 's:diablillo', 'a4', 'b3h2'] },
   caballerooscuro: { n: 'Caballero oscuro', spr: 'caballero', swap: 'oscuro', px: 7, hp: 42, f: ['a5', 'a6', 'b6', 'a4b3', 'r2', 'a7'] },
+  mimico1:     { n: 'Mímico', spr: 'mimico', px: 7, hp: 14, f: ['a3', 'a2', 'a4', 'a2b2', 'a3', 'b3'] },
+  mimico2:     { n: 'Mímico', spr: 'mimico', px: 7, hp: 26, f: ['a4', 'a3', 'a5', 'a3b3', 'a4', 'b4'] },
+  mimico3:     { n: 'Mímico', spr: 'mimico', px: 7, hp: 38, f: ['a6', 'a5', 'a7', 'a4b4', 'a5', 'b6'] },
   dragon:      { n: 'Dragón', px: 8, hp: 70, f: ['a6', 'a4b4', 'a3p3', 'a7', 'b6r1', 'a5'] },
 };
 const FLOORS = [
@@ -2384,7 +2412,7 @@ const Tuto = {
     this.rig = { atk: [hi], def: [blank('def'), defI], esp: [blank('esp'), 5] };
     // colores preparados: ataque y protección del mismo color (pareja); el especial, de otro
     const swapSuit = (d, i, su) => { const a = run.dice[d]; if (a[i].s === su) return; const j = a.findIndex((f, k) => k !== i && f.s === su); if (j >= 0) { a[j].s = a[i].s; a[i].s = su; } };
-    const want = run.dice.atk[hi].s; swapSuit('def', defI, want); swapSuit('esp', 5, (want + 1) % 3);
+    const want = run.dice.atk[hi].s; swapSuit('def', defI, want); swapSuit('esp', 5, (want + 1) % 4);
     this.build();
   },
   steps: [],
@@ -2403,6 +2431,7 @@ const Tuto = {
       { el: '#btn-rr', t: 'Vuelve a tirar los demás.', on: 'reroll' },
       { el: '#dz-def', t: '¡Pareja! Tu ataque y tu protección son del mismo color: los dos suman +1.' },
       { el: '#btn-ready', t: '¡Mejor! Ahora, a usarlos.', on: 'ready' },
+      { el: '#btn-auto', t: '«Auto» usa tus dados por ti en buen orden: primero furia, luego protección y al final ataque. Ahora hazlo tú.' },
       { el: '#dz-def', t: 'Toca tu protección.', on: 'sel:def' },
       { el: '#btn-self', t: 'Úsala en ti.', on: 'use:def' },
       { el: '#hbar', t: 'Lo amarillo pasa a azul: ese golpe ya está parado.' },
@@ -2560,7 +2589,7 @@ function help() {
   <p>Después tiras los tuyos. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces por turno).</p>
   <p>Luego <b>usa cada dado</b>: tócalo y toca su objetivo. El ataque va al enemigo que elijas; la protección es para ti y para los golpes (el veneno la atraviesa).</p>
   <p>Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
-  <p>Cada cara tiene un <b>color</b> (verde, morado o amarillo). <b>Pareja</b>: dos dados del mismo color llevan la etiqueta <b>+1</b> y suman uno más cada uno. <b>Trío</b>: los tres del mismo color llevan <b>×2</b> y valen el doble. Las caras vacías no cuentan.</p>
+  <p>Cada cara tiene un <b>color</b> (verde, morado, amarillo o rosa). <b>Pareja</b>: dos dados del mismo color llevan la etiqueta <b>+1</b> y suman uno más cada uno. <b>Trío</b>: los tres del mismo color llevan <b>×2</b> y valen el doble. Las caras vacías no cuentan.</p>
   <p>Toca a un enemigo (sin dado elegido) para ver todas las caras de su dado.</p>
   <p>Entre combates eliges puerta: forjas, altares, tiendas y eventos <b>mejoran las caras</b> de tus dados. Al vencer a un jefe tu héroe <b>evoluciona</b>.</p>
   <p>Si mueres, vuelves a empezar. ¡Suerte!</p></div>`);
@@ -2656,20 +2685,76 @@ function shop() {
 `;
   addBuild();
 }
+// escenario pequeño de los eventos: sala con antorchas, la figura del evento y sitio para tirar dados
+const ZONE_EV = [[0, 1, 0, 0, .3], [1, 0, 0, -.25, .45], [-1, 0, 0, 1.8, .45], [0, 0, 1, .2, .45], [0, 0, -1, 1.05, .45]];
+const EvStage = {
+  s: makeSurface('ev-cv'), cam: null, bg: null, bgT: 0, raf: 0, dice: [], idb: null,
+  room: { CW: 2.8, CH: 3.2, L: 2.4, lamp: .6, torches: [[-1.6, 2, -2.34], [1.6, 2, -2.34]], doors: [] },
+  attach(slot) {
+    const s = this.s; slot.prepend(s.cv);
+    if (sizeSurface(s, slot.clientWidth, slot.clientHeight, 2) || !this.cam) { this.cam = makeCam([0, 3.1, 3.9], [0, .8, -1], Math.min(s.W * 1.05, s.H * 1.6), s.W, s.H); this.idb = new Uint8Array(s.W * s.H); }
+    this.bg = null; this.dice = [];
+    if (!this.raf) { const f = now => { if (!s.cv.isConnected) { this.raf = 0; return; } this.raf = requestAnimationFrame(f); this.draw(now); }; this.raf = requestAnimationFrame(f); }
+  },
+  css(p) { const q = proj(this.cam, p), k = this.s.cv.offsetWidth / this.s.W; return [q[0] * k, q[1] * k]; },
+  draw(now) {
+    const s = this.s; if (!s.W || !run) return;
+    if (!this.bg || now - this.bgT > 120) { renderRoom(s, this.cam, THEMES[run.floor], this.room, now / 1000); this.bg = s.buf.slice(); this.bgT = now; } else s.buf.set(this.bg);
+    const idb = this.idb.fill(0), { W, H, buf } = s;
+    let id = 0;
+    for (const d of this.dice) {
+      if (!d.pos || !d.map) continue;
+      const h = Math.max(0, d.pos[1] - DS); floorShadow(s, this.cam, d.pos[0] - h * .3, d.pos[2] - h * .25, DS * 1.4, .5);
+      drawCube(s, idb, this.cam, d, (fi, plain) => faceTex(d.d, run.dice[d.d][d.map[fi]], false, plain), ++id);
+    }
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const i = y * W + x; if (idb[i]) continue; if ((x > 0 && idb[i - 1]) || (x < W - 1 && idb[i + 1]) || (y > 0 && idb[i - W]) || (y < H - 1 && idb[i + W])) buf[i] = pack(8, 5, 7); }
+    blit(s);
+  },
+  // tira de verdad un dado tuyo y cae en la cara i
+  roll(d, i) {
+    if (FAST || !this.s.W) return Promise.resolve();
+    const die = { kind: 'p', d, want: i };
+    this.dice = [die];
+    const r = Math.random, b = { pos: [1.5, 1.4, .9], q: Q4.rand(), vel: [-(1.5 + r()), 1 + r(), -(.5 + r())], w: [(r() - .5) * 26, (r() - .5) * 26, (r() - .5) * 26], dyn: true, rest: 0, sleep: false, P: ZONE_EV };
+    const sim = simulate([b]), top = sim.top[0], map = new Array(6), rest = [0, 1, 2, 3, 4, 5].filter(x => x !== i);
+    map[top] = i; for (let c = 0; c < 6; c++) if (c !== top) map[c] = rest.shift();
+    die.map = map; die.top = top;
+    return new Promise(res => {
+      const t0 = performance.now(); let si = 0;
+      const step = now => {
+        const f = Math.max(0, Math.min(sim.frames.length - 1, Math.floor((now - t0) / 16.67)));
+        die.pos = sim.frames[f][0].pos; die.q = sim.frames[f][0].q;
+        while (si < sim.sounds.length && sim.sounds[si][0] <= f) { Sfx.clack(sim.sounds[si][1]); si++; }
+        if (f >= sim.frames.length - 1) { die.rest = true; die.restT = performance.now(); return setTimeout(res, 380); }
+        requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
+  },
+};
+const EV_FIG = { cofre: ['cofre3d', 8], fuente: ['fuente3d', 7.5], sangre: ['altar3d', 7.5], apuesta: ['goblin', 7.5], estatua: ['estatua', 6.5], herido: ['aventurero', 6], herrero: ['espectro', 6.5], setas: ['hongo', 7] };
+function evFig(id, model) { const [m, px] = EV_FIG[id] || ['cofre3d', 5]; return fig(sp3(model || m, px, '', -.25)); }
 function event() {
   let pool = EVENTS.filter(e => !run.seen.includes(e.id));
   if (!pool.length) { run.seen = []; pool = EVENTS; }
   const ev = pick(pool); run.seen.push(ev.id);
   S = { scr: 'event', ev };
-  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp(ev.ico, 6, ev.sw)}</div><h2>${ev.t}</h2><p class="t">${ev.x}</p></div>
-    ${ev.o.map((o, i) => `<button class="btn" ${o.req && !o.req(run) ? 'disabled' : ''} onclick="G.evo(${i})">${o.t}</button>`).join('')}`;
+  app.innerHTML = `${hud()}<div class="evstage" id="evstage"><div class="ev-fig${ev.id === 'apuesta' ? ' side' : ''}" id="evfig">${evFig(ev.id)}</div></div>
+    <div class="panel c col"><h2>${ev.t}</h2><p class="t" id="evtxt">${ev.x}</p></div>
+    <div class="col" id="evopts" style="gap:12px">${ev.o.map((o, i) => `<button class="btn" ${o.req && !o.req(run) ? 'disabled' : ''} onclick="G.evo(${i})">${o.t}</button>`).join('')}</div>`;
   addBuild();
+  if (!FAST) EvStage.attach($('#evstage'));
 }
+// el resultado sale en la misma pantalla, con la escena delante
 function evResult(msg, next) {
-  S = { scr: 'evres', next };
-  app.innerHTML = `${hud()}<div class="panel c col"><p class="t" style="color:var(--txt)">${msg}</p></div>
-    ${run.hp <= 0 ? '<button class="btn pri" onclick="G.over()">...</button>' : `<button class="btn pri" onclick="G.evnext()">Seguir</button>`}`;
+  S.scr = 'evres'; S.next = next;
+  const box = $('#evopts'), txt = $('#evtxt');
+  if (!box || !txt) {
+    app.innerHTML = `${hud()}<div class="panel c col"><p class="t" style="color:var(--txt)">${msg}</p></div><div class="col" id="evopts"></div>`;
+  } else { txt.style.color = 'var(--txt)'; txt.innerHTML = msg; }
+  $('#evopts').innerHTML = run.hp <= 0 ? '<button class="btn pri" onclick="G.over()">...</button>' : `<button class="btn pri" onclick="G.evnext()">Seguir</button>`;
 }
+const evFigFx = cls => { const f = $('#evfig .fig'); if (f) { f.classList.remove(cls); void f.offsetWidth; f.classList.add(cls); } };
 function upRandom(n) {
   const d = pick(['atk', 'def', 'esp']), f = pick(run.dice[d]); f.v += n;
   return `Una cara de tu dado de ${DN(d)} sube a ${f.v}.`;
@@ -2682,20 +2767,34 @@ function curse() {
 }
 const EVENTS = [
   { id: 'cofre', t: 'Cofre polvoriento', ico: 'cofre', x: 'En una esquina hay un cofre lleno de telarañas.', o: [
-    { t: 'Abrirlo', f: r => { if (Math.random() >= .6) { hurt(5); return '¡Era una trampa! Pierdes 5 de vida.'; } r.gold += 25; const c = rollCard(CARD_CHANCE.cofre); return c ? { msg: '¡Monedas! +25 de oro. Y en el fondo del cofre brilla algo...', next: () => cardReveal(c, nextRoom) } : '¡Monedas! +25 de oro.'; } },
+    { t: 'Abrirlo', play: async r => {
+      evFigFx('shake'); Sfx.clack(.6); await sleep(500); evFigFx('shake'); Sfx.clack(.8); await sleep(450);
+      if (Math.random() < .23) {   // ¡mímico!
+        const f = $('#evfig'); if (f) f.innerHTML = evFig('cofre', 'mimico');
+        evFigFx('hit'); Sfx.hit(1); await sleep(650);
+        return { msg: '¡El cofre tenía dientes! Es un <b>mímico</b>.', next: () => startCombat('mimico') };
+      }
+      r.gold += 25; const c = rollCard(CARD_CHANCE.cofre);
+      return c ? { msg: '¡Monedas! +25 de oro. Y en el fondo del cofre brilla algo...', next: () => cardReveal(c, nextRoom) } : '¡Monedas! +25 de oro.';
+    } },
     { t: 'Dejarlo', f: () => 'Mejor no tocar nada.' }] },
   { id: 'fuente', t: 'Fuente azul', ico: 'veneno', sw: 'agua', x: 'Un agua azul brilla en una fuente de piedra.', o: [
-    { t: 'Beber', f: () => Math.random() < .7 ? `Te sientes mejor. +${heal(8)} de vida.` : curse() },
+    { t: 'Beber', play: async () => { evFigFx('shake'); Sfx.clack(.3); await sleep(500); return Math.random() < .7 ? `Te sientes mejor. +${heal(8)} de vida.` : curse(); } },
     { t: 'Seguir', f: () => 'Sigues tu camino.' }] },
   { id: 'sangre', t: 'Altar de sangre', ico: 'altar', x: 'Un altar rojo susurra: "Dame tu vida y te daré poder".', o: [
     { t: 'Ofrecer 6 de vida máxima', req: r => r.maxHp > 10, f: r => { r.maxHp -= 6; r.hp = Math.min(r.hp, r.maxHp); return { msg: 'El altar acepta tu ofrenda. Elige un dado para mejorar.', next: () => altar(true) }; } },
     { t: 'Irse', f: () => 'Te alejas del altar.' }] },
   { id: 'apuesta', t: 'Apuesta del goblin', ico: 'dado', x: 'Un goblin te reta: "Tira tu dado de ataque. Si sacas 2 o más te doy 20 de oro. Si no, me das 10".', o: [
-    { t: 'Tirar el dado', f: r => { const f = pick(r.dice.atk); if (f.v >= 2) { r.gold += 20; return `¡Sacas un ${f.v}! El goblin te paga 20 de oro.`; } r.gold = Math.max(0, r.gold - 10); return `Sacas un ${f.v}... pierdes 10 de oro.`; } },
+    { t: 'Tirar el dado', play: async r => {
+      const i = R(0, 5), f = r.dice.atk[i];
+      await EvStage.roll('atk', i);
+      if (f.v >= 2) { r.gold += 20; evFigFx('lungeL'); return `¡Sacas un ${f.v}! El goblin te paga 20 de oro de mala gana.`; }
+      r.gold = Math.max(0, r.gold - 10); evFigFx('hit'); return `Sacas un ${f.v}... El goblin se ríe y se queda 10 de tu oro.`;
+    } },
     { t: 'No apostar', f: () => 'El goblin se ríe de ti.' }] },
   { id: 'estatua', t: 'Estatua del dado', ico: 'dado', sw: 'rojo', x: 'Una estatua antigua sostiene un dado de piedra.', o: [
-    { t: 'Rezar', f: () => upRandom(2) },
-    { t: 'Romperla (pelea dura, da reliquia)', f: () => ({ msg: '¡La estatua cobra vida y te ataca!', next: () => startCombat('elite') }) }] },
+    { t: 'Rezar', play: async () => { evFigFx('hit'); await sleep(500); return 'La estatua brilla un instante. ' + upRandom(2); } },
+    { t: 'Romperla (pelea dura, da reliquia)', play: async () => { evFigFx('shake'); Sfx.hit(1); await sleep(450); evFigFx('lungeL'); await sleep(400); return { msg: '¡La estatua cobra vida y te ataca!', next: () => startCombat('elite') }; } }] },
   { id: 'herido', t: 'Aventurero herido', ico: 'corazon', x: 'Un aventurero herido te pide ayuda.', o: [
     { t: 'Darle 15 de oro', req: r => r.gold >= 15, f: r => { r.gold -= 15; return { msg: 'Agradecido, te deja elegir algo de su bolsa.', next: () => relicChoice('Regalo', nextRoom) }; } },
     { t: 'Curarle (pierdes 4 de vida)', req: r => r.hp > 4, f: () => { hurt(4); return 'Te enseña un truco. ' + upRandom(1); } },
@@ -2792,10 +2891,12 @@ function startCombat(kind) {
   if (window.LAB_EN) list = window.LAB_EN.slice();
   else if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
   else if (kind === 'jefe') list = [fl.boss];
-  else if (kind === 'elite') list = [pick(fl.elite)];
+  else if (kind === 'elite') list = [pick(fl.elite), pick(fl.pool)];
+  else if (kind === 'mimico') list = ['mimico' + (run.floor + 1)];
   else {
-    let n = run.step < 2 ? 1 : Math.random() < (run.floor ? .65 : .5) ? 2 : 1;
-    if (run.floor > 0 && run.step >= 2 && Math.random() < .3) n++;
+    // el primer combate de cada piso, uno solo; después, siempre dos o tres
+    let n = run.step === 0 ? 1 : 2;
+    if (run.step > 0 && Math.random() < (run.floor === 0 ? .25 : .45)) n = 3;
     list = Array.from({ length: n }, () => pick(fl.pool));
   }
   if (has('anillo') && run.hp > 1) run.hp -= 1;
@@ -2976,6 +3077,21 @@ async function deaths() {
     fresh = C.en.filter(e => e.hp <= 0 && !e._dead);
   }
 }
+// Auto: usa los dados que quedan en buen orden (furia y doble, luego cura y protección,
+// después a todos y por último los ataques a un enemigo al azar) y termina el turno
+async function autoPlay() {
+  if (!C || C.phase !== 'use' || C.busy) return;
+  const ord = f => f.k === 'furia' || f.k === 'doble' ? 0 : targetType(f) === 'self' ? 1 : targetType(f) === 'all' ? 2 : 3;
+  for (let n = 0; n < 4 && C && C.phase === 'use' && !C.won; n++) {
+    const left = effFaces().fs.filter(f => !C.used[f.d] && !blankF(f)).sort((a, b) => ord(a) - ord(b));
+    const al = alive();
+    if (!left.length || !al.length) break;
+    const f = left[0], tt = targetType(f);
+    await useDie(f.d, tt === 'self' ? 'hero' : tt === 'all' ? al[0] : pick(al));
+    await sleep(160);
+  }
+  if (C && C.phase === 'use' && !C.busy && !C.won) endTurn();
+}
 async function endTurn() {
   if (!C || C.busy || (C.phase !== 'use' && C.phase !== 'reroll')) return;
   C.busy = true; C.phase = 'resolve'; C.sel = null;
@@ -3073,7 +3189,7 @@ function phaseBox(eff) {
   }
   const blanks = eff.fs.filter(f => blankF(f)).map(f => DN(f.d));
   return { t: `Usa tus dados${eff.combo ? ` · <span class="gold">${eff.combo}</span>` : ''}`, d: 'Toca un dado en la mesa y después su objetivo. <b>Si matas a un enemigo, su dado ya no hace nada.</b>' + (blanks.length ? `<br>Salieron vacíos (no hacen nada): ${blanks.join(' y ')}.` : ''), c: chips,
-    b: `<button class="btn" onclick="G.end()">Terminar turno</button>` };
+    b: `<button class="btn" id="btn-auto" onclick="G.auto()">Auto</button>` };
 }
 function cRender() {
   S.scr = 'combat';
@@ -3136,12 +3252,12 @@ async function winCombat() {
   Coach.draw();
   await sleep(600);
   const kind = C.kind;
-  let g = kind === 'jefe' ? 40 + run.floor * 10 : kind === 'elite' ? 20 + run.floor * 5 : R(6, 10) + run.floor * 3;
+  let g = kind === 'jefe' ? 40 + run.floor * 10 : kind === 'elite' ? 20 + run.floor * 5 : kind === 'mimico' ? 30 + run.floor * 10 : R(6, 10) + run.floor * 3;
   if (has('bolsa')) g = Math.round(g * 1.5);
   run.gold += g;
   if (has('colmillo')) heal(4);
   C = null;
-  const card = kind === 'jefe' || kind === 'elite' ? rollCard(CARD_CHANCE[kind]) : null;
+  const card = kind === 'jefe' || kind === 'elite' || kind === 'mimico' ? rollCard(CARD_CHANCE[kind]) : null;
   const withCard = f => card ? cardReveal(card, f) : f();
   if (kind === 'jefe') {
     run.hp = run.maxHp;
@@ -3149,6 +3265,7 @@ async function winCombat() {
     return withCard(() => evolve(() => relicChoice('Tesoro del jefe', nextFloor)));
   }
   if (kind === 'elite') return withCard(() => relicChoice(`¡Élite vencido! +${g} de oro`, nextRoom));
+  if (kind === 'mimico') return withCard(() => reward(g));
   reward(g);
 }
 async function lose() { await sleep(600); C = null; Tuto.on = false; Coach.draw(); gameOver(); }
@@ -3170,6 +3287,7 @@ const G = {
   reroll: () => { if (C && C.phase === 'reroll' && !C.busy && Tuto.expect('reroll')) rerollDice(); },
   ready: () => { if (C && C.phase === 'reroll' && !C.busy && Tuto.expect('ready')) toUse(); },
   end: () => { if (Tuto.expect('end')) endTurn(); },
+  auto: () => { if (Tuto.expect('auto')) autoPlay(); },
   use: t => { if (C && C.sel && !C.busy && Tuto.expect('use:' + C.sel)) useDie(C.sel, t); },
   useAll: () => { if (C && C.sel && !C.busy && Tuto.expect('use:' + C.sel)) useDie(C.sel, alive()[0]); },
   tapDie: d => {
@@ -3218,9 +3336,12 @@ const G = {
     shop();
   },
   leaveShop: () => nextRoom(),
-  evo: i => {
+  evo: async i => {
+    if (S.scr !== 'event' || S.busy) return;
     const o = S.ev.o[i]; if (o.req && !o.req(run)) return;
-    const res = o.f(run);
+    S.busy = true; document.querySelectorAll('#evopts .btn').forEach(b => { b.disabled = true; });
+    const res = o.play ? await o.play(run) : o.f(run);
+    S.busy = false;
     if (typeof res === 'string') evResult(res, null); else evResult(res.msg, res.next);
   },
   evnext: () => { const n = S.next; n ? n() : nextRoom(); },
