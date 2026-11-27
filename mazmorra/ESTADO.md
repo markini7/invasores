@@ -18,7 +18,7 @@ Documento para retomar el trabajo en una conversación nueva. Léelo entero ante
 - Tras cada cambio: comprobar con capturas (Playwright, 390×844) y con el bot de pruebas; después publicar en `main` y decir qué versión (`v0.N`) deben ver en el menú.
 - Nada de botones abajo para volver: **"← Volver" arriba** y **✕ arriba** en las ventanas.
 
-## El juego hoy (v0.34)
+## El juego hoy (v0.35)
 
 - **Héroes**: Caballero (Furia y Doble), Clériga (Luz), Pícara (Veneno), Piromante (Fuego). Cada uno con 3 dados: Ataque, Protección y Especial. Evolucionan al vencer a los jefes de los pisos 1 y 2 (2 caminos cada vez); cada evolución tiene su skin 3D (variantes del héroe base) y la pantalla muestra cómo cambian los dados.
 - **Dos mazmorras** (`DUNGEONS`): al pulsar Nueva partida se elige mazmorra. **La Mazmorra** (Cripta, Cuevas, Abismo) y **La Torre del Hechicero** (Biblioteca, Laboratorio y Cima; completa). Ganar La Mazmorra desbloquea la Torre y **La Mazmorra en Dificultad 2** para todos los héroes (`localStorage` `mazmorra_prog`). Truco de pruebas: tocar 5 veces el número de versión lo desbloquea todo. `FLOORS` y `THEMES` cambian según la mazmorra (`setDungeon`); la partida guarda `dg` y `diff`.
@@ -38,6 +38,8 @@ Documento para retomar el trabajo en una conversación nueva. Léelo entero ante
 - **Personajes y enemigos**: modelos de vóxeles hechos con piezas en código (`MODEL_DEFS`), dibujados con luz tramada y contorno. 20 enemigos + 25 criaturas solo de cartas.
 - **Reliquias**: 32. Las de un tipo concreto (veneno, fuego, luz, furia) solo salen si te sirven.
 - **Eventos con escena**: cada evento sale en una salita 3D con su figura (cofre, fuente, altar, goblin, estatua, aventurero herido, espectro herrero, seta). El resultado aparece en la misma pantalla. En la apuesta del goblin se tira de verdad tu dado de ataque. **Cofres**: al abrirlos tiemblan y 23% de las veces son un **mímico** (combate; da 30+ de oro y 40% de carta); si no, 25 de oro.
+- **Decisiones**: en eventos y hoguera, botones grandes uno al lado del otro (`choiceBtn` dentro de `.choices`), con icono, nombre corto y detalle. «Tu build» solo sale en los eventos con `build: 1` (altar de sangre, herrero, espejo) y en la hoguera.
+- **Eventos por mazmorra**: `where: 0` solo en La Mazmorra, `where: 1` solo en la Torre, sin `where` en las dos (cofre y aventurero herido). `dice: 1` pone la figura a un lado para tirar un dado de verdad. Eventos de la Torre: Libro encadenado, Caldero burbujeante, Espejo encantado, El búho del mago, Dado del aprendiz (se tira tu dado especial) y Círculo de invocación.
 - **Cartas coleccionables**: 45 criaturas en 4 rarezas; salen de cofres (evento del cofre 20%, mímicos 40%, élites 7%, jefes 15%) y no se repiten. Álbum en el menú (las que faltan, en sombra). La carta grande se gira con el dedo.
 - **Menú de inicio**: Nueva partida, Álbum (amarillo), Estadísticas (por héroe: partidas, ganadas, enemigos derrotados, daño total, mejor piso), Cómo se juega, Sonido y número de versión.
 - **"Tu build"**: debajo de premios, reliquias, evolución, tienda, hoguera y eventos se ven tus dados y reliquias.

@@ -343,6 +343,12 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .dg-diff{display:flex;gap:8px;margin:4px 0}
 .dg-diff .btn{flex:1;padding:8px 4px;font-size:8px}
 .dg-diff .btn.locked{opacity:.6}
+.choices{display:grid;grid-template-columns:repeat(var(--n),minmax(0,1fr));gap:10px}
+.btn.ch{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:128px;padding:14px 6px}
+.btn.ch b{font-size:10px;line-height:1.4}
+.btn.ch small{font-size:7px;line-height:1.6;color:#c8bcd8}
+.btn.ch:disabled{opacity:.45}
+#evopts>.btn.pri{min-height:64px}
 </style>
 </head>
 <body>
@@ -364,7 +370,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.34'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.35'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -633,6 +639,7 @@ const ICO = {
   hielo: ['c..c..c', '.c.c.c.', '..ccc..', 'cccwccc', '..ccc..', '.c.c.c.', 'c..c..c'],
   maldicion: ['.ppppp.', 'p.....p', 'p.ppp.p', 'p.p.p.p', 'p.p...p', 'p.pppp.', 'p......'],
   escolta: ['.bbbbb.', 'bbbwbbb', 'bbbwbbb', 'bwwwwwb', '.bbwbb.', '..bbb..', '...b...'],
+  salir: ['...ww..', '....ww.', 'wwwwwww', 'wwwwwww', '....ww.', '...ww..', '.......'],
   dado: ['wwwwwww', 'wkwwwkw', 'wwwwwww', 'wwwkwww', 'wwwwwww', 'wkwwwkw', 'wwwwwww'],
   seta: ['.rrrrr.', 'rwrrrwr', 'rrrwrrr', '.kwwwk.', '..www..', '..www..', '.wwwww.'],
   cofre: ['.nnnnn.', 'nYYYYYn', 'nnnnnnn', 'nNNyNNn', 'nnnyynn', 'nnnnnnn', 'NNNNNNN'],
@@ -1772,6 +1779,21 @@ function mWizard(M) {
   M.px(7, 15, 9, 'c'); M.px(9, 15, 9, 'c'); M.box(6, 16, 9, 10, 16, 9, 'w');
   M.cone(8, 7, 17, 24, 3.6, .4, 'B'); M.ring(8, 17, 7, 3.6, .7, 'b'); M.px(8, 20, 9, 'y'); M.px(7, 22, 8, 'y'); M.px(9, 19, 9, 'y');
 }
+function mCauldron(M) {
+  for (const [x, z] of [[4, 4], [10, 4], [7, 11]]) M.box(x, 0, z, x, 1, z, 'k');
+  M.px(6, 0, 7, 'o'); M.px(7, 0, 7, 'y'); M.px(8, 0, 8, 'o'); M.px(7, 1, 8, 'o');
+  M.ell(7, 4.6, 7, 5, 3.8, 5, 'k', (x, y) => y < 7.6); M.ring(7, 7.4, 7, 4.6, .8, 'G');
+  M.ell(7, 7.2, 7, 4, .7, 4, 'e'); M.px(5, 8, 6, 'e'); M.px(8, 9, 8, 'e'); M.px(9, 8, 5, 'w'); M.px(6, 9, 9, 'w');
+  M.ell(7, 4, 11.6, 1.2, 1, .5, 'G');
+}
+function mMirror(M) {
+  M.box(4, 0, 2, 7, 0, 4, 'N'); M.box(5, 1, 3, 6, 2, 3, 'n');
+  M.ell(5.5, 10, 3, 4.8, 7.6, 1.2, 'Y'); M.ell(5.5, 10, 3.6, 3.8, 6.6, .9, 'c');
+  M.px(4, 13, 4, 'w'); M.px(3, 12, 4, 'w'); M.px(4, 11, 4, 'w'); M.px(7, 7, 4, 'b'); M.px(6, 6, 4, 'b');
+  M.px(5, 18, 3, 'y'); M.px(6, 18, 3, 'y'); M.px(5, 2, 3, 'y');
+}
+Object.assign(MODEL_DEFS, { caldero: [14, 11, 14, mCauldron], espejo: [12, 19, 6, mMirror], buho: [14, 12, 12, mRaven, 'buho'] });
+Object.assign(SWAPS, { buho: { B: 'n', w: 'Y', r: 'y', g: 'Y' } });
 Object.assign(SWAPS, { cristal: { g: 'c', G: 'b', k: 'B' }, batalla: { P: 'R', p: 'r', y: 'o' } });
 Object.assign(MODEL_DEFS, { hechicero: [16, 25, 12, mWizard], gargolacristal: [18, 17, 14, mGargoyle, 'cristal'], magobatalla: [16, 19, 12, mCultist, 'batalla'] });
 Object.assign(MODEL_DEFS, { homunculo: [15, 15, 12, mHomunculus], cabezahidra: [14, 19, 16, mHydraHead], sapomorado: [16, 9, 16, mToad, 'morado'] });
@@ -2816,8 +2838,7 @@ function rest() {
   S = { scr: 'rest' };
   const n = Math.max(4, Math.round(run.maxHp * (D2() ? .25 : .35))) * (has('manzana') ? 2 : 1);
   app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('fuego', 6)}</div><h2>Hoguera</h2><p class="t">Un buen sitio para recuperar fuerzas.</p></div>
-    <button class="btn opt" onclick="G.rest(0)">${sp('corazon', 4)}<span>Dormir<small>Te curas ${n} de vida</small></span></button>
-    <button class="btn opt" onclick="G.rest(1)">${sp('yunque', 4)}<span>Entrenar<small>+1 a una cara que elijas</small></span></button>`;
+    <div class="choices" style="--n:2">${choiceBtn('corazon', 'Dormir', `Te curas ${n} de vida`, 'G.rest(0)')}${choiceBtn('yunque', 'Entrenar', '+1 a una cara que elijas', 'G.rest(1)')}</div>`;
   S.heal = n;
   addBuild();
 }
@@ -2897,17 +2918,20 @@ const EvStage = {
     });
   },
 };
-const EV_FIG = { cofre: ['cofre3d', 8], fuente: ['fuente3d', 7.5], sangre: ['altar3d', 7.5], apuesta: ['goblin', 7.5], estatua: ['estatua', 6.5], herido: ['aventurero', 6], herrero: ['espectro', 6.5], setas: ['hongo', 7] };
+const EV_FIG = { grimorio: ['grimorio', 7], caldero: ['caldero', 7.5], espejo: ['espejo', 6], buho: ['buho', 7.5], dadomagico: ['aprendiz', 6], circulo: ['fuegofatuo', 7.5], cofre: ['cofre3d', 8], fuente: ['fuente3d', 7.5], sangre: ['altar3d', 7.5], apuesta: ['goblin', 7.5], estatua: ['estatua', 6.5], herido: ['aventurero', 6], herrero: ['espectro', 6.5], setas: ['hongo', 7] };
 function evFig(id, model) { const [m, px] = EV_FIG[id] || ['cofre3d', 5]; return fig(sp3(model || m, px, '', -.25)); }
+// botón grande de decisión (van uno al lado del otro dentro de .choices)
+const choiceBtn = (ico, t, d, on, off) => `<button class="btn ch" ${off ? 'disabled' : ''} onclick="${on}">${ico ? sp(ico, 4) : ''}<b>${t}</b>${d ? `<small>${d}</small>` : ''}</button>`;
 function event() {
-  let pool = EVENTS.filter(e => !run.seen.includes(e.id));
-  if (!pool.length) { run.seen = []; pool = EVENTS; }
+  const here = EVENTS.filter(e => e.where === undefined || e.where === (run.dg || 0));
+  let pool = here.filter(e => !run.seen.includes(e.id));
+  if (!pool.length) { run.seen = []; pool = here; }
   const ev = pick(pool); run.seen.push(ev.id);
   S = { scr: 'event', ev };
-  app.innerHTML = `${hud()}<div class="evstage" id="evstage"><div class="ev-fig${ev.id === 'apuesta' ? ' side' : ''}" id="evfig">${evFig(ev.id)}</div></div>
+  app.innerHTML = `${hud()}<div class="evstage" id="evstage"><div class="ev-fig${ev.dice ? ' side' : ''}" id="evfig">${evFig(ev.id)}</div></div>
     <div class="panel c col"><h2>${ev.t}</h2><p class="t" id="evtxt">${ev.x}</p></div>
-    <div class="col" id="evopts" style="gap:12px">${ev.o.map((o, i) => `<button class="btn" ${o.req && !o.req(run) ? 'disabled' : ''} onclick="G.evo(${i})">${o.t}</button>`).join('')}</div>`;
-  addBuild();
+    <div class="choices" id="evopts" style="--n:${ev.o.length}">${ev.o.map((o, i) => choiceBtn(o.ico, o.t, o.d, `G.evo(${i})`, o.req && !o.req(run))).join('')}</div>`;
+  if (ev.build) addBuild();
   if (!FAST) EvStage.attach($('#evstage'));
 }
 // el resultado sale en la misma pantalla, con la escena delante
@@ -2917,6 +2941,7 @@ function evResult(msg, next) {
   if (!box || !txt) {
     app.innerHTML = `${hud()}<div class="panel c col"><p class="t" style="color:var(--txt)">${msg}</p></div><div class="col" id="evopts"></div>`;
   } else { txt.style.color = 'var(--txt)'; txt.innerHTML = msg; }
+  $('#evopts').style.setProperty('--n', 1);
   $('#evopts').innerHTML = run.hp <= 0 ? '<button class="btn pri" onclick="G.over()">...</button>' : `<button class="btn pri" onclick="G.evnext()">Seguir</button>`;
 }
 const evFigFx = cls => { const f = $('#evfig .fig'); if (f) { f.classList.remove(cls); void f.offsetWidth; f.classList.add(cls); } };
@@ -2932,7 +2957,7 @@ function curse() {
 }
 const EVENTS = [
   { id: 'cofre', t: 'Cofre polvoriento', ico: 'cofre', x: 'En una esquina hay un cofre lleno de telarañas.', o: [
-    { t: 'Abrirlo', play: async r => {
+    { t: 'Abrirlo', ico: 'cofre', d: '¿Qué habrá dentro?', play: async r => {
       evFigFx('shake'); Sfx.clack(.6); await sleep(500); evFigFx('shake'); Sfx.clack(.8); await sleep(450);
       if (Math.random() < .23) {   // ¡mímico!
         const f = $('#evfig'); if (f) f.innerHTML = evFig('cofre', 'mimico');
@@ -2942,34 +2967,75 @@ const EVENTS = [
       r.gold += 25; const c = rollCard(CARD_CHANCE.cofre);
       return c ? { msg: '¡Monedas! +25 de oro. Y en el fondo del cofre brilla algo...', next: () => cardReveal(c, nextRoom) } : '¡Monedas! +25 de oro.';
     } },
-    { t: 'Dejarlo', f: () => 'Mejor no tocar nada.' }] },
-  { id: 'fuente', t: 'Fuente azul', ico: 'veneno', sw: 'agua', x: 'Un agua azul brilla en una fuente de piedra.', o: [
-    { t: 'Beber', play: async () => { evFigFx('shake'); Sfx.clack(.3); await sleep(500); return Math.random() < .7 ? `Te sientes mejor. +${heal(8)} de vida.` : curse(); } },
-    { t: 'Seguir', f: () => 'Sigues tu camino.' }] },
-  { id: 'sangre', t: 'Altar de sangre', ico: 'altar', x: 'Un altar rojo susurra: "Dame tu vida y te daré poder".', o: [
-    { t: 'Ofrecer 6 de vida máxima', req: r => r.maxHp > 10, f: r => { r.maxHp -= 6; r.hp = Math.min(r.hp, r.maxHp); return { msg: 'El altar acepta tu ofrenda. Elige un dado para mejorar.', next: () => altar(true) }; } },
-    { t: 'Irse', f: () => 'Te alejas del altar.' }] },
-  { id: 'apuesta', t: 'Apuesta del goblin', ico: 'dado', x: 'Un goblin te reta: "Tira tu dado de ataque. Si sacas 2 o más te doy 20 de oro. Si no, me das 10".', o: [
-    { t: 'Tirar el dado', play: async r => {
+    { t: 'Dejarlo', ico: 'salir', f: () => 'Mejor no tocar nada.' }] },
+  { id: 'fuente', where: 0, t: 'Fuente azul', ico: 'veneno', sw: 'agua', x: 'Un agua azul brilla en una fuente de piedra.', o: [
+    { t: 'Beber', ico: 'corazon', d: 'Puede curarte... o no', play: async () => { evFigFx('shake'); Sfx.clack(.3); await sleep(500); return Math.random() < .7 ? `Te sientes mejor. +${heal(8)} de vida.` : curse(); } },
+    { t: 'Seguir', ico: 'salir', f: () => 'Sigues tu camino.' }] },
+  { id: 'sangre', where: 0, build: 1, t: 'Altar de sangre', ico: 'altar', x: 'Un altar rojo susurra: "Dame tu vida y te daré poder".', o: [
+    { t: 'Ofrecer', ico: 'altar', d: '-6 de vida máxima y mejoras un dado', req: r => r.maxHp > 10, f: r => { r.maxHp -= 6; r.hp = Math.min(r.hp, r.maxHp); return { msg: 'El altar acepta tu ofrenda. Elige un dado para mejorar.', next: () => altar(true) }; } },
+    { t: 'Irse', ico: 'salir', f: () => 'Te alejas del altar.' }] },
+  { id: 'apuesta', where: 0, dice: 1, t: 'Apuesta del goblin', ico: 'dado', x: 'Un goblin te reta: "Tira tu dado de ataque. Si sacas 2 o más te doy 20 de oro. Si no, me das 10".', o: [
+    { t: 'Tirar el dado', ico: 'dado', d: 'Con 2 o más ganas 20 de oro', play: async r => {
       const i = R(0, 5), f = r.dice.atk[i];
       await EvStage.roll('atk', i);
       if (f.v >= 2) { r.gold += 20; evFigFx('lungeL'); return `¡Sacas un ${f.v}! El goblin te paga 20 de oro de mala gana.`; }
       r.gold = Math.max(0, r.gold - 10); evFigFx('hit'); return `Sacas un ${f.v}... El goblin se ríe y se queda 10 de tu oro.`;
     } },
-    { t: 'No apostar', f: () => 'El goblin se ríe de ti.' }] },
-  { id: 'estatua', t: 'Estatua del dado', ico: 'dado', sw: 'rojo', x: 'Una estatua antigua sostiene un dado de piedra.', o: [
-    { t: 'Rezar', play: async () => { evFigFx('hit'); await sleep(500); return 'La estatua brilla un instante. ' + upRandom(2); } },
-    { t: 'Romperla (pelea dura, da reliquia)', play: async () => { evFigFx('shake'); Sfx.hit(1); await sleep(450); evFigFx('lungeL'); await sleep(400); return { msg: '¡La estatua cobra vida y te ataca!', next: () => startCombat('elite') }; } }] },
+    { t: 'No apostar', ico: 'salir', f: () => 'El goblin se ríe de ti.' }] },
+  { id: 'estatua', where: 0, t: 'Estatua del dado', ico: 'dado', sw: 'rojo', x: 'Una estatua antigua sostiene un dado de piedra.', o: [
+    { t: 'Rezar', ico: 'luz', d: 'Mejora una cara al azar', play: async () => { evFigFx('hit'); await sleep(500); return 'La estatua brilla un instante. ' + upRandom(2); } },
+    { t: 'Romperla', ico: 'hacha', d: 'Pelea difícil que da reliquia', play: async () => { evFigFx('shake'); Sfx.hit(1); await sleep(450); evFigFx('lungeL'); await sleep(400); return { msg: '¡La estatua cobra vida y te ataca!', next: () => startCombat('elite') }; } }] },
   { id: 'herido', t: 'Aventurero herido', ico: 'corazon', x: 'Un aventurero herido te pide ayuda.', o: [
-    { t: 'Darle 15 de oro', req: r => r.gold >= 15, f: r => { r.gold -= 15; return { msg: 'Agradecido, te deja elegir algo de su bolsa.', next: () => relicChoice('Regalo', nextRoom) }; } },
-    { t: 'Curarle (pierdes 4 de vida)', req: r => r.hp > 4, f: () => { hurt(4); return 'Te enseña un truco. ' + upRandom(1); } },
-    { t: 'Ignorarle', f: () => 'Sigues sin mirar atrás.' }] },
-  { id: 'herrero', t: 'Herrero fantasma', ico: 'yunque', x: 'Un herrero fantasma golpea un yunque invisible: "20 monedas y te mejoro una cara".', o: [
-    { t: 'Pagar 20 de oro', req: r => r.gold >= 20, f: r => { r.gold -= 20; return { msg: 'El fantasma se pone a trabajar.', next: () => forge(1) }; } },
-    { t: 'Irse', f: () => 'El fantasma sigue martillando.' }] },
-  { id: 'setas', t: 'Setas brillantes', ico: 'seta', x: 'Unas setas brillan en el suelo. Huelen... raro.', o: [
-    { t: 'Comerlas', f: r => Math.random() < .5 ? (r.maxHp += 4, r.hp += 4, '¡Deliciosas! +4 de vida máxima.') : (hurt(4), 'Te sientan fatal. Pierdes 4 de vida.') },
-    { t: 'Dejarlas', f: () => 'Mejor no.' }] },
+    { t: 'Darle oro', ico: 'moneda', d: '-15 de oro, te da una reliquia', req: r => r.gold >= 15, f: r => { r.gold -= 15; return { msg: 'Agradecido, te deja elegir algo de su bolsa.', next: () => relicChoice('Regalo', nextRoom) }; } },
+    { t: 'Curarle', ico: 'corazon', d: '-4 de vida, mejora una cara', req: r => r.hp > 4, f: () => { hurt(4); return 'Te enseña un truco. ' + upRandom(1); } },
+    { t: 'Ignorarle', ico: 'salir', f: () => 'Sigues sin mirar atrás.' }] },
+  { id: 'herrero', where: 0, build: 1, t: 'Herrero fantasma', ico: 'yunque', x: 'Un herrero fantasma golpea un yunque invisible: "20 monedas y te mejoro una cara".', o: [
+    { t: 'Pagar', ico: 'yunque', d: '-20 de oro y +1 a una cara que elijas', req: r => r.gold >= 20, f: r => { r.gold -= 20; return { msg: 'El fantasma se pone a trabajar.', next: () => forge(1) }; } },
+    { t: 'Irse', ico: 'salir', f: () => 'El fantasma sigue martillando.' }] },
+  { id: 'setas', where: 0, t: 'Setas brillantes', ico: 'seta', x: 'Unas setas brillan en el suelo. Huelen... raro.', o: [
+    { t: 'Comerlas', ico: 'seta', d: '¿+4 de vida máxima?', f: r => Math.random() < .5 ? (r.maxHp += 4, r.hp += 4, '¡Deliciosas! +4 de vida máxima.') : (hurt(4), 'Te sientan fatal. Pierdes 4 de vida.') },
+    { t: 'Dejarlas', ico: 'salir', f: () => 'Mejor no.' }] },
+  // ---------- eventos de la Torre del Hechicero
+  { id: 'grimorio', where: 1, t: 'Libro encadenado', x: 'Un libro encadenado a un atril susurra tu nombre.', o: [
+    { t: 'Leerlo', ico: 'recuerdos', d: 'Aprendes algo... si no te muerde', play: async () => {
+      evFigFx('shake'); Sfx.clack(.4); await sleep(600);
+      if (Math.random() < .6) { evFigFx('hit'); return 'Aprendes un hechizo. ' + upRandom(2); }
+      evFigFx('lungeL'); Sfx.hit(1); hurt(5); await sleep(300); return '¡El libro te muerde! Pierdes 5 de vida.';
+    } },
+    { t: 'Dejarlo', ico: 'salir', f: () => 'El libro se ríe por lo bajo.' }] },
+  { id: 'caldero', where: 1, t: 'Caldero burbujeante', x: 'Un caldero hierve solo. Al lado, un cartel: "Poción del día: sorpresa".', o: [
+    { t: 'Beber', ico: 'veneno', d: 'A ver qué pasa', play: async r => {
+      evFigFx('shake'); Sfx.clack(.3); await sleep(600); const x = Math.random();
+      if (x < .35) { r.maxHp += 4; r.hp += 4; return '¡Te sientes más fuerte! +4 de vida máxima.'; }
+      if (x < .7) return `Sabe a fresa. +${heal(10)} de vida.`;
+      hurt(6); return 'Sabe a calcetín. Pierdes 6 de vida.';
+    } },
+    { t: 'Comprar una buena', ico: 'moneda', d: '-15 de oro, te curas 12', req: r => r.gold >= 15, f: r => { r.gold -= 15; return `El caldero te da una poción buena. +${heal(12)} de vida.`; } },
+    { t: 'Irse', ico: 'salir', f: () => 'Mejor no beber nada que hierva solo.' }] },
+  { id: 'espejo', where: 1, build: 1, t: 'Espejo encantado', x: 'Tu reflejo te sonríe... y se mueve solo.', o: [
+    { t: 'Tocarlo', ico: 'ojo', d: 'Tu peor cara de Ataque copia a la mejor', play: async r => {
+      evFigFx('hit'); await sleep(600);
+      const a = r.dice.atk, hi = a.reduce((m, f) => f.v > m.v ? f : m, a[0]), lo = a.filter(f => f.v > 0).reduce((m, f) => f.v < m.v ? f : m, hi);
+      if (lo === hi || lo.v >= hi.v) return 'Tu reflejo no tiene nada que copiar.';
+      const old = lo.v; Object.assign(lo, { k: hi.k, v: hi.v }); return `Tu reflejo copia tu mejor golpe: una cara de Ataque pasa de ${old} a ${hi.v}.`;
+    } },
+    { t: 'Romperlo', ico: 'hacha', d: '+15 de oro, -3 de vida', play: async r => { evFigFx('shake'); Sfx.hit(1); await sleep(450); r.gold += 15; hurt(3); return 'Los cristales cortan, pero detrás había 15 monedas.'; } },
+    { t: 'Irse', ico: 'salir', f: () => 'Tu reflejo te dice adiós con la mano.' }] },
+  { id: 'buho', where: 1, t: 'El búho del mago', x: '"Uh-uh. Te cambio un secreto del mago por 25 monedas".', o: [
+    { t: 'Pagar', ico: 'moneda', d: '-25 de oro, eliges una reliquia', req: r => r.gold >= 25, f: r => { r.gold -= 25; return { msg: 'El búho te susurra dónde guardaba el mago sus tesoros.', next: () => relicChoice('Secreto del búho', nextRoom) }; } },
+    { t: 'Irse', ico: 'salir', f: () => '"Uh-uh", dice el búho, ofendido.' }] },
+  { id: 'dadomagico', where: 1, dice: 1, t: 'Dado del aprendiz', x: 'Un aprendiz ha encantado tu dado especial: "Tíralo. Si sale una cara con número, la mejoro. Si sale vacía... ups".', o: [
+    { t: 'Tirar el dado', ico: 'dado', d: 'Cara con número: +1. Vacía: -4 de vida', play: async r => {
+      const i = R(0, 5), f = r.dice.esp[i];
+      await EvStage.roll('esp', i);
+      if (f.k === 'doble') { r.gold += 12; evFigFx('lungeL'); return '¡Sale el rayo! Esa cara ya es perfecta, así que el aprendiz te paga 12 de oro.'; }
+      if (!blankF(f)) { f.v += 1; for (const k in texCache) delete texCache[k]; evFigFx('lungeL'); return `¡Sale ${KW[f.k].n.toLowerCase()}! El aprendiz la mejora: ahora vale ${f.v}.`; }
+      hurt(4); evFigFx('hit'); return 'Sale una cara vacía... ¡ups! El hechizo te quema: pierdes 4 de vida.';
+    } },
+    { t: 'No tirar', ico: 'salir', f: () => 'El aprendiz se encoge de hombros.' }] },
+  { id: 'circulo', where: 1, t: 'Círculo de invocación', x: 'En el suelo brilla un círculo mágico a medio terminar.', o: [
+    { t: 'Terminarlo', ico: 'invoca', d: 'Pelea difícil que da reliquia', play: async () => { evFigFx('shake'); Sfx.hit(1); await sleep(500); return { msg: '¡Algo sale del círculo!', next: () => startCombat('elite') }; } },
+    { t: 'Borrarlo', ico: 'salir', d: '+8 de oro', f: r => { r.gold += 8; return 'Borras el círculo y encuentras 8 monedas entre la tiza.'; } }] },
 ];
 
 // --- premios
