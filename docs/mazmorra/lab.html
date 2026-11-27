@@ -351,7 +351,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.29'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.30'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -2890,9 +2890,10 @@ function startCombat(kind) {
   let list;
   if (window.LAB_EN) list = window.LAB_EN.slice();
   else if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
-  else if (kind === 'jefe') list = [fl.boss];
-  else if (kind === 'elite') list = [pick(fl.elite), pick(fl.pool)];
-  else if (kind === 'mimico') list = ['mimico' + (run.floor + 1)];
+  // nadie pelea solo: el jefe trae un esbirro (dos en el último piso), la élite uno o dos y el mímico, un bicho del piso
+  else if (kind === 'jefe') list = run.floor === 2 ? [pick(fl.pool), fl.boss, pick(fl.pool)] : [fl.boss, pick(fl.pool)];
+  else if (kind === 'elite') list = run.floor > 0 && Math.random() < .5 ? [pick(fl.pool), pick(fl.elite), pick(fl.pool)] : [pick(fl.elite), pick(fl.pool)];
+  else if (kind === 'mimico') list = ['mimico' + (run.floor + 1), pick(fl.pool)];
   else {
     // el primer combate de cada piso, uno solo; después, siempre dos o tres
     let n = run.step === 0 ? 1 : 2;

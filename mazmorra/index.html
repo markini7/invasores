@@ -2886,9 +2886,10 @@ function startCombat(kind) {
   let list;
   if (window.LAB_EN) list = window.LAB_EN.slice();
   else if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
-  else if (kind === 'jefe') list = [fl.boss];
-  else if (kind === 'elite') list = [pick(fl.elite), pick(fl.pool)];
-  else if (kind === 'mimico') list = ['mimico' + (run.floor + 1)];
+  // nadie pelea solo: el jefe trae un esbirro (dos en el último piso), la élite uno o dos y el mímico, un bicho del piso
+  else if (kind === 'jefe') list = run.floor === 2 ? [pick(fl.pool), fl.boss, pick(fl.pool)] : [fl.boss, pick(fl.pool)];
+  else if (kind === 'elite') list = run.floor > 0 && Math.random() < .5 ? [pick(fl.pool), pick(fl.elite), pick(fl.pool)] : [pick(fl.elite), pick(fl.pool)];
+  else if (kind === 'mimico') list = ['mimico' + (run.floor + 1), pick(fl.pool)];
   else {
     // el primer combate de cada piso, uno solo; después, siempre dos o tres
     let n = run.step === 0 ? 1 : 2;
