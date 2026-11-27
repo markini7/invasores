@@ -304,6 +304,24 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .evo-d .fc.same{opacity:.35}
 .evo-d .fc.chg{box-shadow:0 0 0 2px var(--gold),0 0 6px var(--gold)}
 .evo-d .lb{color:var(--txt)}
+.evo-scr{display:flex;flex-direction:column;gap:10px}
+.evo-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:2px 2px 0}
+.evo-top h1{font-size:14px;text-align:left}
+.evo-scr .evo-opt{flex-direction:row;align-items:center;gap:8px;padding:6px 8px}
+.evo-skin{flex:none;width:56px;display:flex;justify-content:center}
+.evo-r{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.evo-scr .evo-h b{font-size:9px}
+.evo-scr .evo-d{gap:3px}
+.evo-scr .evo-d .lb{width:50px;font-size:5px}
+.evo-scr .evo-d .fc{width:26px;height:26px;font-size:7px;border-width:2px}
+.evo-scr .evo-d .fc img{width:10px;height:10px}
+.evo-scr .build{padding:8px 10px;gap:6px}
+.evo-scr .build h3{font-size:8px}
+.evo-scr .build .drow .lb{width:56px;font-size:5px}
+.evo-scr .build .fc{width:28px;height:28px;font-size:7px;border-width:2px}
+.evo-scr .build .fc img{width:10px;height:10px}
+.evo-scr .build .col{gap:4px}
+.evo-scr .relics button{padding:2px}
 </style>
 </head>
 <body>
@@ -325,7 +343,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.21'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.22'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -2699,15 +2717,16 @@ function relicChoice(title, after) {
 function evolve(after) {
   const opts = H().evo[run.floor];
   S = { scr: 'evolve', opts, after };
-  app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${fig(sp3(heroSkin(), 7, '', .4))}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
-    ${opts.map((o, i) => evoOption(o, i)).join('')}`;
-  addBuild();
+  app.innerHTML = `<div class="evo-scr">${hud()}
+    <div class="evo-top"><h1>¡Evolución!</h1><span class="t">${run.cls} elige su camino</span></div>
+    ${opts.map((o, i) => evoOption(o, i)).join('')}
+    ${buildPanel()}</div>`;
 }
 function evoOption(o, i) {
   const sim = clone(run); o.a(sim);
   const rows = DKEYS.filter(d => sim.dice[d].some((f, j) => f.k !== run.dice[d][j].k || f.v !== run.dice[d][j].v)).map(d => `<div class="drow"><div class="lb">${DN(d)}</div>${sim.dice[d].map((f, j) => faceHTML(f, d, { cls: f.k !== run.dice[d][j].k || f.v !== run.dice[d][j].v ? 'chg' : 'same' })).join('')}</div>`).join('');
   const hp = sim.maxHp - run.maxHp;
-  return `<button class="btn evo-opt" onclick="G.evolve(${i})"><div class="evo-h">${sp3(skinFor(run.hero, (run.evo || []).concat(evoId(o.n))), 4, '', .5)}<b>${o.n}</b>${hp ? `<span class="evo-hp">+${hp} de vida</span>` : ''}</div><div class="col evo-d">${rows}</div></button>`;
+  return `<button class="btn evo-opt" onclick="G.evolve(${i})"><div class="evo-skin">${sp3(skinFor(run.hero, (run.evo || []).concat(evoId(o.n))), 3.4, '', .5)}</div><div class="evo-r"><div class="evo-h"><b>${o.n}</b>${hp ? `<span class="evo-hp">+${hp} de vida</span>` : ''}</div><div class="col evo-d">${rows}</div></div></button>`;
 }
 function nextFloor() {
   run.floor++; run.step = 0; run.doors = genDoors(0); save(); floorIntro();
