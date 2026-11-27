@@ -324,6 +324,7 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .evo-scr .build .fc img{width:11px;height:11px}
 .evo-scr .build .col{gap:6px}
 .evo-scr .relics button{padding:3px}
+.fc .gem{position:absolute;top:2px;right:2px;width:6px;height:6px;transform:rotate(45deg);box-shadow:0 0 0 1px #000}
 </style>
 </head>
 <body>
@@ -345,7 +346,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.23'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.24'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -931,11 +932,14 @@ function dieCols(d) {
 const TS = 18; // lado de la textura de cada cara
 // estilo de las caras: A = icono y número, B = número grande, E = placa de color (se prueban en el laboratorio)
 let DSTYLE = { p: 'A', e: 'A' };
-try { const ds = JSON.parse(localStorage.getItem('mazmorra_dstyle')); if (ds && ds.p && ds.e) DSTYLE = ds; } catch (e) {}
+// palos (prueba del laboratorio): si SUITS tiene valor, las parejas y tríos van por color y no por número
+let SUITS = null;   // null | 'borde' | 'fondo' | 'gema' | 'metal'
+const SUIT_COL = ['#3ac060', '#a060e8', '#e8c030'], SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
+const suitOf = f => SUITS && f && f.s !== undefined && !blankF(f) ? f.s : null;
 const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
 const DIG5 = ['01110100011001110101110011000101110', '00100011000010000100001000010001110', '01110100010000100010001000100011111', '11110000010000101110000010000111110', '00010001100101010010111110001000010', '11111100001111000001000011000101110', '00110010001000011110100011000101110', '11111000010001000100010000100001000', '01110100011000101110100011000101110', '01110100011000101111000010001001100'];
-function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p') {
-  const style = DSTYLE[kind]; key += '|' + style;
+function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p', suit = null) {
+  const style = DSTYLE[kind], SV = kind === 'p' && suit !== null ? SUITS : null; key += '|' + style + '|' + SV + '|' + suit;
   if (texCache[key]) return texCache[key];
   const body = hexRGB(bodyH), rim = hexRGB(rimH), N = TS;
   const px = Array.from({ length: N * N }, () => body.slice());
@@ -944,6 +948,8 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p') {
     else if (x === 1 || y === 1) px[y * N + x] = body.map(v => Math.min(255, v * 1.5 + 12));
     else if (x === N - 2 || y === N - 2) px[y * N + x] = body.map(v => v * .6);
   }
+  if (SV === 'borde') { const c = hexRGB(SUIT_COL[suit]); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (x <= 1 || y <= 1 || x >= N - 2 || y >= N - 2) px[y * N + x] = (x === 0 || y === 0 || x === N - 1 || y === N - 1) ? c.map(v => v * .75) : c.slice(); }
+  if (SV === 'fondo') { const c = hexRGB(SUIT_COL[suit]); for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) px[y * N + x] = c.map(v => v * (x === 1 || y === 1 ? .75 : x === N - 2 || y === N - 2 ? .35 : .5)); }
   const put = (x, y, c) => { if (x >= 1 && x < N - 1 && y >= 1 && y < N - 1) px[y * N + x] = c; };
   const icon = (n, ox, oy) => ICO[n].forEach((row, y) => { for (let x = 0; x < row.length; x++) if (PAL[row[x]]) put(ox + x, oy + y, hexRGB(PAL[row[x]])); });
   // número grande (5x7 por cifra) con contorno oscuro para que se lea bien
@@ -974,15 +980,21 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p') {
   } else if (parts.length === 1) {
     const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
     icon(ic, Math.floor((N - 7) / 2), st ? 2 : Math.floor((N - 7) / 2));
-    if (st) num(st, cen(st), N - 8, gold ? '#f8d84a' : c);
+    if (st) num(st, cen(st), N - 8, SV === 'metal' ? SUIT_MET[suit] : gold ? '#f8d84a' : c);
   } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 2, 1 + r * (N / 2)); if (n !== '') num(String(n), N - 8, 1 + r * (N / 2), c); });
+  if (SV === 'gema' && parts.length) {   // gemita en la esquina de arriba a la derecha
+    const c = hexRGB(SUIT_COL[suit]), gx = N - 5, gy = 1;
+    for (const [x, y] of [[1, 0], [0, 1], [2, 1], [1, 2], [1, -1], [-1, 1], [3, 1], [1, 3], [0, 0], [2, 0], [0, 2], [2, 2]]) put(gx + x, gy + y, [8, 5, 7]);
+    for (const [x, y] of [[1, 0], [0, 1], [2, 1], [1, 2]]) put(gx + x, gy + y, c);
+    put(gx + 1, gy + 1, c.map(v => Math.min(255, v * 1.5 + 60)));
+  }
   return texCache[key] = [.5, .74, 1.02].map(k => Uint32Array.from(px, c => pack(Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0)));
 }
 function faceTex(d, f, gold) {
   const [b, r] = dieCols(d), key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
   if (blankF(f)) return dieTexture(key, b, r, []);
   const kw = KW[f.k];
-  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold, 'p');
+  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold, 'p', suitOf(f));
 }
 // dado de enemigo: hueso oscuro con borde rojo, y lo que hace pintado (hasta dos cosas)
 function enemyFaceTex(str) {
@@ -2422,8 +2434,10 @@ function faceHTML(f, d, opts = {}) {
   const on = opts.click ? ` onclick="${opts.click}"` : '';
   const cls = `fc ${d} ${blankF(f) ? 'blank' : ''} ${opts.cls || ''}`;
   if (blankF(f)) return `<${tag} class="${cls}"${on}><b>·</b></${tag}>`;
-  const kw = KW[f.k], px = opts.big ? 4 : 2;
-  return `<${tag} class="${cls}"${on}>${sp(kw.ico, px)}<b style="color:${kw.col}">${f.k === 'doble' && !f.v ? '' : f.v}</b></${tag}>`;
+  const kw = KW[f.k], px = opts.big ? 4 : 2, su = suitOf(f);
+  const st = su === null ? '' : SUITS === 'borde' ? ` style="border-color:${SUIT_COL[su]}"` : SUITS === 'fondo' ? ` style="background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : '';
+  const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : kw.col;
+  return `<${tag} class="${cls}"${on}${st}>${sp(kw.ico, px)}<b style="color:${numCol}">${f.k === 'doble' && !f.v ? '' : f.v}</b>${su !== null && SUITS === 'gema' ? `<i class="gem" style="background:${SUIT_COL[su]}"></i>` : ''}</${tag}>`;
 }
 function diceRows(opts = {}) {
   return `<div class="col ${opts.pick ? 'pick' : ''}">${['atk', 'def', 'esp'].map(d => `<div class="drow"><div class="lb">${DN(d)}</div>${run.dice[d].map((f, i) => {
@@ -2850,13 +2864,13 @@ function toUse() {
 function effFaces() {
   const fs = DKEYS.map(d => ({ ...C.rolled[d], d, b: 0 }));
   let combo = '';
-  const v = fs.map(f => f.v);
+  const v = fs.map(f => SUITS ? suitOf(f) : (f.v > 0 ? f.v : null));
   fs.forEach(f => { f.o = f.v; f.tag = ''; });
-  if (v[0] > 0 && v[0] === v[1] && v[1] === v[2]) { const m = has('hueso') ? 3 : 2; fs.forEach(f => { f.b = f.v * (m - 1); f.v *= m; f.tag = '×' + m; }); combo = '¡Trío!'; }
+  if (v[0] !== null && v[0] === v[1] && v[1] === v[2]) { const m = has('hueso') ? 3 : 2; fs.forEach(f => { f.b = f.v * (m - 1); f.v *= m; f.tag = '×' + m; }); combo = '¡Trío!'; }
   else {
     const b = has('gemelo') ? 2 : 1;
     outer: for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
-      if (fs[i].v > 0 && fs[i].v === fs[j].v) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; fs[i].tag = fs[j].tag = '+' + b; combo = '¡Pareja!'; break outer; }
+      if (v[i] !== null && v[i] === v[j]) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; fs[i].tag = fs[j].tag = '+' + b; combo = '¡Pareja!'; break outer; }
   }
   // reliquias que cambian el valor de las caras
   for (const f of fs) {
