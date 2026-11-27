@@ -18,7 +18,7 @@ Documento para retomar el trabajo en una conversación nueva. Léelo entero ante
 - Tras cada cambio: comprobar con capturas (Playwright, 390×844) y con el bot de pruebas; después publicar en `main` y decir qué versión (`v0.N`) deben ver en el menú.
 - Nada de botones abajo para volver: **"← Volver" arriba** y **✕ arriba** en las ventanas.
 
-## El juego hoy (v0.37)
+## El juego hoy (v0.38)
 
 - **Héroes** (Ataque y Protección iguales para todos; cambia el especial, siempre con 2 o más tipos de cara):
   - Caballero · Furia: vacía, vacía, Furia 1, Furia 1, Furia 2, Rayo 2.
@@ -26,7 +26,7 @@ Documento para retomar el trabajo en una conversación nueva. Léelo entero ante
   - Pícara · Trucos (17 de vida): vacía, Marcar 2, Marcar 3, Esquivar, Rapidez, Robar 3.
   - Piromante · Fuego: vacía, Fuego 1, Fuego 2, Fuego 3, Explosión 1, Debilitar 2.
   - Doctor de la Plaga · Peste (nuevo, 18 de vida, desde el principio): vacía, Veneno 1, Veneno 2, Nube tóxica 1, Contagio, Antídoto 2.
-- **Caras**: Rayo X = tus golpes de este turno pegan X veces (la forja sube los golpes). Castigo (daño que atraviesa), Aturdir (cancela su dado; a un jefe le quita la mitad del golpe), Debilitar X, Marcar X (+X a cada golpe que reciba), Esquivar (el primer golpe no hace daño), Rapidez (vuelves a tirar los dados no usados, también los vacíos), Robar X (+X de protección y le quitas X), Contagio (su veneno pasa a los demás), Antídoto X. Las caras sin número (`nonum`) y el Rayo (`fixed`) no cambian con parejas ni tríos y no se pueden mejorar (`upF`).
+- **Caras**: Rayo X = tus golpes de este turno pegan X veces (la forja sube los golpes). Castigo (daño que atraviesa), Aturdir (cancela su dado, a cualquier enemigo, jefes incluidos), Debilitar X, Marcar X (+X a cada golpe que reciba), Esquivar (el primer golpe no hace daño), Rapidez (vuelves a tirar los dados no usados, también los vacíos), Robar X (+X de protección y le quitas X), Contagio (su veneno pasa a los demás), Antídoto X. Las caras sin número (`nonum`) y el Rayo (`fixed`) no cambian con parejas ni tríos y no se pueden mejorar (`upF`).
 - Cada héroe con 3 dados: Ataque, Protección y Especial. Evolucionan al vencer a los jefes de los pisos 1 y 2 (2 caminos cada vez); cada evolución tiene su skin 3D (variantes del héroe base) y la pantalla muestra cómo cambian los dados.
 - **Dos mazmorras** (`DUNGEONS`): al pulsar Nueva partida se elige mazmorra. **La Mazmorra** (Cripta, Cuevas, Abismo) y **La Torre del Hechicero** (Biblioteca, Laboratorio y Cima; completa). Ganar La Mazmorra desbloquea la Torre y **La Mazmorra en Dificultad 2** para todos los héroes (`localStorage` `mazmorra_prog`). Truco de pruebas: tocar 5 veces el número de versión lo desbloquea todo. `FLOORS` y `THEMES` cambian según la mazmorra (`setDungeon`); la partida guarda `dg` y `diff`.
 - **Dificultad 2**: enemigos con 25% más de vida, +1 al primer número de cada cara (ataque, escudo o veneno), algunas caras cambiadas por habilidades nuevas (`DIFF2_SUB`, `DIFF2_BOOM`), más combates de 3, 25% menos oro y la hoguera cura el 25% en vez del 35%.

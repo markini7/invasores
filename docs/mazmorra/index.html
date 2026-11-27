@@ -370,7 +370,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.37'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.39'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -2296,7 +2296,7 @@ const KW = {
   furia:     { n: 'Furia',     ico: 'furia',     col: '#ff7050',                         x: v => `+${v} a cada golpe este turno` },
   doble:     { n: 'Rayo',      ico: 'doble',     col: '#f8d84a', fixed: 1,               x: v => `tus golpes de este turno pegan ${v} veces` },
   castigo:   { n: 'Castigo',   ico: 'castigo',   col: '#fff0a0', dmg: 1, pierce: 1,      x: v => `${v} de daño sagrado (atraviesa protección)` },
-  aturdir:   { n: 'Aturdir',   ico: 'aturdir',   col: '#f8d84a', nonum: 1,               x: () => 'ese enemigo no hace nada este turno (a un jefe solo le quita la mitad del golpe)' },
+  aturdir:   { n: 'Aturdir',   ico: 'aturdir',   col: '#f8d84a', nonum: 1,               x: () => 'ese enemigo no hace nada este turno' },
   debilitar: { n: 'Debilitar', ico: 'debilitar', col: '#c0a0ff',                         x: v => `ese enemigo pega ${v} menos este turno` },
   marcar:    { n: 'Marcar',    ico: 'marcar',    col: '#ff9a5a',                         x: v => `ese enemigo recibe +${v} de cada golpe este turno` },
   esquivar:  { n: 'Esquivar',  ico: 'esquivar',  col: '#a0e0ff', nonum: 1,               x: () => 'el primer golpe que te den este turno no te hace daño' },
@@ -3370,9 +3370,8 @@ async function useDie(d, t) {
   } else if (f.k === 'furia') {
     C.furia += f.v; fl('hero', 'FURIA +' + f.v, '#ff7050');
   } else if (f.k === 'aturdir') {
-    if (t.boss) { const a = (t.intent.a + t.rage) || 0, h = Math.ceil(a / 2); t.weak += h; fl(t, h ? 'ATURDIDO: -' + h : 'ATURDIDO', '#f8d84a'); }
-    else { t.stun = true; fl(t, '¡ATURDIDO!', '#f8d84a'); }
-    Tips.show('aturdir', t.boss ? 'Los jefes aguantan: aturdido, solo pega la mitad este turno.' : 'Aturdido: este turno no hace nada. Úsalo en el que más te va a pegar.', null);
+    t.stun = true; fl(t, '¡ATURDIDO!', '#f8d84a');
+    Tips.show('aturdir', 'Aturdido: este turno no hace nada. Úsalo en el que más te va a pegar.', null);
   } else if (f.k === 'debilitar') {
     t.weak += f.v; fl(t, 'DÉBIL -' + f.v, '#c0a0ff');
     Tips.show('debilitar', 'Debilitado: este turno pega ' + f.v + ' menos.', null);
