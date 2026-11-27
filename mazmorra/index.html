@@ -808,6 +808,18 @@ function renderRoom(s, cam, theme, room, time) {
       if (theme.shelf && mat >= 3) {
         const u = mat === 3 ? pz : px, sv = py / .62, row = Math.floor(sv), fv = sv - row;
         if (fv < .13 || py < .3) { ramp = theme.wood; tex = .62 + hash2(Math.floor(u * 4), row) * .12; }
+        else if (theme.shelf === 'lab') {
+          const cu = u / .16 + row * 2.3, col = Math.floor(cu), cx = Math.abs(cu - col - .5), h = hash2(col, row * 5 + 1), bh = .13 + .87 * (.38 + h * .4);
+          if (h < .3) { ramp = theme.wall; tex = brickTex(u, py) * .8; }
+          else if (fv < .13 + (bh - .13) * .68 && cx < .36) {
+            const lv = .13 + (bh - .13) * .68 * (.35 + hash2(col, 9) * .55);
+            if (fv < lv) { ramp = theme.books[Math.floor(h * 97) % 4]; tex = (.95 + Math.sin(time * 3 + col) * .08) * (cx > .28 ? .7 : 1) * (Math.abs(cx - .12) < .05 && fv > lv - .06 ? 1.4 : 1); direct = 0; }
+            else { ramp = theme.floor; tex = cx > .28 ? .75 : .45; }
+          }
+          else if (fv < bh && cx < .12) { ramp = theme.floor; tex = .62; }
+          else if (fv < bh + .03 && cx < .15) { ramp = theme.wood; tex = .7; }
+          else { ramp = theme.wall; tex = brickTex(u, py) * .8; }
+        }
         else {
           const cu = u / .1 + row * 3.7, col = Math.floor(cu), h = hash2(col, row * 7 + 3);
           if (fv < .13 + .87 * (.5 + h * .42) && h > .06) { ramp = theme.books[Math.floor(h * 97) % 4]; tex = (.55 + hash2(col, 11) * .3) * (cu - col < .14 ? .55 : 1) * (Math.abs(fv - .6) < .04 ? 1.35 : 1); }
@@ -1027,7 +1039,7 @@ function enemyFaceTex(str) {
   const it = parseFace(str), parts = [];
   if (it.a) parts.push(['golpe', it.a, '#ff8a8a']); if (it.b) parts.push(['escudo', it.b, '#8ab8ff']); if (it.p) parts.push(['veneno', it.p, '#7aea7a']);
   if (it.h) parts.push(['corazon', it.h, '#ff8a8a']); if (it.r) parts.push(['furia', it.r, '#ff7050']); if (it.s) parts.push(['invoca', '', '#d0a0ff']);
-  if (it.c) parts.push(['maldicion', '', '#d090ff']); if (it.o) parts.push(['moneda', it.o, '#f8d84a']); if (it.k) parts.push(['hielo', it.k > 1 ? it.k : '', '#9ae0ff']); if (it.g) parts.push(['escolta', it.g, '#8ab8ff']);
+  if (it.c) parts.push(['maldicion', '', '#d090ff']); if (it.o) parts.push(['moneda', it.o, '#f8d84a']); if (it.k) parts.push(['hielo', it.k > 1 ? it.k : '', '#9ae0ff']); if (it.g) parts.push(['escolta', it.g, '#8ab8ff']); if (it.l) parts.push(['corazon', it.l, '#7aea7a']);
   return dieTexture('E|' + str, '#2e2428', '#c04040', parts, false, 'e');
 }
 function topFace(q) { let best = 0, bv = -2; CUBE_F.forEach((f, i) => { const n = Q4.rot(q, f.n); if (n[1] > bv) { bv = n[1]; best = i; } }); return best; }
@@ -1724,6 +1736,25 @@ function mLibrarian(M) {
   M.cone(8, 7, 17, 21, 3, .5, 'P'); M.ring(8, 17, 7, 2.8, .6, 'p'); M.px(8, 19, 8, 'y'); M.px(7, 18, 9, 'y');
   M.box(13, 0, 6, 13, 12, 6, 'n'); M.ell(13, 13, 6, 1, 1, 1, 'c');
 }
+function mHomunculus(M) {
+  M.cap(6, 4, 6, 5.6, 0, 6, .9, 'm'); M.cap(9, 4, 6, 9.4, 0, 6, .9, 'm');
+  M.ell(7.5, 6, 6, 2.6, 2.6, 2.2, 'm'); M.box(7, 5, 8, 8, 8, 8, 'R');
+  M.cap(5, 7, 6, 3, 4, 8, .8, 'm'); M.cap(10, 7, 6, 12, 4, 8, .8, 'm'); M.px(3, 4, 9, 's'); M.px(12, 4, 9, 's');
+  M.ell(7.5, 10.6, 6.4, 3.6, 3.2, 3.2, 'm'); M.ell(7.5, 12.6, 6, 2.6, 1.4, 2.4, 'R');
+  M.ell(7.5, 10.6, 9.2, 1.5, 1.5, .8, 'w'); M.px(7, 10, 10, 'k'); M.px(8, 10, 10, 'k'); M.px(7, 11, 10, 'e');
+  for (let x = 6; x <= 9; x++) M.px(x, 8, 9, x % 2 ? 'k' : 'w');
+  M.box(4, 12, 6, 4, 12, 7, 'k'); M.box(11, 11, 6, 11, 11, 7, 'k'); M.box(7, 14, 5, 8, 14, 5, 'k');
+}
+function mHydraHead(M) {
+  M.ell(7, 1.6, 6, 4.6, 1.8, 4.4, 'E'); M.ell(7, 2.2, 7.4, 3.2, 1.4, 3, 'e');
+  M.cap(7, 2.6, 6.4, 7, 9, 6.8, 2, 'e'); M.cap(7, 9, 6.8, 7, 13.6, 9.4, 1.6, 'e');
+  M.cap(7, 3, 8.2, 7, 9, 8.6, 1, 'y'); M.cap(7, 9, 8.4, 7, 12.6, 10.6, .8, 'y');
+  M.ell(7, 15, 10.6, 2.4, 1.9, 2.8, 'e'); M.ell(7, 14.2, 13, 1.6, 1.1, 1.6, 'e'); M.box(6, 13, 13, 8, 13, 14, 'R');
+  M.px(6, 13, 14, 'w'); M.px(8, 13, 14, 'w'); M.px(5, 15, 12, 'r'); M.px(9, 15, 12, 'r'); M.px(5, 16, 12, 'y'); M.px(9, 16, 12, 'y');
+  mirror(7, (sg, X) => { M.cap(X(5.6), 16.2, 9.6, X(4.4), 18.4, 8, .45, 'w'); M.cap(X(4.8), 15, 10, X(3.4), 15.6, 8.6, .4, 'E'); });
+  for (let y = 4; y <= 12; y += 2) M.px(7, y, 4, 'E');
+}
+Object.assign(MODEL_DEFS, { homunculo: [15, 15, 12, mHomunculus], cabezahidra: [14, 19, 16, mHydraHead], sapomorado: [16, 9, 16, mToad, 'morado'] });
 Object.assign(SWAPS, { azul: { P: 'B', p: 'b', y: 'c' }, grimorio: { P: 'R', p: 'r', w: 'y' } });
 Object.assign(MODEL_DEFS, { libro: [14, 12, 12, mBook], bibliotecario: [16, 22, 12, mLibrarian], aprendiz: [16, 19, 12, mCultist, 'azul'], grimorio: [14, 12, 12, mBook, 'grimorio'] });
 Object.assign(SWAPS, { estatua: { P: 'G', p: 'g', k: 'G', r: 'w', y: 'g', s: 'g', g: 'G' }, aventurero: { b: 'n', g: 'G', y: 'n' } });
@@ -1787,6 +1818,7 @@ const CARDS = [
   ['libro', 'Libro vivo', 0, 'Un libro de hechizos que aprendió a morder. Si te muerde, se te olvida algo.'],
   ['aprendiz', 'Aprendiz de mago', 0, 'Todavía no sabe atacar bien, pero protege a todos sus amigos.'],
   ['grimorio', 'Grimorio prohibido', 1, 'Está encadenado por algo: sus maldiciones duran todo el combate.'],
+  ['homunculo', 'Homúnculo', 0, 'Lo hicieron en un frasco. Cada día que pasa vivo se hace más fuerte.'],
   ['bibliotecario', 'El Bibliotecario', 2, 'Guarda la Biblioteca desde hace siglos. Odia el ruido y a los ladrones de libros.'],
   ['reycalavera', 'Rey Calavera', 3, 'Gobernó la Cripta en vida. Sigue gobernándola en muerte.'],
   ['dragon', 'Dragón', 3, 'El fuego más antiguo duerme sobre su tesoro en el Abismo.'],
@@ -2042,7 +2074,7 @@ const Scene = {
     if (ref === 'hero') return { ref, name: heroSkin(), x: HERO_POS[0], z: HERO_POS[2], v: .092, yaw: .55, fx: this.hfx, ph: 1.3 };
     const n = C.en.length, i = C.en.indexOf(ref), tx = slotX(i, n);
     if (ref._x === undefined) ref._x = tx;
-    return { ref, name: MODEL_DEFS[ref.key] ? ref.key : ref.spr, x: ref._x, tx, z: EN_Z, v: voxSize(ref), yaw: -.45, fx: ref._fx || (ref._fx = {}), ph: i * 2.1 };
+    return { ref, name: ref.fig || (MODEL_DEFS[ref.key] ? ref.key : ref.spr), x: ref._x, tx, z: EN_Z, v: voxSize(ref), yaw: -.45, fx: ref._fx || (ref._fx = {}), ph: i * 2.1 };
   },
   headCss(ref) { const f = this.figOf(ref), m = V3D.model(f.name); return this.css([f.tx ?? f.x, m.H * f.v + .1, f.z]); },
   footCss(ref) { const f = this.figOf(ref); return this.css([f.tx ?? f.x, 0, f.z + .4]); },
@@ -2285,6 +2317,13 @@ const EN = {
   banshee:     { n: 'Banshee', px: 6, hp: 18, f: ['a3', 'k1', 'a2k1', 'a4', 'a2p2', 'a3'] },
   grimorio:    { n: 'Grimorio', px: 7, hp: 20, f: ['a3', 'a2c1', 'a4', 'b4', 'c1', 'a5'] },
   bibliotecario: { n: 'Bibliotecario', px: 8, hp: 30, f: ['a4', 's:libro', 'a2c1', 'a5', 'a2g4', 'k1a3'] },
+  homunculo:   { n: 'Homúnculo', hp: 10, grow: 1, f: ['a2', 'a3', 'a2', 'b2', 'a1p1', 'a3'] },
+  sapo:        { n: 'Sapo', fig: 'sapomorado', hp: 9, f: ['p2', 'a1p2', 'a2', 'p3', 'b2', 'a2p1'] },
+  serpiente:   { n: 'Serpiente', hp: 9, f: ['a2', 'l4', 'a3', 'a1p2', 'l3', 'a3'] },
+  momia:       { n: 'Momia', hp: 14, spines: 1, f: ['a3', 'a2', 'b3', 'a4', 'a2b2', 'a3'] },
+  manticora:   { n: 'Mantícora', px: 5, hp: 32, spines: 1, grow: 1, f: ['a4', 'a3p2', 'a5', 'b4', 'a3', 'a6'] },
+  basilisco:   { n: 'Basilisco', px: 6, hp: 30, f: ['a4', 'k2', 'a3', 'a5', 'a2k1', 'b5'] },
+  hidra:       { n: 'Hidra', fig: 'cabezahidra', px: 6, hp: 13, heads: 3, regrow: 1, f: ['a3', 'a4', 'a2p2', 'a5', 'b3', 'a3'] },
   dragon:      { n: 'Dragón', px: 8, hp: 70, f: ['a6', 'a4b4', 'a3p3', 'a7', 'b6r1', 'a5'] },
 };
 const FLOORS_M1 = [
@@ -2297,13 +2336,16 @@ const THEMES_T = [
   { wall: rampOf(['#050302', '#140c07', '#24160c', '#382314', '#4f331e', '#6b4a2c', '#8c653d']), floor: rampOf(['#040203', '#12080a', '#221013', '#38191d', '#512428', '#6e3434', '#8e4a44']), wood: rampOf(['#060403', '#1a100a', '#301e10', '#4a2f19', '#664226', '#8a5c34']), sky: pack(4, 3, 2), shelf: true,
     books: [rampOf(['#0a0304', '#2a0c0e', '#4e1618', '#782424', '#a03a30', '#c85a40']), rampOf(['#03040a', '#0c1430', '#16245a', '#243a86', '#3a58ac', '#5a80d0']), rampOf(['#030803', '#0c2210', '#163c1a', '#245a28', '#3a7a36', '#5a9e4a']), rampOf(['#080702', '#221c08', '#3e3210', '#5e4c18', '#867024', '#b09a3a'])] },
 ];
+THEMES_T.push({ wall: rampOf(['#020403', '#08120e', '#102018', '#1a3024', '#284636', '#3a6048', '#56805e']), floor: rampOf(['#030304', '#0c0d10', '#16181e', '#22262e', '#323844', '#464e5c', '#626c7c']), wood: rampOf(['#040302', '#140e08', '#261a0e', '#3a2a16', '#523c20', '#6e522c']), sky: pack(2, 4, 3), shelf: 'lab',
+  books: [rampOf(['#031003', '#0a300c', '#145a18', '#24902a', '#4ac84a', '#a0f890']), rampOf(['#0a030e', '#2a0c3a', '#4e1870', '#7a2aa8', '#a850e0', '#d8a0ff']), rampOf(['#030a0e', '#0a2a3a', '#145068', '#2280a0', '#40b8d8', '#a0f0ff']), rampOf(['#0e0603', '#3a160a', '#6a2a10', '#a0481a', '#d87a2a', '#ffc070'])] });
 const FLOORS_T = [
   { n: 'La Biblioteca', pool: ['libro', 'cuervo', 'fuegofatuo', 'aprendiz'], elite: ['banshee', 'grimorio'], boss: 'bibliotecario', bg: '#24160c' },
+  { n: 'El Laboratorio', pool: ['homunculo', 'sapo', 'serpiente', 'momia'], elite: ['manticora', 'basilisco'], boss: 'hidra', bg: '#102018' },
 ];
 let FLOORS = FLOORS_M1, THEMES = THEMES_M1;
 const DUNGEONS = [
   { n: 'La Mazmorra', d: 'La Cripta, las Cuevas y el Abismo', floors: FLOORS_M1, themes: THEMES_M1, spr: 'dragon' },
-  { n: 'La Torre del Hechicero', d: 'La Biblioteca, el Laboratorio y la Cima', floors: FLOORS_T, themes: THEMES_T, spr: 'bibliotecario', wip: 'En obras: de momento solo está la Biblioteca (vista previa).' },
+  { n: 'La Torre del Hechicero', d: 'La Biblioteca, el Laboratorio y la Cima', floors: FLOORS_T, themes: THEMES_T, spr: 'bibliotecario', wip: 'En obras: de momento están la Biblioteca y el Laboratorio (vista previa).' },
 ];
 function setDungeon(r) { const D = DUNGEONS[(r && r.dg) || 0]; FLOORS = D.floors; THEMES = D.themes; }
 // progreso: ganar La Mazmorra desbloquea la Torre y la dificultad 2
@@ -2956,7 +2998,7 @@ function victory() {
   S = { scr: 'win' };
   const D = DUNGEONS[run.dg || 0], fresh = (run.dg || 0) === 0 && !progGet().won1;
   if ((run.dg || 0) === 0) progSet({ won1: true });
-  const msg = D.wip ? `${run.cls} ha superado la Biblioteca. ¡Fin de la vista previa! El Laboratorio y la Cima llegarán pronto.`
+  const msg = D.wip ? `${run.cls} ha superado el Laboratorio. ¡Fin de la vista previa! La Cima llegará pronto.`
     : `${run.cls} ha vencido a ${EN[FLOORS[FLOORS.length - 1].boss].n === 'Dragón' ? 'el Dragón' : EN[FLOORS[FLOORS.length - 1].boss].n} y sale de ${D.n.toLowerCase()} con ${run.gold} de oro.`;
   app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(heroSkin(), 10, '', .4))}${sp('corona', 6)}
     <p class="t">${msg}</p>
@@ -2970,9 +3012,9 @@ function victory() {
 // y vuelves a tirar el resto (2 veces)  3) usas cada dado sobre un objetivo
 // 4) los enemigos que siguen vivos hacen lo que sacaron.
 function parseFace(s) {
-  const o = { a: 0, b: 0, p: 0, h: 0, r: 0, c: 0, o: 0, k: 0, g: 0, s: null };
+  const o = { a: 0, b: 0, p: 0, h: 0, r: 0, c: 0, o: 0, k: 0, g: 0, l: 0, s: null };
   const m = s.match(/s:(\w+)/); if (m) o.s = m[1];
-  s.replace(/s:\w+/, '').replace(/([abphrcokg])(\d+)/g, (_, k, n) => { o[k] += +n; });
+  s.replace(/s:\w+/, '').replace(/([abphrcokgl])(\d+)/g, (_, k, n) => { o[k] += +n; });
   return o;
 }
 function makeEnemy(key) {
@@ -2982,7 +3024,7 @@ function makeEnemy(key) {
     f = f.slice(); const sb = DIFF2_SUB[key]; if (sb) f[sb[0]] = sb[1];
     f = f.map(bumpF); hp = Math.ceil(hp * 1.25); boom = boom || DIFF2_BOOM[key] || 0;
   }
-  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp, max: hp, block: 0, guard: 0, thorn: 0, poison: 0, rage: 0, intent: null, die: -1, f, boom, stolen: 0 };
+  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp, max: hp, block: 0, guard: 0, thorn: 0, poison: 0, rage: 0, intent: null, die: -1, f, boom, stolen: 0, spines: d.spines || 0, grow: d.grow || 0, regrow: d.regrow || 0, fig: d.fig };
 }
 // maldición: una cara de tus dados queda vacía hasta el final del combate
 function curseFace() {
@@ -3002,6 +3044,7 @@ function startCombat(kind) {
   if (window.LAB_EN) list = window.LAB_EN.slice();
   else if (!FAST && kind === 'combate' && !Tuto.seen()) { list = ['rata']; Tuto.start(); }
   // nadie pelea solo: el jefe trae un esbirro (dos en el último piso), la élite uno o dos y el mímico, un bicho del piso
+  else if (kind === 'jefe' && EN[fl.boss].heads) list = Array(EN[fl.boss].heads).fill(fl.boss);
   else if (kind === 'jefe') list = run.floor === 2 ? [pick(fl.pool), fl.boss, pick(fl.pool)] : [fl.boss, pick(fl.pool)];
   else if (kind === 'elite') list = run.floor > 0 && Math.random() < .5 ? [pick(fl.pool), pick(fl.elite), pick(fl.pool)] : [pick(fl.elite), pick(fl.pool)];
   else if (kind === 'mimico') list = ['mimico' + (run.floor + 1), pick(fl.pool)];
@@ -3020,7 +3063,12 @@ function startCombat(kind) {
 const alive = () => C.en.filter(e => e.hp > 0);
 async function newTurn() {
   if (!C) return;
+  const regrow = C.en.filter(e => e.hp <= 0 && e.regrow > 0 && C.en.some(o => o.hp > 0 && o.key === e.key));
+  for (const e of regrow) {
+    e.regrow--; e.hp = Math.ceil(e.max / 2); e._dead = false; e._killed = false; e.poison = 0; e.block = 0; if (e._fx) e._fx.die = 0;
+  }
   C.en = C.en.filter(e => e.hp > 0);
+  if (C.turn > 0) for (const e of C.en) if (e.grow) { e.rage += e.grow; }
   const keep = has('coraza') ? Math.min(3, C.block || 0) : 0;
   C.turn++; C.block = (has('escudo') ? 1 : 0) + keep + (C.turn === 1 && has('yelmo') ? 4 : 0); C.rolled = null; C.sel = null; C.cuerno = false;
   C.locked = { atk: false, def: false, esp: false }; C.used = { atk: false, def: false, esp: false };
@@ -3035,6 +3083,8 @@ async function newTurn() {
     t.block += e.intent.g; e.gTo = t === e ? 'sí mismo' : t.n;
   }
   C.phase = 'enemy'; C.busy = true; cRender();
+  for (const e of regrow) { fl(e, '¡Le vuelve a crecer!', '#7aea7a'); Tips.show('regrow', 'Si no matas todas las cabezas, las muertas vuelven a crecer con la mitad de vida (una vez cada una).', null); }
+  if (C.turn > 1 && C.en.some(e => e.grow)) { for (const e of C.en) if (e.grow) fl(e, 'CRECE +' + e.grow, '#ff7050'); Tips.show('grow', 'Crece: cada turno que sigue vivo pega 1 más. Mátalo pronto.', null); }
   if (!FAST) {
     Scene.dice = [];
     const ed = C.en.map(e => ({ kind: 'e', en: e, want: e.die }));
@@ -3150,7 +3200,14 @@ async function useDie(d, t) {
     for (let h = 0; h < C.hits; h++) {
       if (!alive().length) break;
       if (!FAST) Scene.lunge('hero', targets[0]);
-      for (const e of targets) { if (e.hp <= 0) continue; const dealt = hitEnemy(e, f.v + C.furia, kw.pierce, f.k === 'fuego' || f.k === 'explosion' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); } }
+      for (const e of targets) {
+        if (e.hp <= 0) continue; const dealt = hitEnemy(e, f.v + C.furia, kw.pierce, f.k === 'fuego' || f.k === 'explosion' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); }
+        if (e.spines) {
+          let dmg = e.spines; const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
+          if (dmg > 0) { run.hp = Math.max(1, run.hp - dmg); fl('hero', '-' + dmg + ' pinchos', '#c0d0ff', true); }
+          Tips.show('spines', 'Tiene pinchos: cada vez que le pegas te hace ' + e.spines + ' de daño (tu protección te sirve).', null);
+        }
+      }
       cRender(); await sleep(280);
     }
   } else if (f.k === 'escudo' || f.k === 'espinas') {
@@ -3196,7 +3253,7 @@ async function deaths() {
     for (const e of fresh) {
       e._dead = true;
       if (!FAST) { const sd = Scene.edie(e); if (sd) sd.fade = performance.now(); }
-      if (e.intent && !e.acted && (e.intent.a || e.intent.p || e.intent.h || e.intent.s || e.intent.c || e.intent.o || e.intent.k)) { fl(e, '¡Dado cancelado!', '#f8d84a'); Tips.show('cancel', 'Lo has matado antes de que actuara: su dado ya no hace nada.', null); }
+      if (e.intent && !e.acted && (e.intent.a || e.intent.p || e.intent.h || e.intent.s || e.intent.c || e.intent.o || e.intent.k || e.intent.l)) { fl(e, '¡Dado cancelado!', '#f8d84a'); Tips.show('cancel', 'Lo has matado antes de que actuara: su dado ya no hace nada.', null); }
     }
     if (has('calavera')) for (const _ of fresh) for (const e of alive()) hitEnemy(e, 2, true, '#e0e0f0');
     for (const e of fresh) if (e.boom) {
@@ -3251,6 +3308,7 @@ async function endTurn() {
       if (C.thorns) hitEnemy(e, C.thorns, true, '#c0d0ff');
     }
     if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p + ' veneno', '#7aea7a'); }
+    if (it.l) { const al = alive().filter(o => o.hp < o.max).sort((a, b) => a.hp / a.max - b.hp / b.max)[0]; if (al) { const hh = Math.min(it.l, al.max - al.hp); al.hp += hh; fl(al, '+' + hh, '#7aea7a'); Tips.show('healally', 'Cura al enemigo más herido. Mátalo primero si puedes.', null); } }
     if (it.h) for (const o of alive()) { const hh = Math.min(it.h, o.max - o.hp); o.hp += hh; if (hh) fl(o, '+' + hh, '#7aea7a'); }
     if (it.r) { e.rage += it.r; fl(e, 'FURIA +' + it.r, '#ff7050'); Tips.show('rage', 'Se ha enfurecido: desde ahora sus golpes suman ' + e.rage + ' más (el número rojo pequeño).', '#ec-' + C.en.indexOf(e) + ' .intent'); }
     if (it.s && alive().length < 3) { const m = makeEnemy(it.s); C.en.push(m); fl(m, '¡Aparece!', '#d0a0ff'); }
@@ -3282,6 +3340,7 @@ function intentHTML(e) {
   if (it.o) p.push(`<span style="color:#f8d84a">${sp('moneda', 2)}${it.o}</span>`);
   if (it.k) p.push(`<span style="color:#9ae0ff">${sp('hielo', 2)}${it.k > 1 ? it.k : ''}</span>`);
   if (it.g) p.push(`<span style="color:#8ab8ff">${sp('escolta', 2)}${it.g}</span>`);
+  if (it.l) p.push(`<span style="color:#7aea7a">${sp('corazon', 2)}+${it.l}</span>`);
   return p.join('') || '<span style="color:var(--dim)">nada</span>';
 }
 function intentText(it, e) {
@@ -3289,7 +3348,7 @@ function intentText(it, e) {
   if (it.a) p.push(`ataca ${it.a + (e ? e.rage : 0)}`); if (it.b) p.push(`se protege ${it.b}`); if (it.p) p.push(`envenena ${it.p}`);
   if (it.h) p.push(`cura ${it.h} a todos`); if (it.r) p.push(`se enfurece +${it.r}`); if (it.s) p.push(`invoca: ${EN[it.s].n}`);
   if (it.c) p.push('te maldice: una cara de tus dados queda vacía hasta el final del combate'); if (it.o) p.push(`te roba ${it.o} de oro`);
-  if (it.k) p.push(`congela ${it.k > 1 ? it.k + ' de tus dados' : 'uno de tus dados'} el próximo turno`); if (it.g) p.push(`protege ${it.g} a ${e && e.gTo ? e.gTo : 'un aliado'}`);
+  if (it.k) p.push(`congela ${it.k > 1 ? it.k + ' de tus dados' : 'uno de tus dados'} el próximo turno`); if (it.g) p.push(`protege ${it.g} a ${e && e.gTo ? e.gTo : 'un aliado'}`); if (it.l) p.push(`cura ${it.l} al aliado más herido`);
   return p.join(', ') || 'nada';
 }
 function badge(ico, v, col) { return `<span style="color:${col}">${sp(ico, 2)}${v}</span>`; }
@@ -3359,7 +3418,7 @@ function cRender() {
     const cx = n === 1 ? bw / 2 : bw * (k + .5) / n;
     const row = e.max <= 12 ? e.max : live.length === 1 ? 35 : live.length === 2 ? 25 : 16;
     band += `<div class="ecard ${can ? 'pick' : f ? 'nope' : ''}" id="ec-${i}" style="left:${cx}px;width:${w}px" onclick="G.tapEnemy(${i})">
-      <div class="ec-top"><span class="nm">${e.n}</span>${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.boom ? badge('explosion', e.boom, '#f08a2a') : ''}${e.stolen ? badge('moneda', e.stolen, '#f8d84a') : ''}<span class="intent">${intentHTML(e)}</span></div>
+      <div class="ec-top"><span class="nm">${e.n}</span>${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.boom ? badge('explosion', e.boom, '#f08a2a') : ''}${e.stolen ? badge('moneda', e.stolen, '#f8d84a') : ''}${e.spines ? badge('espinas', e.spines, '#c0d0ff') : ''}<span class="intent">${intentHTML(e)}</span></div>
       <div class="ec-hp">${pips(e.hp, e.max, { blk: e.block, row: Math.max(4, Math.min(Math.max(row, e.max <= 12 ? e.max : Math.ceil(e.max / 2)), Math.floor((w - 12 - 6 * (String(e.max).length * 2 + 1) * 1.0 - 8) / 5))), cls: 'en' })}<span class="hpn">${Math.max(0, e.hp)}/${e.max}</span></div></div>`;
   });
   const eb = $('#eband'); eb.innerHTML = band;
@@ -3457,7 +3516,7 @@ const G = {
     }
     if (C.phase === 'roll') return G.roll();
     if (Tuto.on) return;
-    modal(`<h3>${e.n}</h3>${pips(e.hp, e.max, { blk: e.block, cls: 'mid' })}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>${e.boom ? `<p class="t" style="color:#f08a2a">Al morir explota: ${e.boom} de daño a todos.</p>` : ''}${e.stolen ? `<p class="t" style="color:var(--gold)">Te ha robado ${e.stolen} de oro: mátalo y lo recuperas.</p>` : ''}`);
+    modal(`<h3>${e.n}</h3>${pips(e.hp, e.max, { blk: e.block, cls: 'mid' })}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>${e.boom ? `<p class="t" style="color:#f08a2a">Al morir explota: ${e.boom} de daño a todos.</p>` : ''}${e.spines ? `<p class="t" style="color:#c0d0ff">Pinchos: cada vez que le pegas te hace ${e.spines} de daño.</p>` : ''}${e.grow ? `<p class="t" style="color:#ff7050">Crece: cada turno pega ${e.grow} más.</p>` : ''}${e.regrow ? `<p class="t" style="color:#7aea7a">Si queda otra cabeza viva, vuelve a crecer (${e.regrow} vez).</p>` : ''}${e.stolen ? `<p class="t" style="color:var(--gold)">Te ha robado ${e.stolen} de oro: mátalo y lo recuperas.</p>` : ''}`);
   },
   tapHero: () => {
     if (!C) return;
