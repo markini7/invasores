@@ -370,7 +370,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.36'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.37'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -639,6 +639,15 @@ const ICO = {
   hielo: ['c..c..c', '.c.c.c.', '..ccc..', 'cccwccc', '..ccc..', '.c.c.c.', 'c..c..c'],
   maldicion: ['.ppppp.', 'p.....p', 'p.ppp.p', 'p.p.p.p', 'p.p...p', 'p.pppp.', 'p......'],
   escolta: ['.bbbbb.', 'bbbwbbb', 'bbbwbbb', 'bwwwwwb', '.bbwbb.', '..bbb..', '...b...'],
+  castigo: ['...w...', '..wyw..', '.wyyyw.', 'wyyyyyw', '.wyyyw.', '..wyw..', '...w...'],
+  aturdir: ['.yyy...', 'y...y..', 'y.y.y..', 'y..y...', '.y....y', '..y..yy', '...yyy.'],
+  debilitar: ['...p...', '...p...', '...p...', 'ppppppp', '.ppppp.', '..ppp..', '...p...'],
+  marcar: ['..ooo..', '.o...o.', 'o..o..o', 'o.ooo.o', 'o..o..o', '.o...o.', '..ooo..'],
+  esquivar: ['.......', 'cccc...', '....cc.', '.cccccc', '......c', 'ccccc..', '.......'],
+  rapidez: ['e..e...', '.e..e..', '..e..e.', '...e..e', '..e..e.', '.e..e..', 'e..e...'],
+  robar: ['..yy...', '.y..y..', '..yy...', '.yyyy..', 'yyYyyy.', 'yyyyyy.', '.yyyy..'],
+  contagio: ['e.....e', 'ee...ee', '.......', '...e...', '..eee..', '.eeeee.', '..eee..'],
+  antidoto: ['..ggg..', '...g...', '.ccccc.', 'cccwccc', 'ccwwwcc', 'cccwccc', '.ccccc.'],
   salir: ['...ww..', '....ww.', 'wwwwwww', 'wwwwwww', '....ww.', '...ww..', '.......'],
   dado: ['wwwwwww', 'wkwwwkw', 'wwwwwww', 'wwwkwww', 'wwwwwww', 'wkwwwkw', 'wwwwwww'],
   seta: ['.rrrrr.', 'rwrrrwr', 'rrrwrrr', '.kwwwk.', '..www..', '..www..', '.wwwww.'],
@@ -1047,7 +1056,7 @@ function faceTex(d, f, gold, plain) {
   const [b, r] = dieCols(d), key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
   if (blankF(f)) return dieTexture(key, b, r, []);
   const kw = KW[f.k];
-  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold, 'p', plain ? null : suitOf(f));
+  return dieTexture(key, b, r, [[kw.ico, kw.nonum ? '' : f.v, kw.col]], gold, 'p', plain ? null : suitOf(f));
 }
 // dado de enemigo: hueso oscuro con borde rojo, y lo que hace pintado (hasta dos cosas)
 function enemyFaceTex(str) {
@@ -1286,6 +1295,20 @@ function mPyro(M, o = {}) {
   if (arc) { M.ell(12.1, 16.6, 7.8, 1.3, 1.3, 1.3, 'c'); M.ell(12.1, 16.6, 7.8, .6, .6, .6, 'w'); }
   else { M.ell(12.1, 17, 7.8, 1.3, 2.1, 1.3, 'o'); M.ell(12.1, 16.6, 7.8, .7, 1.1, .7, 'y'); }
 }
+function mDoctor(M, o = {}) {
+  const alq = o.t1 === 'alquimista', cir = o.t1 === 'cirujano';
+  M.box(6, 0, 5, 7, 3, 7, 'k'); M.box(8, 0, 5, 9, 3, 7, 'k');
+  M.cone(8, 6, 1, 12, 4.2, 2.8, 'k'); M.cone(8, 6, 1, 1, 4.4, 4.4, 'G');
+  M.ring(8, 7, 6, 3.3, .5, 'n'); M.box(10, 5, 8, 11, 7, 9, 'n');
+  if (alq) for (const [x, c] of [[5, 'e'], [7, 'p'], [9, 'c']]) { M.px(x, 6, 9, c); M.px(x, 7, 9, c); }
+  if (cir) { M.box(6, 2, 9, 10, 10, 9, 'w'); M.box(7, 7, 10, 9, 7, 10, 'r'); M.box(8, 6, 10, 8, 8, 10, 'r'); }
+  M.cap(5.2, 11.4, 6, 4, 8, 8.4, 1, 'k'); M.cap(10.8, 11.4, 6, 12, 8, 8.4, 1, 'k');
+  M.ell(4, 7.8, 8.6, .8, .8, .8, 'N'); M.ell(12, 7.8, 8.6, .8, .8, .8, 'N');
+  M.cap(12.4, 0, 9, 12.4, 9, 9, .45, 'n'); M.px(12, 10, 9, 'y');
+  M.ell(8, 14.2, 6, 2.6, 2.6, 2.4, 'w'); M.cap(8, 13.6, 8, 8, 12.2, 11.4, .8, 'w'); M.cap(8, 12.8, 10, 8, 12, 11.8, .5, 'Y');
+  M.px(7, 15, 8, 'r'); M.px(9, 15, 8, 'r'); M.px(7, 14, 8, 'k'); M.px(9, 14, 8, 'k');
+  M.ell(8, 16.8, 6, 4.2, .6, 4.2, 'k'); M.cone(8, 6, 17, 20, 2.5, 2.2, 'k'); M.ring(8, 17.4, 6, 2.5, .4, alq ? 'e' : 'R');
+}
 // piezas que añade la segunda evolución (encima de la primera)
 const EVO_ACC = {
   campeon: M => { M.box(5, 3, 2, 10, 13, 3, 'R'); M.box(4, 12, 3, 11, 13, 4, 'R'); M.ring(8, 17.8, 6, 2.7, .45, 'e'); },
@@ -1293,12 +1316,14 @@ const EVO_ACC = {
   santa: M => mirror(8, (s, X) => { M.ell(X(2.4), 13.2, 3.2, 2.4, 4.4, .6, 'y', (x, y) => y > 9.4); M.ell(X(2), 15, 3.2, 1.4, 2.4, .6, 'w', (x, y) => y > 13); }),
   martillosagrado: M => { M.box(10, 14, 6, 14, 17, 9, 'g'); M.box(10, 17, 6, 14, 17, 9, 'w'); M.px(12, 15, 10, 'y'); M.ell(4.8, 12.8, 6, 1.7, 1.2, 1.7, 'g'); M.ell(11.2, 12.8, 6, 1.7, 1.2, 1.7, 'g'); },
   sombra: M => { M.ell(8, 1.2, 6, 4.6, 1.8, 4.6, 'P'); M.ell(8, 3, 6, 3.6, 1, 3.6, 'P', (x, y, z) => (Math.floor(x) + Math.floor(z)) % 2 === 0); M.px(6, 14, 9, 'c'); M.px(9, 14, 9, 'c'); },
+  maestradelengano: M => { M.ell(8, 1.2, 6, 4.6, 1.8, 4.6, 'k'); M.ell(8, 3, 6, 3.6, 1, 3.6, 'k', (x, y, z) => (Math.floor(x) + Math.floor(z)) % 2 === 0); M.px(6, 14, 9, 'p'); M.px(9, 14, 9, 'p'); },
+  medicodeguerra: M => { M.box(3, 6, 4, 4, 9, 7, 'n'); M.box(4, 10, 8, 5, 11, 8, 'w'); M.px(4, 10, 9, 'r'); M.ring(8, 9.5, 6, 3, .4, 'R'); },
   plaga: M => { M.cap(8, 13.6, 9.4, 8, 12.4, 11.6, .75, 'w'); M.ell(8, 17.8, 6, 3.6, .5, 3.6, 'k'); M.cone(8, 6, 18, 20, 2, 1.4, 'k'); for (const [x, y, z] of [[3, 15, 8], [13, 13, 9], [2, 11, 6], [14, 16, 5]]) M.px(x, y, z, 'k'); },
   tormenta: M => { M.ell(12.1, 21.4, 7.8, 2, .9, 1.4, 'G'); for (const [x, y] of [[13, 20], [12, 19], [13, 18], [11, 13], [10, 12], [11, 11], [3, 12], [4, 11], [3, 10]]) M.px(x, y, 9, 'c'); },
   fenix: M => mirror(8, (s, X) => { M.ell(X(2.6), 13, 3.4, 2.6, 4.6, .6, 'o', (x, y) => y > 8.8); M.ell(X(2.4), 14.8, 3.4, 1.6, 2.8, .6, 'y', (x, y) => y > 12); }),
 };
 const evoId = n => n.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]/g, '');
-const HERO_BASE = { caballero: mKnight, clerigo: mCleric, picaro: mRogue, piromante: mPyro };
+const HERO_BASE = { caballero: mKnight, clerigo: mCleric, picaro: mRogue, piromante: mPyro, doctor: mDoctor };
 // modelo 3D del héroe según sus evoluciones (se crea la primera vez que hace falta)
 function skinFor(hero, evos) {
   const base = HEROES[hero].spr;
@@ -1500,7 +1525,7 @@ function mDragon(M) {
   for (let z = 6; z <= 16; z += 2) M.px(12, z < 13 ? 12 : 14, z, 'o');
 }
 const MODEL_DEFS = {
-  caballero: [16, 22, 12, mKnight], clerigo: [16, 20, 12, mCleric], picaro: [16, 19, 12, mRogue], piromante: [16, 23, 12, mPyro],
+  caballero: [16, 22, 12, mKnight], clerigo: [16, 20, 12, mCleric], picaro: [16, 19, 12, mRogue], piromante: [16, 23, 12, mPyro], doctor: [16, 21, 13, mDoctor],
   rata: [12, 9, 18, mRat], ratagigante: [12, 9, 18, M => mRat(M, { crown: 1, tails: 3 }), 'rojo'],
   murcielago: [20, 13, 8, mBat], esqueleto: [16, 19, 12, mSkeleton], limo: [16, 12, 16, mSlime],
   limogrande: [16, 12, 16, M => mSlime(M, { skulls: 3 }), 'morado'], reycalavera: [18, 23, 14, mSkullKing],
@@ -2269,7 +2294,16 @@ const KW = {
   escudo:    { n: 'Escudo',    ico: 'escudo',    col: '#8ab8ff',                         x: v => `+${v} de protección` },
   espinas:   { n: 'Espinas',   ico: 'espinas',   col: '#c0d0ff',                         x: v => `+${v} de protección y devuelves ${v} a quien te pegue` },
   furia:     { n: 'Furia',     ico: 'furia',     col: '#ff7050',                         x: v => `+${v} a cada golpe este turno` },
-  doble:     { n: 'Doble',     ico: 'doble',     col: '#f8d84a',                         x: v => `tus golpes pegan 2 veces${v ? ` y +${v}` : ''}` },
+  doble:     { n: 'Rayo',      ico: 'doble',     col: '#f8d84a', fixed: 1,               x: v => `tus golpes de este turno pegan ${v} veces` },
+  castigo:   { n: 'Castigo',   ico: 'castigo',   col: '#fff0a0', dmg: 1, pierce: 1,      x: v => `${v} de daño sagrado (atraviesa protección)` },
+  aturdir:   { n: 'Aturdir',   ico: 'aturdir',   col: '#f8d84a', nonum: 1,               x: () => 'ese enemigo no hace nada este turno (a un jefe solo le quita la mitad del golpe)' },
+  debilitar: { n: 'Debilitar', ico: 'debilitar', col: '#c0a0ff',                         x: v => `ese enemigo pega ${v} menos este turno` },
+  marcar:    { n: 'Marcar',    ico: 'marcar',    col: '#ff9a5a',                         x: v => `ese enemigo recibe +${v} de cada golpe este turno` },
+  esquivar:  { n: 'Esquivar',  ico: 'esquivar',  col: '#a0e0ff', nonum: 1,               x: () => 'el primer golpe que te den este turno no te hace daño' },
+  rapidez:   { n: 'Rapidez',   ico: 'rapidez',   col: '#a0ffa0', nonum: 1,               x: () => 'vuelves a tirar una vez más los dados que no has usado (también los que salieron vacíos)' },
+  robar:     { n: 'Robar',     ico: 'robar',     col: '#f8d84a',                         x: v => `+${v} de protección para ti y le quitas ${v} de la suya` },
+  contagio:  { n: 'Contagio',  ico: 'contagio',  col: '#7aea7a', nonum: 1,               x: () => 'el veneno de ese enemigo pasa también a todos los demás' },
+  antidoto:  { n: 'Antídoto',  ico: 'antidoto',  col: '#a0ffc0',                         x: v => `te quitas el veneno y te curas ${v}` },
   luz:       { n: 'Luz',       ico: 'luz',       col: '#f8e88a',                         x: v => `te curas ${v} (lo que sobre es protección)` },
   veneno:    { n: 'Veneno',    ico: 'veneno',    col: '#7aea7a',                         x: v => `${v} de veneno al objetivo` },
   nube:      { n: 'Nube tóxica', ico: 'nube',    col: '#7aea7a',                         x: v => `${v} de veneno a todos` },
@@ -2278,20 +2312,21 @@ const blankF = f => f.v <= 0 && f.k !== 'doble';
 
 // ---------------------------------------------------------- héroes
 const plusAll = (d, n = 1) => r => r.dice[d].forEach(f => f.v += n);
-const lowIdx = (r, d, cnt) => r.dice[d].map((f, i) => [f.v, i]).sort((a, b) => a[0] - b[0]).slice(0, cnt).map(x => x[1]);
+const lowIdx = (r, d, cnt) => r.dice[d].map((f, i) => [KW[f.k].nonum || KW[f.k].fixed ? 99 : f.v, i]).sort((a, b) => a[0] - b[0]).slice(0, cnt).map(x => x[1]);
 const lowUp = (d, cnt) => r => lowIdx(r, d, cnt).forEach(i => r.dice[d][i].v++);
 const setLow = (d, cnt, k, v) => r => lowIdx(r, d, cnt).forEach(i => { r.dice[d][i] = { ...F(k, Math.max(v, r.dice[d][i].v + 1)), s: r.dice[d][i].s }; });
 // cada dado tiene dos caras de cada color, repartidas al azar
 // cada dado: dos colores con dos caras y dos colores con una, repartidos al azar
 const giveSuits = r => DKEYS.forEach(d => { if (r.dice[d].every(f => f.s !== undefined)) return; const c = shuffle([0, 1, 2, 3]), su = shuffle([c[0], c[0], c[1], c[1], c[2], c[3]]); r.dice[d].forEach((f, i) => { f.s = su[i]; }); });
+const upF = (d, i) => { const f = run.dice[d][i]; if (KW[f.k] && KW[f.k].nonum) { toast('Esta cara no tiene número: no se puede mejorar'); return false; } f.v++; return true; };
 const hpUp = n => r => { r.maxHp += n; r.hp += n; };
 const all = (...fns) => r => fns.forEach(f => f(r));
 
 const HEROES = {
   caballero: {
     n: 'Caballero', spr: 'caballero', hp: 22, dc: '#f08a2a', espK: 'furia', espN: 'Furia',
-    d: 'Duro y directo. Su Furia suma daño a cada golpe y a veces pega dos veces.',
-    esp: [F('furia', 0), F('furia', 0), F('furia', 1), F('furia', 1), F('furia', 2), F('doble', 0)],
+    d: 'Duro y directo. Su Furia suma daño a cada golpe y su Rayo hace que pegue dos veces.',
+    esp: [F('furia', 0), F('furia', 0), F('furia', 1), F('furia', 1), F('furia', 2), F('doble', 2)],
     evo: [
       [{ n: 'Paladín', d: 'Protección +1 en todas las caras, 2 caras de Luz y +4 de vida', a: all(plusAll('def'), setLow('esp', 2, 'luz', 2), hpUp(4)) },
        { n: 'Bárbaro', d: 'Furia +1 en todas las caras y +1 a tus 2 peores caras de ataque', a: all(plusAll('esp'), lowUp('atk', 2)) }],
@@ -2299,34 +2334,44 @@ const HEROES = {
        { n: 'Señor de la guerra', d: '2 caras de Barrido 3 en ataque y Furia +1', a: all(setLow('atk', 2, 'barrido', 3), plusAll('esp')) }]],
   },
   clerigo: {
-    n: 'Clériga', spr: 'clerigo', hp: 20, dc: '#f8d84a', espK: 'luz', espN: 'Luz',
-    d: 'Se cura casi cada turno y su maza pega algo más fuerte.',
-    esp: [F('luz', 0), F('luz', 1), F('luz', 1), F('luz', 2), F('luz', 2), F('luz', 3)], atk: [1, 1, 1, 2, 2, 2],
+    n: 'Clériga', spr: 'clerigo', hp: 20, dc: '#f8d84a', espK: 'castigo', espN: 'Fe',
+    d: 'Castiga con luz sagrada que atraviesa la protección, aturde al más peligroso y se cura un poco.',
+    esp: [F('castigo', 0), F('luz', 2), F('castigo', 2), F('castigo', 2), F('castigo', 3), F('aturdir', 1)], atk: [1, 1, 1, 2, 2, 2],
     evo: [
-      [{ n: 'Sacerdotisa', d: 'Luz +1 en todas las caras y +4 de vida', a: all(plusAll('esp'), hpUp(4)) },
-       { n: 'Inquisidora', d: 'Ataque +1 en todas las caras y 2 caras de Fuego 2', a: all(plusAll('atk'), setLow('esp', 2, 'fuego', 2)) }],
-      [{ n: 'Santa', d: 'Protección +1 y Luz +1 en todas las caras', a: all(plusAll('def'), plusAll('esp')) },
+      [{ n: 'Sacerdotisa', d: 'Fe +1 en todas las caras y +4 de vida', a: all(plusAll('esp'), hpUp(4)) },
+       { n: 'Inquisidora', d: 'Ataque +1 en todas las caras y 2 caras de Castigo 3', a: all(plusAll('atk'), setLow('esp', 2, 'castigo', 3)) }],
+      [{ n: 'Santa', d: 'Protección +1 y Fe +1 en todas las caras', a: all(plusAll('def'), plusAll('esp')) },
        { n: 'Martillo sagrado', d: '2 caras de Vampiro 4 en ataque', a: setLow('atk', 2, 'vampiro', 4) }]],
   },
   picaro: {
-    n: 'Pícara', spr: 'picaro', hp: 15, dc: '#5ad05a', espK: 'veneno', espN: 'Veneno',
-    d: 'Envenena: el veneno hace daño cada turno y se acumula.',
-    esp: [F('veneno', 0), F('veneno', 0), F('veneno', 1), F('veneno', 1), F('veneno', 1), F('veneno', 2)],
+    n: 'Pícara', spr: 'picaro', hp: 17, dc: '#5ad05a', espK: 'marcar', espN: 'Trucos',
+    d: 'Marca a su víctima para que tus golpes peguen más, esquiva, roba protección y vuelve a tirar.',
+    esp: [F('marcar', 0), F('marcar', 2), F('marcar', 3), F('esquivar', 1), F('rapidez', 1), F('robar', 3)],
     evo: [
       [{ n: 'Asesina', d: '2 caras de Perforar 3 en ataque', a: setLow('atk', 2, 'perforar', 3) },
-       { n: 'Alquimista', d: 'Veneno +1 en todas las caras y 1 cara de Nube tóxica', a: all(plusAll('esp'), setLow('esp', 1, 'nube', 2)) }],
+       { n: 'Ladrona', d: 'Trucos +1 y 1 cara más de Rapidez', a: all(plusAll('esp'), setLow('esp', 1, 'rapidez', 1)) }],
       [{ n: 'Sombra', d: 'Ataque +1 y Protección +1 en todas las caras', a: all(plusAll('atk'), plusAll('def')) },
-       { n: 'Plaga', d: 'Veneno +1 en todas las caras y 2 caras de Nube tóxica 3', a: all(plusAll('esp'), setLow('esp', 2, 'nube', 3)) }]],
+       { n: 'Maestra del engaño', d: 'Trucos +2 y 1 cara más de Esquivar', a: all(plusAll('esp', 2), setLow('esp', 1, 'esquivar', 1)) }]],
   },
   piromante: {
     n: 'Piromante', spr: 'piromante', hp: 17, dc: '#ff6a3a', espK: 'fuego', espN: 'Fuego',
-    d: 'Su fuego atraviesa la protección. Frágil pero explosivo.',
-    esp: [F('fuego', 0), F('fuego', 0), F('fuego', 1), F('fuego', 1), F('fuego', 2), F('fuego', 3)],
+    d: 'Su fuego atraviesa la protección y su humo debilita. Frágil pero explosivo.',
+    esp: [F('fuego', 0), F('fuego', 1), F('fuego', 2), F('fuego', 3), F('explosion', 1), F('debilitar', 2)],
     evo: [
       [{ n: 'Archimago', d: 'Fuego +1 en todas las caras y +3 de vida', a: all(plusAll('esp'), hpUp(3)) },
        { n: 'Incendiario', d: '2 caras de Explosión 3 (fuego a todos)', a: setLow('esp', 2, 'explosion', 3) }],
-      [{ n: 'Tormenta', d: 'Ataque +1 en todas las caras y 1 cara Doble', a: all(plusAll('atk'), setLow('esp', 1, 'doble', 1)) },
+      [{ n: 'Tormenta', d: 'Ataque +1 en todas las caras y 1 cara de Rayo 2', a: all(plusAll('atk'), setLow('esp', 1, 'doble', 2)) },
        { n: 'Fénix', d: '+8 de vida, Protección +1 y 1 cara de Luz 3', a: all(hpUp(8), plusAll('def'), setLow('esp', 1, 'luz', 3)) }]],
+  },
+  doctor: {
+    n: 'Doctor de la Plaga', spr: 'doctor', hp: 18, dc: '#7aea7a', espK: 'veneno', espN: 'Peste',
+    d: 'Envenena a uno y lo contagia a todos. El veneno hace daño cada turno. Se cura su propio veneno.',
+    esp: [F('veneno', 0), F('veneno', 1), F('veneno', 2), F('nube', 1), F('contagio', 1), F('antidoto', 2)],
+    evo: [
+      [{ n: 'Alquimista', d: 'Peste +1 en todas las caras y 1 cara de Nube tóxica 2', a: all(plusAll('esp'), setLow('esp', 1, 'nube', 2)) },
+       { n: 'Cirujano', d: 'Ataque +1, Protección +1 y +4 de vida', a: all(plusAll('atk'), plusAll('def'), hpUp(4)) }],
+      [{ n: 'Plaga', d: 'Peste +1 en todas las caras y 2 caras de Nube tóxica 3', a: all(plusAll('esp'), setLow('esp', 2, 'nube', 3)) },
+       { n: 'Médico de guerra', d: '+6 de vida y 2 caras de Antídoto 3', a: all(hpUp(6), setLow('esp', 2, 'antidoto', 3)) }]],
   },
 };
 
@@ -2449,7 +2494,7 @@ const RELICS = {
   acido:    { n: 'Frasco de ácido', ico: 'acido', d: 'Al envenenar a un enemigo, pierde toda su protección', req: r => hasKw(r, ['veneno', 'nube']) },
   carbon:   { n: 'Carbón ardiente', ico: 'carbon', d: 'Tus caras de fuego y explosión hacen +1', req: r => hasKw(r, ['fuego', 'explosion']) },
   incienso: { n: 'Incienso sagrado', ico: 'incienso', d: 'Tus caras de luz curan +1', req: r => hasKw(r, ['luz']) },
-  tambor:   { n: 'Tambor de guerra', ico: 'tambor', d: 'Tus caras de furia y doble suman +1 más', req: r => hasKw(r, ['furia', 'doble']) },
+  tambor:   { n: 'Tambor de guerra', ico: 'tambor', d: 'Tus caras de furia suman +1 más', req: r => hasKw(r, ['furia']) },
 };
 
 // ---------------------------------------------------------- salas
@@ -2545,7 +2590,7 @@ function hearts(hp, max) { return pips(hp, max, { cls: 'mid', row: 20 }); }
 // lo que te viene este turno (golpes y veneno de los enemigos que aún no han actuado)
 function incoming() {
   let inc = 0, poi = C.ppoison;
-  if (C.phase !== 'enemy') for (const e of alive()) if (e.intent && !e.acted) { if (e.intent.a) inc += (e.intent.a + e.rage) * (e.multi || 1); poi += e.intent.p + e.intent.q; }
+  if (C.phase !== 'enemy') for (const e of alive()) if (e.intent && !e.acted) { if (e.stun) continue; if (e.intent.a) inc += Math.max(0, e.intent.a + e.rage - (e.weak || 0)) * (e.multi || 1); poi += e.intent.p + e.intent.q; }
   return { inc, poi };
 }
 
@@ -2650,7 +2695,7 @@ function faceHTML(f, d, opts = {}) {
   const kw = KW[f.k], px = opts.big ? 4 : 2, su = suitOf(f);
   const st = su === null ? '' : SUITS === 'borde' ? ` style="border-color:${SUIT_COL[su]}"` : SUITS === 'fondo' ? ` style="background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : SUITS === 'ambos' ? ` style="border-color:${SUIT_COL[su]};background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : '';
   const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : su !== null && SUITS === 'ambos' ? '#ffffff' : kw.col;
-  return `<${tag} class="${cls}"${on}${st}>${sp(kw.ico, px)}<b style="color:${numCol}">${f.k === 'doble' && !f.v ? '' : f.v}</b>${su !== null && SUITS === 'gema' ? `<i class="gem" style="background:${SUIT_COL[su]}"></i>` : ''}</${tag}>`;
+  return `<${tag} class="${cls}"${on}${st}>${sp(kw.ico, px)}<b style="color:${numCol}">${kw.nonum ? '' : f.v}</b>${su !== null && SUITS === 'gema' ? `<i class="gem" style="background:${SUIT_COL[su]}"></i>` : ''}</${tag}>`;
 }
 function diceRows(opts = {}) {
   return `<div class="col ${opts.pick ? 'pick' : ''}">${['atk', 'def', 'esp'].map(d => `<div class="drow"><div class="lb">${DN(d)}</div>${run.dice[d].map((f, i) => {
@@ -2679,7 +2724,7 @@ document.addEventListener('pointerdown', e => { if (!e.target.closest('.fc')) hi
 function faceInfo(d, f) {
   if (blankF(f)) return `<b>${DN(d)}</b> · Cara vacía<br>No hace nada.`;
   const kw = KW[f.k];
-  return `<b>${DN(d)}</b> · ${kw.n}${f.k === 'doble' && !f.v ? '' : ' ' + f.v}<br>${kw.x(f.v).replace(/^./, c => c.toUpperCase())}.`;
+  return `<b>${DN(d)}</b> · ${kw.n}${kw.nonum ? '' : ' ' + f.v}<br>${kw.x(f.v).replace(/^./, c => c.toUpperCase())}.`;
 }
 function toast(t) { if (FAST) return; const d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(() => d.remove(), 1000); }
 function modal(html) {
@@ -2733,7 +2778,7 @@ function title() {
   const sv = load();
   app.innerHTML = `<div id="bgview"></div><div class="center">
     <h1 class="logo">MAZMORRA<br>DE DADOS</h1>
-    <div class="trio">${['caballero', 'clerigo', 'picaro', 'piromante'].map((k, i) => fig(sp3(k, 5, '', [.5, .2, -.2, -.5][i]))).join('')}</div>
+    <div class="trio">${['caballero', 'clerigo', 'picaro', 'piromante', 'doctor'].map((k, i) => fig(sp3(k, 4.2, '', [.55, .3, 0, -.3, -.55][i]))).join('')}</div>
     <p class="t c">Tira tus dados, mejora sus caras<br>y llega al fondo de la mazmorra.</p>
     ${sv ? `<button class="btn pri" onclick="G.cont()">Continuar<br><small>${sv.cls} · ${(DUNGEONS[sv.dg || 0].floors[sv.floor] || {}).n || ''}${sv.diff === 2 ? ' · Dificultad 2' : ''}</small></button>` : ''}
     <button class="btn ${sv ? '' : 'pri'}" onclick="G.choose()">Nueva partida</button>
@@ -2827,7 +2872,7 @@ function pickFace(cfg) {
 }
 function forge(n) {
   pickFace({ title: 'Forja', ico: 'yunque', sub: `El herrero sube +1 la cara que elijas.<br>Te queda${n > 1 ? 'n' : ''} ${n}.`, dice: ['atk', 'def', 'esp'],
-    on: (d, i) => { run.dice[d][i].v++; toast('+1'); n > 1 ? forge(n - 1) : nextRoom(); } });
+    on: (d, i) => { if (!upF(d, i)) return; toast('+1'); n > 1 ? forge(n - 1) : nextRoom(); } });
 }
 function altar(fromEvent) {
   S = { scr: 'altar' };
@@ -3155,7 +3200,7 @@ function startCombat(kind) {
     list = Array.from({ length: n }, () => pick(fl.pool));
   }
   if (has('anillo') && run.hp > 1) run.hp -= 1;
-  C = { kind, curses: [], freezeNext: {}, frozen: {}, en: list.map(makeEnemy), turn: 0, block: 0, ppoison: 0, rolled: null, locked: {}, used: {}, rerolls: 0, phase: 'enemy', sel: null, furia: 0, hits: 1, busy: false };
+  C = { kind, curses: [], freezeNext: {}, frozen: {}, en: list.map(k => { const e = makeEnemy(k); if (kind === 'jefe' && k === fl.boss) e.boss = true; return e; }), turn: 0, block: 0, ppoison: 0, rolled: null, locked: {}, used: {}, rerolls: 0, phase: 'enemy', sel: null, furia: 0, hits: 1, busy: false };
   if (!FAST) Scene.reset();
   S.scr = 'combat';
   newTurn();
@@ -3175,7 +3220,8 @@ async function newTurn() {
   C.furia = (C.turn === 1 && has('brasa') ? 2 : 0) + (has('anillo') ? 1 : 0); C.hits = 1;
   C.rerolls = 2 + (has('trebol') ? 1 : 0) + (C.turn === 1 && has('reloj') ? 1 : 0);
   C.thorns = has('raiz') ? 1 : 0;
-  C.frozen = C.freezeNext || {}; C.freezeNext = {};
+  C.frozen = C.freezeNext || {}; C.freezeNext = {}; C.dodge = false; C.disc = {};
+  for (const e of C.en) { e.stun = false; e.weak = 0; e.mark = 0; }
   for (const e of C.en) { e.acted = false; e.die = Tuto.on && C.turn === 1 ? Math.max(0, e.f.indexOf('a2')) : R(0, 5); e.intent = parseFace(e.f[e.die]); e.block = e.intent.b; }
   // los que protegen a un aliado le dan el escudo ya (al más herido; si está solo, a sí mismo)
   for (const e of C.en) if (e.intent.g) {
@@ -3219,6 +3265,7 @@ async function doRoll() {
 function toggleLock(d) {
   if (!C || C.phase !== 'reroll' || C.busy) return;
   if (C.frozen && C.frozen[d]) return toast('Está congelado: este turno no puedes volver a tirarlo');
+  if (C.used[d]) return;
   C.locked[d] = !C.locked[d];
   const sd = !FAST && Scene.pdie(d); if (sd) sd.locked = C.locked[d];
   cRender();
@@ -3241,7 +3288,7 @@ function toUse() {
   DKEYS.forEach(k => { C.locked[k] = false; const sd = !FAST && Scene.pdie(k); if (sd) sd.locked = false; });
   const eff = effFaces();
   if (eff.combo && has('cuerno') && !C.cuerno) { C.cuerno = true; C.furia += 1; fl('hero', 'CUERNO +1', '#ff7050'); }
-  eff.fs.forEach(f => { if (blankF(f)) { C.used[f.d] = true; const sd = !FAST && Scene.pdie(f.d); if (sd) sd.fade = performance.now(); } });
+  eff.fs.forEach(f => { if (blankF(f)) { C.used[f.d] = true; (C.disc || (C.disc = {}))[f.d] = true; const sd = !FAST && Scene.pdie(f.d); if (sd) sd.fade = performance.now(); } });
   cRender();
   if (DKEYS.every(k => C.used[k])) setTimeout(() => endTurn(), FAST ? 0 : 700);
 }
@@ -3250,11 +3297,12 @@ function effFaces() {
   let combo = '';
   const v = fs.map(f => SUITS ? suitOf(f) : (f.v > 0 ? f.v : null));
   fs.forEach(f => { f.o = f.v; f.tag = ''; });
-  if (v[0] !== null && v[0] === v[1] && v[1] === v[2]) { const m = has('hueso') ? 3 : 2; fs.forEach(f => { f.b = f.v * (m - 1); f.v *= m; f.tag = '×' + m; }); combo = '¡Trío!'; }
+  const fixd = f => KW[f.k].nonum || KW[f.k].fixed;
+  if (v[0] !== null && v[0] === v[1] && v[1] === v[2]) { const m = has('hueso') ? 3 : 2; fs.forEach(f => { if (fixd(f)) return; f.b = f.v * (m - 1); f.v *= m; f.tag = '×' + m; }); combo = '¡Trío!'; }
   else {
     const b = has('gemelo') ? 2 : 1;
     outer: for (let i = 0; i < 3; i++) for (let j = i + 1; j < 3; j++)
-      if (v[i] !== null && v[i] === v[j]) { fs[i].v += b; fs[j].v += b; fs[i].b = fs[j].b = b; fs[i].tag = fs[j].tag = '+' + b; combo = '¡Pareja!'; break outer; }
+      if (v[i] !== null && v[i] === v[j]) { for (const f of [fs[i], fs[j]]) if (!fixd(f)) { f.v += b; f.b = b; f.tag = '+' + b; } combo = '¡Pareja!'; break outer; }
   }
   // reliquias que cambian el valor de las caras
   for (const f of fs) {
@@ -3262,14 +3310,14 @@ function effFaces() {
     if (has('ojo') && f.d === 'def' && blankF(f)) { f.k = 'escudo'; f.v = 1; }
     if (has('carbon') && (f.k === 'fuego' || f.k === 'explosion') && f.v > 0) f.v += 1;
     if (has('incienso') && f.k === 'luz' && f.v > 0) f.v += 1;
-    if (has('tambor') && (f.k === 'furia' || f.k === 'doble')) f.v += 1;
+    if (has('tambor') && f.k === 'furia' && f.v > 0) f.v += 1;
   }
   return { fs, combo };
 }
 // a quién va un dado
 function targetType(f) {
   if (blankF(f)) return 'none';
-  if (f.k === 'escudo' || f.k === 'espinas' || f.k === 'luz' || f.k === 'furia' || f.k === 'doble') return 'self';
+  if (['escudo', 'espinas', 'luz', 'furia', 'doble', 'esquivar', 'rapidez', 'antidoto'].includes(f.k)) return 'self';
   if (f.k === 'nube' || KW[f.k].all) return 'all';
   return 'enemy';
 }
@@ -3301,7 +3349,7 @@ async function useDie(d, t) {
       if (!alive().length) break;
       if (!FAST) Scene.lunge('hero', targets[0]);
       for (const e of targets) {
-        if (e.hp <= 0) continue; const dealt = hitEnemy(e, f.v + C.furia, kw.pierce, f.k === 'fuego' || f.k === 'explosion' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); }
+        if (e.hp <= 0) continue; const dealt = hitEnemy(e, f.v + C.furia + (e.mark || 0), kw.pierce, f.k === 'fuego' || f.k === 'explosion' ? '#ffb040' : null); if (kw.vamp && dealt) { const hh = heal(dealt); if (hh) fl('hero', '+' + hh, '#7aea7a'); }
         if (e.spines) {
           let dmg = e.spines; const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
           if (dmg > 0) { run.hp = Math.max(1, run.hp - dmg); fl('hero', '-' + dmg + ' pinchos', '#c0d0ff', true); }
@@ -3316,9 +3364,43 @@ async function useDie(d, t) {
   } else if (f.k === 'luz') {
     const h = heal(f.v); if (h) fl('hero', '+' + h, '#7aea7a');
     if (f.v > h) { C.block += f.v - h; fl('hero', '+' + (f.v - h) + ' prot.', '#8ab8ff'); }
-  } else if (f.k === 'furia' || f.k === 'doble') {
-    C.furia += f.v; if (f.k === 'doble') C.hits = 2;
-    fl('hero', f.k === 'doble' ? '¡DOBLE!' : 'FURIA +' + f.v, '#ff7050');
+  } else if (f.k === 'doble') {
+    C.hits = Math.max(C.hits, f.v); fl('hero', '¡RAYO ×' + C.hits + '!', '#f8d84a');
+    Tips.show('rayo', 'El Rayo hace que tus golpes de este turno peguen ' + C.hits + ' veces. Úsalo antes que el ataque.', null);
+  } else if (f.k === 'furia') {
+    C.furia += f.v; fl('hero', 'FURIA +' + f.v, '#ff7050');
+  } else if (f.k === 'aturdir') {
+    if (t.boss) { const a = (t.intent.a + t.rage) || 0, h = Math.ceil(a / 2); t.weak += h; fl(t, h ? 'ATURDIDO: -' + h : 'ATURDIDO', '#f8d84a'); }
+    else { t.stun = true; fl(t, '¡ATURDIDO!', '#f8d84a'); }
+    Tips.show('aturdir', t.boss ? 'Los jefes aguantan: aturdido, solo pega la mitad este turno.' : 'Aturdido: este turno no hace nada. Úsalo en el que más te va a pegar.', null);
+  } else if (f.k === 'debilitar') {
+    t.weak += f.v; fl(t, 'DÉBIL -' + f.v, '#c0a0ff');
+    Tips.show('debilitar', 'Debilitado: este turno pega ' + f.v + ' menos.', null);
+  } else if (f.k === 'marcar') {
+    t.mark += f.v; fl(t, 'MARCADO +' + f.v, '#ff9a5a');
+    Tips.show('marcar', 'Marcado: este turno cada golpe que le des hace +' + t.mark + '. Úsalo antes que el ataque.', null);
+  } else if (f.k === 'esquivar') {
+    C.dodge = true; fl('hero', 'ESQUIVAR', '#a0e0ff');
+    Tips.show('esquivar', 'El primer golpe que te den este turno no te hará daño.', null);
+  } else if (f.k === 'rapidez') {
+    fl('hero', '¡RAPIDEZ!', '#a0ffa0');
+    // los que salieron vacíos también vuelven a la mesa
+    DKEYS.forEach(k => { if (C.disc && C.disc[k]) { C.used[k] = false; C.disc[k] = false; const sd3 = !FAST && Scene.pdie(k); if (sd3) { sd3.fade = 0; sd3.gone = false; sd3.fk = 0; } } });
+    if (DKEYS.some(k => !C.used[k])) {
+      C.rerolls = 1; C.phase = 'reroll';
+      DKEYS.forEach(k => { C.locked[k] = !!C.used[k]; const sd2 = !FAST && Scene.pdie(k); if (sd2 && !C.used[k]) sd2.locked = false; });
+      Tips.show('rapidez', 'Puedes volver a tirar los dados que no has usado. Guarda los que te gusten.', null);
+    }
+  } else if (f.k === 'robar') {
+    const st = Math.min(f.v, t.block); t.block -= st; C.block += f.v;
+    fl('hero', '+' + f.v + ' prot.', '#8ab8ff'); if (st) fl(t, '-' + st + ' prot.', '#f8d84a');
+  } else if (f.k === 'contagio') {
+    const pz = t.poison; if (pz) for (const o of alive()) if (o !== t) { o.poison += pz; fl(o, '+' + pz, '#7aea7a'); }
+    fl(t, pz ? '¡CONTAGIO!' : 'sin veneno', '#7aea7a');
+    Tips.show('contagio', 'Contagio: el veneno que tenga ese enemigo pasa también a los demás. Envenénalo primero.', null);
+  } else if (f.k === 'antidoto') {
+    const had = C.ppoison; C.ppoison = 0; const h = heal(f.v);
+    fl('hero', (had ? 'SIN VENENO ' : '') + (h ? '+' + h : ''), '#7aea7a');
   } else if (f.k === 'veneno') {
     t.poison += f.v + seta; fl(t, '+' + (f.v + seta) + ' veneno', '#7aea7a'); if (has('acido')) t.block = 0;
   } else if (f.k === 'nube') {
@@ -3379,13 +3461,17 @@ async function deaths() {
 // después a todos y por último los ataques a un enemigo al azar) y termina el turno
 async function autoPlay() {
   if (!C || C.phase !== 'use' || C.busy) return;
-  const ord = f => f.k === 'furia' || f.k === 'doble' ? 0 : targetType(f) === 'self' ? 1 : targetType(f) === 'all' ? 2 : 3;
+  const ord = f => ['furia', 'doble'].includes(f.k) ? 0 : ['aturdir', 'debilitar', 'marcar', 'robar'].includes(f.k) ? 1 : targetType(f) === 'self' ? 2 : targetType(f) === 'all' ? 3 : f.k === 'contagio' ? 5 : 4;
+  const threat = e => e.stun ? -1 : (e.intent ? Math.max(0, e.intent.a + e.rage - (e.weak || 0)) * (e.multi || 1) + e.intent.p + e.intent.q : 0);
   for (let n = 0; n < 4 && C && C.phase === 'use' && !C.won; n++) {
-    const left = effFaces().fs.filter(f => !C.used[f.d] && !blankF(f)).sort((a, b) => ord(a) - ord(b));
+    const left = effFaces().fs.filter(f => !C.used[f.d] && !blankF(f) && f.k !== 'rapidez').sort((a, b) => ord(a) - ord(b));
     const al = alive();
     if (!left.length || !al.length) break;
-    const f = left[0], tt = targetType(f);
-    await useDie(f.d, tt === 'self' ? 'hero' : tt === 'all' ? al[0] : pick(al));
+    const f = left[0], tt = targetType(f), by = (fn) => al.slice().sort((a, b) => fn(b) - fn(a))[0];
+    const tgt = tt === 'self' ? 'hero' : tt === 'all' ? al[0]
+      : f.k === 'aturdir' || f.k === 'debilitar' ? by(threat) : f.k === 'marcar' ? by(e => -e.hp) : f.k === 'robar' ? by(e => e.block)
+      : f.k === 'contagio' ? by(e => e.poison) : (al.find(e => e.mark) || pick(al));
+    await useDie(f.d, tgt);
     await sleep(160);
   }
   if (C && C.phase === 'use' && !C.busy && !C.won) endTurn();
@@ -3404,11 +3490,13 @@ async function endTurn() {
   // los enemigos hacen lo que sacaron
   for (const e of [...C.en]) {
     if (e.hp <= 0 || !e.intent) continue;
+    if (e.stun) { fl(e, 'Aturdido', '#f8d84a'); e.acted = true; const sd0 = !FAST && Scene.edie(e); if (sd0) sd0.fade = performance.now(); cRender(); await sleep(380); continue; }
     const it = e.intent, sd = !FAST && Scene.edie(e);
     if (sd) sd.sel = true;
     if (it.a) for (let m = 0; m < (e.multi || 1) && e.hp > 0; m++) {
-      let dmg = it.a + e.rage;
+      let dmg = Math.max(0, it.a + e.rage - (e.weak || 0));
       const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
+      if (dmg > 0 && C.dodge) { C.dodge = false; dmg = 0; fl('hero', '¡ESQUIVADO!', '#a0e0ff'); }
       if (dmg > 0 && has('capa') && !C.capa) { C.capa = true; dmg = 0; fl('hero', 'CAPA DE SOMBRAS', '#b070e0'); }
       if (!FAST) Scene.lunge(e, 'hero');
       run.hp -= dmg;
@@ -3443,8 +3531,9 @@ async function endTurn() {
 }
 function intentHTML(e) {
   const it = e.intent; if (!it || C.phase === 'enemy') return '<span style="color:var(--dim)">…</span>';
+  if (e.stun) return `<span style="color:#f8d84a">${sp('aturdir', 2)}aturdido</span>`;
   const p = [];
-  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a}${e.multi > 1 ? '×' + e.multi : ''}${e.rage ? `<span class="rg">+${e.rage}${sp('furia', 1)}</span>` : ''}</span>`);
+  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${Math.max(0, it.a - (e.weak || 0))}${e.multi > 1 ? '×' + e.multi : ''}${e.rage ? `<span class="rg">+${e.rage}${sp('furia', 1)}</span>` : ''}</span>`);
   if (it.b) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${it.b}</span>`);
   if (it.p) p.push(`<span style="color:#7aea7a">${sp('veneno', 2)}${it.p}</span>`);
   if (it.h) p.push(`<span style="color:#ff8a8a">${sp('corazon', 2)}+${it.h}</span>`);
@@ -3533,7 +3622,7 @@ function cRender() {
     const cx = n === 1 ? bw / 2 : bw * (k + .5) / n;
     const row = e.max <= 12 ? e.max : live.length === 1 ? 35 : live.length === 2 ? 25 : 16;
     band += `<div class="ecard ${can ? 'pick' : f ? 'nope' : ''}" id="ec-${i}" style="left:${cx}px;width:${w}px" onclick="G.tapEnemy(${i})">
-      <div class="ec-top"><span class="nm">${e.n}</span>${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.boom ? badge('explosion', e.boom, '#f08a2a') : ''}${e.stolen ? badge('moneda', e.stolen, '#f8d84a') : ''}${e.spines ? badge('espinas', e.spines, '#c0d0ff') : ''}<span class="intent">${intentHTML(e)}</span></div>
+      <div class="ec-top"><span class="nm">${e.n}</span>${e.poison ? badge('veneno', e.poison, '#7aea7a') : ''}${e.boom ? badge('explosion', e.boom, '#f08a2a') : ''}${e.stolen ? badge('moneda', e.stolen, '#f8d84a') : ''}${e.spines ? badge('espinas', e.spines, '#c0d0ff') : ''}${e.mark ? badge('marcar', '+' + e.mark, '#ff9a5a') : ''}${e.weak ? badge('debilitar', '-' + e.weak, '#c0a0ff') : ''}<span class="intent">${intentHTML(e)}</span></div>
       <div class="ec-hp">${pips(e.hp, e.max, { blk: e.block, row: Math.max(4, Math.min(Math.max(row, e.max <= 12 ? e.max : Math.ceil(e.max / 2)), Math.floor((w - 12 - 6 * (String(e.max).length * 2 + 1) * 1.0 - 8) / 5))), cls: 'en' })}<span class="hpn">${Math.max(0, e.hp)}/${e.max}</span></div></div>`;
   });
   const eb = $('#eband'); eb.innerHTML = band;
@@ -3541,7 +3630,7 @@ function cRender() {
   const [hx, hy] = Scene.headCss('hero'), hcan = f && validTarget(f, 'hero');
   ov += `<div class="ov hero ${hcan ? 'pick' : ''}" id="ov-hero" style="left:${hx}px;top:${hy}px"><div class="nm">&nbsp;</div></div>`;
   const inc = incoming();
-  $('#hbarw').innerHTML = `<div class="hbar" id="hbar"><div class="hb-top"><span>${run.cls}</span><span class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×2', '#f8d84a') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}${DKEYS.some(d => C.frozen[d]) ? badge('hielo', DKEYS.filter(d => C.frozen[d]).length, '#9ae0ff') : ''}${C.curses.length ? badge('maldicion', C.curses.length, '#d090ff') : ''}</span></div>
+  $('#hbarw').innerHTML = `<div class="hbar" id="hbar"><div class="hb-top"><span>${run.cls}</span><span class="badges">${C.block ? badge('escudo', C.block, '#8ab8ff') : ''}${C.furia ? badge('furia', '+' + C.furia, '#ff7050') : ''}${C.hits > 1 ? badge('doble', '×' + C.hits, '#f8d84a') : ''}${C.dodge ? badge('esquivar', '', '#a0e0ff') : ''}${C.thorns ? badge('espinas', C.thorns, '#c0d0ff') : ''}${C.ppoison ? badge('veneno', C.ppoison, '#7aea7a') : ''}${DKEYS.some(d => C.frozen[d]) ? badge('hielo', DKEYS.filter(d => C.frozen[d]).length, '#9ae0ff') : ''}${C.curses.length ? badge('maldicion', C.curses.length, '#d090ff') : ''}</span></div>
     ${pips(run.hp, run.maxHp, { inc: inc.inc, poi: inc.poi, blk: C.block, row: 20, cls: 'big' })}</div>`;
   if (eff && C.phase !== 'resolve') eff.fs.forEach(f => {
     const sd = Scene.pdie(f.d), lk = C.phase === 'reroll' && C.locked[f.d];
@@ -3592,7 +3681,7 @@ async function lose() { await sleep(600); uncurse(); C = null; Tuto.on = false; 
 const G = {
   title, choose: dungeonScreen, help, map,
   start: k => newRun(k),
-  cont: () => { run = load(); if (!run) return title(); setDungeon(run); giveSuits(run); map(); },
+  cont: () => { run = load(); if (!run) return title(); setDungeon(run); giveSuits(run); DKEYS.forEach(d => run.dice[d].forEach(f => { if (f.k === 'doble' && f.v < 2) f.v = 2; })); map(); },
   pickD: (dg, diff) => { NEXT = { dg, diff }; chooseHero(); },
   vtap: () => { G._vt = (G._vt || 0) + 1; if (G._vt === 5) { progSet({ won1: true }); toast('Modo pruebas: todo desbloqueado'); } },
   door: i => {
@@ -3644,12 +3733,12 @@ const G = {
   pf: (d, i) => { const cfg = S.pf; if (cfg) cfg.on(d, i); },
   pfCancel: () => { const cfg = S.pf; if (cfg && cfg.cancel) cfg.cancel(); },
   altar: d => { run.dice[d].forEach(f => f.v++); toast(`¡${DN(d)} +1!`); nextRoom(); },
-  rest: i => { if (i === 0) { heal(S.heal); toast('Zzz...'); nextRoom(); } else pickFace({ title: 'Entrenar', ico: 'yunque', sub: '+1 a la cara que elijas.', dice: ['atk', 'def', 'esp'], on: (d, j) => { run.dice[d][j].v++; toast('+1'); nextRoom(); } }); },
+  rest: i => { if (i === 0) { heal(S.heal); toast('Zzz...'); nextRoom(); } else pickFace({ title: 'Entrenar', ico: 'yunque', sub: '+1 a la cara que elijas.', dice: ['atk', 'def', 'esp'], on: (d, j) => { if (!upF(d, j)) return; toast('+1'); nextRoom(); } }); },
   buy: i => {
     const sh = S.shop, it = sh[i]; if (!it || it.sold || run.gold < it.p) return;
     const back = () => { S = { scr: 'shop', shop: sh }; shop(); };
     if (it.t === 'st') return stickerFlow(it.s, () => { run.gold -= it.p; it.sold = 1; back(); }, back);
-    if (it.t === 'up') return pickFace({ title: 'Mejora', ico: 'yunque', sub: '+1 a la cara que elijas.', dice: ['atk', 'def', 'esp'], cancel: back, on: (d, j) => { run.dice[d][j].v++; run.gold -= it.p; it.sold = 1; toast('+1'); back(); } });
+    if (it.t === 'up') return pickFace({ title: 'Mejora', ico: 'yunque', sub: '+1 a la cara que elijas.', dice: ['atk', 'def', 'esp'], cancel: back, on: (d, j) => { if (!upF(d, j)) return; run.gold -= it.p; it.sold = 1; toast('+1'); back(); } });
     run.gold -= it.p; it.sold = 1;
     if (it.t === 'heal') heal(it.n);
     if (it.t === 'relic') { run.relics.push(it.k); RELICS[it.k].on && RELICS[it.k].on(run); }
@@ -3668,7 +3757,7 @@ const G = {
   over: () => gameOver(),
   offer: i => {
     const o = S.offers[i];
-    if (o.t === 'up') return pickFace({ title: `Mejorar ${DN(o.d)}`, ico: KW[run.dice[o.d][0].k].ico, sub: '+1 a la cara que elijas.', dice: [o.d], on: (d, j) => { run.dice[d][j].v++; toast('+1'); nextRoom(); } });
+    if (o.t === 'up') return pickFace({ title: `Mejorar ${DN(o.d)}`, ico: KW[run.dice[o.d][0].k].ico, sub: '+1 a la cara que elijas.', dice: [o.d], on: (d, j) => { if (!upF(d, j)) return; toast('+1'); nextRoom(); } });
     if (o.t === 'st') return stickerFlow(o.s, nextRoom);
     if (o.t === 'heal') heal(o.n);
     if (o.t === 'max') { run.maxHp += o.n; run.hp += o.n; }
