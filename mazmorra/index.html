@@ -292,6 +292,14 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .card.big{transition:transform .45s cubic-bezier(.2,1.4,.4,1);cursor:grab;--sh:-60%}
 .card.big.drag{transition:none;cursor:grabbing}
 .card.big::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent calc(var(--sh) - 18%),#ffffff26 var(--sh),transparent calc(var(--sh) + 18%));transition:background .2s}
+.build{display:flex;flex-direction:column;gap:10px}
+.evo-opt{display:flex;flex-direction:column;gap:8px;text-align:left;padding:10px}
+.evo-h{display:flex;align-items:center;gap:10px}
+.evo-h b{font-weight:normal;font-size:11px}
+.evo-hp{margin-left:auto;font-size:8px;color:#ff8a8a;background:#000a;padding:3px 6px;box-shadow:0 0 0 2px #000}
+.evo-d .fc.same{opacity:.35}
+.evo-d .fc.chg{box-shadow:0 0 0 2px var(--gold),0 0 6px var(--gold)}
+.evo-d .lb{color:var(--txt)}
 </style>
 </head>
 <body>
@@ -2571,6 +2579,7 @@ function rest() {
     <button class="btn opt" onclick="G.rest(0)">${sp('corazon', 4)}<span>Dormir<small>Te curas ${n} de vida</small></span></button>
     <button class="btn opt" onclick="G.rest(1)">${sp('yunque', 4)}<span>Entrenar<small>+1 a una cara que elijas</small></span></button>`;
   S.heal = n;
+  addBuild();
 }
 function stickers() {
   const v = run.floor + 2, h = H();
@@ -2599,6 +2608,7 @@ function shop() {
   app.innerHTML = `${topbar('Salir de la tienda', 'G.leaveShop()')}${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp('moneda', 6)}</div><h2>Tienda</h2><p class="t">Un mercader encapuchado te enseña sus cosas.</p></div>
     ${S.shop.map((it, i) => { const [ic, n, d] = lbl(it); return `<button class="btn opt" ${it.sold || run.gold < it.p ? 'disabled' : ''} onclick="G.buy(${i})">${ic}<span>${n}<small>${d}</small></span><span class="price">${it.sold ? 'VENDIDO' : it.p}</span></button>`; }).join('')}
 `;
+  addBuild();
 }
 function event() {
   let pool = EVENTS.filter(e => !run.seen.includes(e.id));
@@ -2607,6 +2617,7 @@ function event() {
   S = { scr: 'event', ev };
   app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${sp(ev.ico, 6, ev.sw)}</div><h2>${ev.t}</h2><p class="t">${ev.x}</p></div>
     ${ev.o.map((o, i) => `<button class="btn" ${o.req && !o.req(run) ? 'disabled' : ''} onclick="G.evo(${i})">${o.t}</button>`).join('')}`;
+  addBuild();
 }
 function evResult(msg, next) {
   S = { scr: 'evres', next };
@@ -2659,6 +2670,10 @@ function genOffers() {
   else o.push({ t: 'max', n: 4 });
   return o;
 }
+function buildPanel() {
+  return `<div class="panel build"><h3>Tu build</h3>${diceRows()}<div class="col" style="gap:6px"><span class="t" style="color:var(--txt)">Reliquias</span>${relicsHTML()}</div></div>`;
+}
+const addBuild = () => app.insertAdjacentHTML('beforeend', buildPanel());
 function reward(gold) {
   S = { scr: 'reward', offers: genOffers() };
   const lbl = o => o.t === 'up' ? [sp(KW[run.dice[o.d][0].k].ico, 4), `Mejorar ${DN(o.d)}`, '+1 a una cara que elijas']
@@ -2667,6 +2682,7 @@ function reward(gold) {
     : [sp('corazon', 4, 'piedra'), 'Más vida', `+${o.n} de vida máxima`];
   app.innerHTML = `${hud()}<div class="panel c col"><h1 style="font-size:16px">¡VICTORIA!</h1><p class="t">+${gold} de oro. Elige una mejora:</p></div>
     ${S.offers.map((o, i) => { const [ic, n, d] = lbl(o); return `<button class="btn opt" onclick="G.offer(${i})">${ic}<span>${n}<small>${d}</small></span></button>`; }).join('')}`;
+  addBuild();
 }
 function relicChoice(title, after) {
   const opts = shuffle(Object.keys(RELICS).filter(relicOk)).slice(0, 3);
@@ -2674,12 +2690,20 @@ function relicChoice(title, after) {
   S = { scr: 'relic', opts, after };
   app.innerHTML = `${hud()}<div class="panel c col"><h2>${title}</h2><p class="t">Elige una reliquia. Te ayuda toda la partida.</p></div>
     ${opts.map(k => `<button class="btn opt" onclick="G.takeRelic('${k}')">${sp(RELICS[k].ico, 5, RELICS[k].sw)}<span>${RELICS[k].n}<small>${RELICS[k].d}</small></span></button>`).join('')}`;
+  addBuild();
 }
 function evolve(after) {
   const opts = H().evo[run.floor];
   S = { scr: 'evolve', opts, after };
   app.innerHTML = `${hud()}<div class="panel c col"><div class="row" style="justify-content:center">${fig(sp3(heroSkin(), 7, '', .4))}</div><h1 style="font-size:15px">¡Evolución!</h1><p class="t">${run.cls} se hace más fuerte. Elige su camino:</p></div>
-    ${opts.map((o, i) => `<button class="btn opt" onclick="G.evolve(${i})">${sp3(skinFor(run.hero, (run.evo || []).concat(evoId(o.n))), 4, '', .5)}<span>${o.n}<small>${o.d}</small></span></button>`).join('')}`;
+    ${opts.map((o, i) => evoOption(o, i)).join('')}`;
+  addBuild();
+}
+function evoOption(o, i) {
+  const sim = clone(run); o.a(sim);
+  const rows = DKEYS.filter(d => sim.dice[d].some((f, j) => f.k !== run.dice[d][j].k || f.v !== run.dice[d][j].v)).map(d => `<div class="drow"><div class="lb">${DN(d)}</div>${sim.dice[d].map((f, j) => faceHTML(f, d, { cls: f.k !== run.dice[d][j].k || f.v !== run.dice[d][j].v ? 'chg' : 'same' })).join('')}</div>`).join('');
+  const hp = sim.maxHp - run.maxHp;
+  return `<button class="btn evo-opt" onclick="G.evolve(${i})"><div class="evo-h">${sp3(skinFor(run.hero, (run.evo || []).concat(evoId(o.n))), 4, '', .5)}<b>${o.n}</b>${hp ? `<span class="evo-hp">+${hp} de vida</span>` : ''}</div><div class="col evo-d">${rows}</div></button>`;
 }
 function nextFloor() {
   run.floor++; run.step = 0; run.doors = genDoors(0); save(); floorIntro();
