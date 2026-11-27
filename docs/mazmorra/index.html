@@ -370,7 +370,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.35'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.36'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -2923,7 +2923,7 @@ function evFig(id, model) { const [m, px] = EV_FIG[id] || ['cofre3d', 5]; return
 // botón grande de decisión (van uno al lado del otro dentro de .choices)
 const choiceBtn = (ico, t, d, on, off) => `<button class="btn ch" ${off ? 'disabled' : ''} onclick="${on}">${ico ? sp(ico, 4) : ''}<b>${t}</b>${d ? `<small>${d}</small>` : ''}</button>`;
 function event() {
-  const here = EVENTS.filter(e => e.where === undefined || e.where === (run.dg || 0));
+  const here = EVENTS.filter(e => e.where === undefined || e.where <= (run.dg || 0));   // en la Torre salen también los de La Mazmorra
   let pool = here.filter(e => !run.seen.includes(e.id));
   if (!pool.length) { run.seen = []; pool = here; }
   const ev = pick(pool); run.seen.push(ev.id);

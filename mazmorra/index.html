@@ -2919,7 +2919,7 @@ function evFig(id, model) { const [m, px] = EV_FIG[id] || ['cofre3d', 5]; return
 // botón grande de decisión (van uno al lado del otro dentro de .choices)
 const choiceBtn = (ico, t, d, on, off) => `<button class="btn ch" ${off ? 'disabled' : ''} onclick="${on}">${ico ? sp(ico, 4) : ''}<b>${t}</b>${d ? `<small>${d}</small>` : ''}</button>`;
 function event() {
-  const here = EVENTS.filter(e => e.where === undefined || e.where === (run.dg || 0));
+  const here = EVENTS.filter(e => e.where === undefined || e.where <= (run.dg || 0));   // en la Torre salen también los de La Mazmorra
   let pool = here.filter(e => !run.seen.includes(e.id));
   if (!pool.length) { run.seen = []; pool = here; }
   const ev = pick(pool); run.seen.push(ev.id);
