@@ -929,7 +929,7 @@ const TS = 18; // lado de la textura de cada cara
 // estilo de las caras: A = icono y número, B = número grande, E = placa de color (se prueban en el laboratorio)
 let DSTYLE = { p: 'A', e: 'A' };
 // palos (prueba del laboratorio): si SUITS tiene valor, las parejas y tríos van por color y no por número
-let SUITS = null;   // null | 'borde' | 'fondo' | 'ambos' | 'gema' | 'metal'
+let SUITS = 'ambos';   // las parejas y tríos van por color (palo): verde, morado y amarillo
 let SUIT_COL = ['#3ac060', '#a060e8', '#e8c030']; const SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
 const suitOf = f => SUITS && f && f.s !== undefined && !blankF(f) ? f.s : null;
 const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
@@ -2129,7 +2129,9 @@ const blankF = f => f.v <= 0 && f.k !== 'doble';
 const plusAll = (d, n = 1) => r => r.dice[d].forEach(f => f.v += n);
 const lowIdx = (r, d, cnt) => r.dice[d].map((f, i) => [f.v, i]).sort((a, b) => a[0] - b[0]).slice(0, cnt).map(x => x[1]);
 const lowUp = (d, cnt) => r => lowIdx(r, d, cnt).forEach(i => r.dice[d][i].v++);
-const setLow = (d, cnt, k, v) => r => lowIdx(r, d, cnt).forEach(i => { r.dice[d][i] = F(k, Math.max(v, r.dice[d][i].v + 1)); });
+const setLow = (d, cnt, k, v) => r => lowIdx(r, d, cnt).forEach(i => { r.dice[d][i] = { ...F(k, Math.max(v, r.dice[d][i].v + 1)), s: r.dice[d][i].s }; });
+// cada dado tiene dos caras de cada color, repartidas al azar
+const giveSuits = r => DKEYS.forEach(d => { if (r.dice[d].every(f => f.s !== undefined)) return; const su = shuffle([0, 0, 1, 1, 2, 2]); r.dice[d].forEach((f, i) => { f.s = su[i]; }); });
 const hpUp = n => r => { r.maxHp += n; r.hp += n; };
 const all = (...fns) => r => fns.forEach(f => f(r));
 
@@ -2303,6 +2305,7 @@ function newRun(hero) {
     hero, cls: h.n, hp: h.hp, maxHp: h.hp, gold: 0, floor: 0, step: 0, relics: [], seen: [],
     dice: { atk: (h.atk || [1, 1, 1, 1, 2, 2]).map(v => F('golpe', v)), def: [0, 0, 0, 0, 1, 1].map(v => F('escudo', v)), esp: clone(h.esp) },
   };
+  giveSuits(run);
   run.doors = genDoors(0); save(); statAdd('runs'); floorIntro();
 }
 function wpick(w) { let t = 0; for (const k in w) t += w[k]; let x = Math.random() * t; for (const k in w) { x -= w[k]; if (x < 0) return k; } return Object.keys(w)[0]; }
@@ -2373,7 +2376,11 @@ const Tuto = {
   start() {
     this.on = true; this.step = 0;
     const atk = run.dice.atk, hi = atk.reduce((b, f, i) => f.v > atk[b].v ? i : b, 0), blank = d => Math.max(0, run.dice[d].findIndex(f => blankF(f)));
-    this.rig = { atk: [hi], def: [blank('def'), run.dice.def.findIndex(f => f.v === 1)], esp: [blank('esp'), 5] };
+    const defI = run.dice.def.findIndex(f => f.v === 1);
+    this.rig = { atk: [hi], def: [blank('def'), defI], esp: [blank('esp'), 5] };
+    // colores preparados: ataque y protección del mismo color (pareja); el especial, de otro
+    const swapSuit = (d, i, su) => { const a = run.dice[d]; if (a[i].s === su) return; const j = a.findIndex((f, k) => k !== i && f.s === su); if (j >= 0) { a[j].s = a[i].s; a[i].s = su; } };
+    const want = run.dice.atk[hi].s; swapSuit('def', defI, want); swapSuit('esp', 5, (want + 1) % 3);
     this.build();
   },
   steps: [],
@@ -2390,6 +2397,7 @@ const Tuto = {
       { el: '#btn-roll', t: 'Tira tus dados.', on: 'roll' },
       { el: '#dz-atk', t: 'Buen ataque. Tócalo para guardarlo.', on: 'lock:atk' },
       { el: '#btn-rr', t: 'Vuelve a tirar los demás.', on: 'reroll' },
+      { el: '#dz-def', t: '¡Pareja! Tu ataque y tu protección son del mismo color: los dos suman +1.' },
       { el: '#btn-ready', t: '¡Mejor! Ahora, a usarlos.', on: 'ready' },
       { el: '#dz-def', t: 'Toca tu protección.', on: 'sel:def' },
       { el: '#btn-self', t: 'Úsala en ti.', on: 'use:def' },
@@ -2548,7 +2556,7 @@ function help() {
   <p>Después tiras los tuyos. Toca los que quieras <b>guardar</b> y vuelve a tirar el resto (2 veces por turno).</p>
   <p>Luego <b>usa cada dado</b>: tócalo y toca su objetivo. El ataque va al enemigo que elijas; la protección es para ti y para los golpes (el veneno la atraviesa).</p>
   <p>Si matas a un enemigo antes de que actúe, <b>su dado se cancela</b>.</p>
-  <p><b>Pareja</b>: dos dados con el mismo número llevan la etiqueta <b>+1</b> y suman uno más cada uno. <b>Trío</b>: los tres iguales llevan <b>×2</b> y valen el doble.</p>
+  <p>Cada cara tiene un <b>color</b> (verde, morado o amarillo). <b>Pareja</b>: dos dados del mismo color llevan la etiqueta <b>+1</b> y suman uno más cada uno. <b>Trío</b>: los tres del mismo color llevan <b>×2</b> y valen el doble. Las caras vacías no cuentan.</p>
   <p>Toca a un enemigo (sin dado elegido) para ver todas las caras de su dado.</p>
   <p>Entre combates eliges puerta: forjas, altares, tiendas y eventos <b>mejoran las caras</b> de tus dados. Al vencer a un jefe tu héroe <b>evoluciona</b>.</p>
   <p>Si mueres, vuelves a empezar. ¡Suerte!</p></div>`);
@@ -2622,7 +2630,7 @@ function stickers() {
 }
 function stickerFlow(st, after, cancel) {
   pickFace({ title: 'Nueva cara', sub: `Elige qué cara de ${DN(st.d)} se cambia por esta:`, face: st.f, dice: [st.d], cancel,
-    on: (d, i) => { run.dice[d][i] = clone(st.f); toast('¡Nueva cara!'); after(); } });
+    on: (d, i) => { run.dice[d][i] = { ...clone(st.f), s: run.dice[d][i].s }; toast('¡Nueva cara!'); after(); } });
 }
 function shop() {
   if (!S.shop) {
@@ -3111,7 +3119,7 @@ function cRender() {
   $('#ovs').innerHTML = ov;
   flushFx();
   // pistas de la primera vez
-  if (eff && eff.combo && (C.phase === 'reroll' || C.phase === 'use')) Tips.show(eff.combo === '¡Trío!' ? 'trio' : 'pareja', eff.combo === '¡Trío!' ? '¡Trío! Tres dados con el mismo número: los tres valen el doble.' : '¡Pareja! Dos dados con el mismo número: cada uno suma +1.', '.dinfo.cb .tag');
+  if (eff && eff.combo && (C.phase === 'reroll' || C.phase === 'use')) Tips.show(eff.combo === '¡Trío!' ? 'trio' : 'pareja', eff.combo === '¡Trío!' ? '¡Trío! Tus tres dados son del mismo color: los tres valen el doble.' : '¡Pareja! Dos dados del mismo color: cada uno suma +1.', '.dinfo.cb .tag');
   if (C.phase === 'roll') { const i = C.en.findIndex(e => e.hp > 0 && e.intent && e.intent.b); if (i >= 0) Tips.show('eblock', 'Este enemigo se protege (azul): tu daño primero rompe esos cuadraditos.', '#ec-' + i + ' .pipw'); }
   if (C.phase === 'use' && C.sel === 'atk' && eff && eff.fs.some(f => (f.k === 'furia' || f.k === 'doble') && !C.used[f.d] && !blankF(f))) Tips.show('order', 'Consejo: usa antes la furia o el rayo, y así este ataque valdrá más. Toca "Cancelar" si quieres cambiar.', '#dz-esp');
   if (C.phase === 'roll' && inc.poi) Tips.show('poison', 'Lo verde es veneno: te quita vida al final del turno y la protección no lo para.', '#hbar');
@@ -3145,7 +3153,7 @@ async function lose() { await sleep(600); C = null; Tuto.on = false; Coach.draw(
 const G = {
   title, choose: chooseHero, help, map,
   start: k => newRun(k),
-  cont: () => { run = load(); if (!run) return title(); map(); },
+  cont: () => { run = load(); if (!run) return title(); giveSuits(run); map(); },
   door: i => {
     if (S.walking) return;
     if (FAST || !Corr.room || !$('#view')) return enter(run.doors[i]);
