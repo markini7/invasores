@@ -800,6 +800,10 @@ function renderRoom(s, cam, theme, room, time) {
       else if (dx > 0) { tt = (CW - ex) / dx; if (tt < t) { t = tt; mat = 3; nx = -1; ny = 0; nz = 0; } }
       if (dz < 0) { tt = (-L - ez) / dz; if (tt < t) { t = tt; mat = 4; nx = 0; ny = 0; nz = 1; } }
       const px = ex + dx * t, py = ey + dy * t, pz = ez + dz * t;
+      if (theme.open && (mat === 2 || (mat === 3 && py > 1.05 + (Math.floor(pz / .55) & 1) * .4))) {
+        const st = hash2(Math.floor(dx * 260 + 999), Math.floor(dy * 260 + 999)) > .994 ? .5 : 0, fla = (time % 6.7) < .09 || ((time + 3.1) % 9.3) < .07 ? .45 : 0;
+        buf[y * W + x] = dith(theme.skyR, .22 + Math.max(0, .6 - dy) * .25 + st + fla, x, y); continue;
+      }
       let tex, ramp = theme.wall, direct = 0;
       if (mat === 1) { tex = tileTex(px, pz); ramp = theme.floor; }
       else if (mat === 2) { const fz = pz / 1.3 - Math.floor(pz / 1.3); if (fz < .28) { tex = plankTex(px * .3, pz, 1) * .9; ramp = theme.wood; } else tex = .3 + hash2(Math.floor(px * 3), Math.floor(pz * 3)) * .1; }
@@ -1039,7 +1043,7 @@ function enemyFaceTex(str) {
   const it = parseFace(str), parts = [];
   if (it.a) parts.push(['golpe', it.a, '#ff8a8a']); if (it.b) parts.push(['escudo', it.b, '#8ab8ff']); if (it.p) parts.push(['veneno', it.p, '#7aea7a']);
   if (it.h) parts.push(['corazon', it.h, '#ff8a8a']); if (it.r) parts.push(['furia', it.r, '#ff7050']); if (it.s) parts.push(['invoca', '', '#d0a0ff']);
-  if (it.c) parts.push(['maldicion', '', '#d090ff']); if (it.o) parts.push(['moneda', it.o, '#f8d84a']); if (it.k) parts.push(['hielo', it.k > 1 ? it.k : '', '#9ae0ff']); if (it.g) parts.push(['escolta', it.g, '#8ab8ff']); if (it.l) parts.push(['corazon', it.l, '#7aea7a']);
+  if (it.c) parts.push(['maldicion', '', '#d090ff']); if (it.o) parts.push(['moneda', it.o, '#f8d84a']); if (it.k) parts.push(['hielo', it.k > 1 ? it.k : '', '#9ae0ff']); if (it.g) parts.push(['escolta', it.g, '#8ab8ff']); if (it.l) parts.push(['corazon', it.l, '#7aea7a']); if (it.q) parts.push(['fuego', it.q, '#ffb040']);
   return dieTexture('E|' + str, '#2e2428', '#c04040', parts, false, 'e');
 }
 function topFace(q) { let best = 0, bv = -2; CUBE_F.forEach((f, i) => { const n = Q4.rot(q, f.n); if (n[1] > bv) { bv = n[1]; best = i; } }); return best; }
@@ -1754,6 +1758,18 @@ function mHydraHead(M) {
   mirror(7, (sg, X) => { M.cap(X(5.6), 16.2, 9.6, X(4.4), 18.4, 8, .45, 'w'); M.cap(X(4.8), 15, 10, X(3.4), 15.6, 8.6, .4, 'E'); });
   for (let y = 4; y <= 12; y += 2) M.px(7, y, 4, 'E');
 }
+function mWizard(M) {
+  M.cone(8, 6, 0, 13, 4.8, 2.6, 'B'); M.cone(8, 6, 0, 0, 5, 5, 'b');
+  for (const [x, y, z] of [[5, 3, 10], [10, 6, 9], [7, 9, 9], [11, 2, 9], [4, 7, 8]]) M.px(x, y, z, 'y');
+  M.cap(5.2, 12, 6, 3.6, 8.6, 8.6, 1.2, 'B'); M.cap(10.8, 12, 6, 12.4, 9, 8.6, 1.2, 'B');
+  M.ell(3.6, 8.2, 9, .8, .8, .8, 's'); M.ell(12.4, 8.6, 9, .8, .8, .8, 's');
+  M.box(13, 0, 9, 13, 15, 9, 'n'); M.ell(13, 16.4, 9, 1.4, 1.4, 1.4, 'p'); M.px(13, 16, 10, 'w');
+  M.ell(8, 15.2, 7, 2.5, 2.7, 2.5, 's'); M.ell(8, 12.6, 8.6, 2.4, 2.8, 1.4, 'w'); M.cap(8, 11.6, 9, 8, 7.6, 9.8, 1.1, 'w');
+  M.px(7, 15, 9, 'c'); M.px(9, 15, 9, 'c'); M.box(6, 16, 9, 10, 16, 9, 'w');
+  M.cone(8, 7, 17, 24, 3.6, .4, 'B'); M.ring(8, 17, 7, 3.6, .7, 'b'); M.px(8, 20, 9, 'y'); M.px(7, 22, 8, 'y'); M.px(9, 19, 9, 'y');
+}
+Object.assign(SWAPS, { cristal: { g: 'c', G: 'b', k: 'B' }, batalla: { P: 'R', p: 'r', y: 'o' } });
+Object.assign(MODEL_DEFS, { hechicero: [16, 25, 12, mWizard], gargolacristal: [18, 17, 14, mGargoyle, 'cristal'], magobatalla: [16, 19, 12, mCultist, 'batalla'] });
 Object.assign(MODEL_DEFS, { homunculo: [15, 15, 12, mHomunculus], cabezahidra: [14, 19, 16, mHydraHead], sapomorado: [16, 9, 16, mToad, 'morado'] });
 Object.assign(SWAPS, { azul: { P: 'B', p: 'b', y: 'c' }, grimorio: { P: 'R', p: 'r', w: 'y' } });
 Object.assign(MODEL_DEFS, { libro: [14, 12, 12, mBook], bibliotecario: [16, 22, 12, mLibrarian], aprendiz: [16, 19, 12, mCultist, 'azul'], grimorio: [14, 12, 12, mBook, 'grimorio'] });
@@ -1818,6 +1834,9 @@ const CARDS = [
   ['libro', 'Libro vivo', 0, 'Un libro de hechizos que aprendió a morder. Si te muerde, se te olvida algo.'],
   ['aprendiz', 'Aprendiz de mago', 0, 'Todavía no sabe atacar bien, pero protege a todos sus amigos.'],
   ['grimorio', 'Grimorio prohibido', 1, 'Está encadenado por algo: sus maldiciones duran todo el combate.'],
+  ['magobatalla', 'Mago de batalla', 0, 'Lanza hechizos para curar y proteger a los suyos desde lo alto de la torre.'],
+  ['gargolacristal', 'Gárgola de cristal', 1, 'Tallada en cristal mágico. Quien la golpea se corta.'],
+  ['hechicero', 'El Hechicero', 3, 'Lleva siglos estudiando cómo no morir. A media vida descubre que lo ha conseguido.'],
   ['homunculo', 'Homúnculo', 0, 'Lo hicieron en un frasco. Cada día que pasa vivo se hace más fuerte.'],
   ['bibliotecario', 'El Bibliotecario', 2, 'Guarda la Biblioteca desde hace siglos. Odia el ruido y a los ladrones de libros.'],
   ['reycalavera', 'Rey Calavera', 3, 'Gobernó la Cripta en vida. Sigue gobernándola en muerte.'],
@@ -2316,14 +2335,22 @@ const EN = {
   aprendiz:    { n: 'Aprendiz', hp: 8, f: ['a2', 'g3', 'a1g2', 'a3', 'b2', 'g4'] },
   banshee:     { n: 'Banshee', px: 6, hp: 18, f: ['a3', 'k1', 'a2k1', 'a4', 'a2p2', 'a3'] },
   grimorio:    { n: 'Grimorio', px: 7, hp: 20, f: ['a3', 'a2c1', 'a4', 'b4', 'c1', 'a5'] },
-  bibliotecario: { n: 'Bibliotecario', px: 8, hp: 30, f: ['a4', 's:libro', 'a2c1', 'a5', 'a2g4', 'k1a3'] },
+  bibliotecario: { n: 'Bibliotecario', px: 8, hp: 26, f: ['a4', 's:libro', 'a2c1', 'a5', 'a2g4', 'k1a3'] },
   homunculo:   { n: 'Homúnculo', hp: 10, grow: 1, f: ['a2', 'a3', 'a2', 'b2', 'a1p1', 'a3'] },
   sapo:        { n: 'Sapo', fig: 'sapomorado', hp: 9, f: ['p2', 'a1p2', 'a2', 'p3', 'b2', 'a2p1'] },
   serpiente:   { n: 'Serpiente', hp: 9, f: ['a2', 'l4', 'a3', 'a1p2', 'l3', 'a3'] },
   momia:       { n: 'Momia', hp: 14, spines: 1, f: ['a3', 'a2', 'b3', 'a4', 'a2b2', 'a3'] },
   manticora:   { n: 'Mantícora', px: 5, hp: 32, spines: 1, grow: 1, f: ['a4', 'a3p2', 'a5', 'b4', 'a3', 'a6'] },
   basilisco:   { n: 'Basilisco', px: 6, hp: 30, f: ['a4', 'k2', 'a3', 'a5', 'a2k1', 'b5'] },
-  hidra:       { n: 'Hidra', fig: 'cabezahidra', px: 6, hp: 13, heads: 3, regrow: 1, f: ['a3', 'a4', 'a2p2', 'a5', 'b3', 'a3'] },
+  hidra:       { n: 'Hidra', fig: 'cabezahidra', px: 6, hp: 12, heads: 3, regrow: 1, f: ['a3', 'a4', 'a2p2', 'a5', 'b3', 'a3'] },
+  arpia:       { n: 'Arpía', hp: 12, f: ['a3', 'o5', 'a2', 'a4', 'b2', 'a3o2'] },
+  gargolacristal: { n: 'Gárgola de cristal', hp: 16, spines: 1, f: ['b4', 'a3', 'a2b3', 'a4', 'b5', 'a3'] },
+  wyvern:      { n: 'Guiverno', hp: 14, f: ['a3', 'q3', 'a4', 'a2', 'q2', 'a3'] },
+  magobatalla: { n: 'Mago de batalla', hp: 12, f: ['a3', 'l4', 'g4', 'a2l2', 'a4', 'g3'] },
+  cerbero:     { n: 'Cerbero', px: 6, hp: 34, multi: 3, f: ['a2', 'a3', 'a2', 'b4', 'a1p1', 'a3'] },
+  medusa:      { n: 'Medusa', px: 6, hp: 30, f: ['a4', 'k2', 'a3p2', 'a5', 'a2k1', 'b4'] },
+  hechicero:   { n: 'Hechicero', px: 7, hp: 40, phase: 'liche', f: ['a4', 'a2k1', 'a2c1', 'a5', 's:fuegofatuo', 'b5'] },
+  liche:       { n: 'Liche', fig: 'lich', px: 7, hp: 40, f: ['a6', 'a3p3', 'a3c1', 'a7', 'q4', 'b5k1'] },
   dragon:      { n: 'Dragón', px: 8, hp: 70, f: ['a6', 'a4b4', 'a3p3', 'a7', 'b6r1', 'a5'] },
 };
 const FLOORS_M1 = [
@@ -2338,14 +2365,17 @@ const THEMES_T = [
 ];
 THEMES_T.push({ wall: rampOf(['#020403', '#08120e', '#102018', '#1a3024', '#284636', '#3a6048', '#56805e']), floor: rampOf(['#030304', '#0c0d10', '#16181e', '#22262e', '#323844', '#464e5c', '#626c7c']), wood: rampOf(['#040302', '#140e08', '#261a0e', '#3a2a16', '#523c20', '#6e522c']), sky: pack(2, 4, 3), shelf: 'lab',
   books: [rampOf(['#031003', '#0a300c', '#145a18', '#24902a', '#4ac84a', '#a0f890']), rampOf(['#0a030e', '#2a0c3a', '#4e1870', '#7a2aa8', '#a850e0', '#d8a0ff']), rampOf(['#030a0e', '#0a2a3a', '#145068', '#2280a0', '#40b8d8', '#a0f0ff']), rampOf(['#0e0603', '#3a160a', '#6a2a10', '#a0481a', '#d87a2a', '#ffc070'])] });
+THEMES_T.push({ wall: rampOf(['#030306', '#0c0c14', '#181a26', '#262a3a', '#383e52', '#4e566e', '#6e7890']), floor: rampOf(['#030304', '#0e0e12', '#1a1a22', '#282a34', '#3a3e4a', '#525866', '#727a88']), wood: rampOf(['#040302', '#140e08', '#261a0e', '#3a2a16', '#523c20', '#6e522c']), sky: pack(4, 4, 10), open: true,
+  skyR: rampOf(['#020208', '#060818', '#0c1030', '#16204a', '#24346a', '#3a5090', '#9ab0f0']) });
 const FLOORS_T = [
   { n: 'La Biblioteca', pool: ['libro', 'cuervo', 'fuegofatuo', 'aprendiz'], elite: ['banshee', 'grimorio'], boss: 'bibliotecario', bg: '#24160c' },
   { n: 'El Laboratorio', pool: ['homunculo', 'sapo', 'serpiente', 'momia'], elite: ['manticora', 'basilisco'], boss: 'hidra', bg: '#102018' },
+  { n: 'La Cima', pool: ['arpia', 'gargolacristal', 'wyvern', 'magobatalla'], elite: ['cerbero', 'medusa'], boss: 'hechicero', bg: '#0c1030' },
 ];
 let FLOORS = FLOORS_M1, THEMES = THEMES_M1;
 const DUNGEONS = [
   { n: 'La Mazmorra', d: 'La Cripta, las Cuevas y el Abismo', floors: FLOORS_M1, themes: THEMES_M1, spr: 'dragon' },
-  { n: 'La Torre del Hechicero', d: 'La Biblioteca, el Laboratorio y la Cima', floors: FLOORS_T, themes: THEMES_T, spr: 'bibliotecario', wip: 'En obras: de momento están la Biblioteca y el Laboratorio (vista previa).' },
+  { n: 'La Torre del Hechicero', d: 'La Biblioteca, el Laboratorio y la Cima', floors: FLOORS_T, themes: THEMES_T, spr: 'hechicero' },
 ];
 function setDungeon(r) { const D = DUNGEONS[(r && r.dg) || 0]; FLOORS = D.floors; THEMES = D.themes; }
 // progreso: ganar La Mazmorra desbloquea la Torre y la dificultad 2
@@ -2489,7 +2519,7 @@ function hearts(hp, max) { return pips(hp, max, { cls: 'mid', row: 20 }); }
 // lo que te viene este turno (golpes y veneno de los enemigos que aún no han actuado)
 function incoming() {
   let inc = 0, poi = C.ppoison;
-  if (C.phase !== 'enemy') for (const e of alive()) if (e.intent && !e.acted) { if (e.intent.a) inc += e.intent.a + e.rage; poi += e.intent.p; }
+  if (C.phase !== 'enemy') for (const e of alive()) if (e.intent && !e.acted) { if (e.intent.a) inc += (e.intent.a + e.rage) * (e.multi || 1); poi += e.intent.p + e.intent.q; }
   return { inc, poi };
 }
 
@@ -2698,7 +2728,7 @@ function dungeonScreen() {
       <div class="dg-diff"><button class="btn small pri" onclick="G.pickD(0, 1)">Dificultad 1</button>
       <button class="btn small ${won ? '' : 'locked'}" ${won ? 'onclick="G.pickD(0, 2)"' : 'disabled'}>${won ? '' : sp('llave', 1) + ' '}Dificultad 2</button></div>
       <small style="color:${won ? 'var(--dim)' : '#c0a0ff'}">${won ? 'Dificultad 2: enemigos más fuertes y con habilidades nuevas, menos oro y la hoguera cura menos.' : 'Gana La Mazmorra para desbloquear la Dificultad 2.'}</small></div></div>
-    <button class="btn dg-card" onclick="G.pickD(1, 1)">${figOf(1)}<div class="info"><h3>${D1.n}</h3><small>${D1.d}</small>${D1.wip ? `<small style="color:var(--gold)">${D1.wip}</small>` : ''}</div></button>`;
+    <button class="btn dg-card ${won ? '' : 'locked'}" ${won ? 'onclick="G.pickD(1, 1)"' : 'disabled'}>${won ? figOf(1) : `<div class="dg-fig">${fig(sp3(D1.spr, 3.4, '', -.4, { sil: 1 }))}</div>`}<div class="info"><h3>${D1.n}</h3><small>${D1.d}</small>${won ? '' : `<small class="dg-lock">${sp('llave', 1)} Gana La Mazmorra para desbloquearla</small>`}</div></button>`;
 }
 function chooseHero() {
   S = { scr: 'choose' };
@@ -2999,7 +3029,7 @@ function victory() {
   const D = DUNGEONS[run.dg || 0], fresh = (run.dg || 0) === 0 && !progGet().won1;
   if ((run.dg || 0) === 0) progSet({ won1: true });
   const msg = D.wip ? `${run.cls} ha superado el Laboratorio. ¡Fin de la vista previa! La Cima llegará pronto.`
-    : `${run.cls} ha vencido a ${EN[FLOORS[FLOORS.length - 1].boss].n === 'Dragón' ? 'el Dragón' : EN[FLOORS[FLOORS.length - 1].boss].n} y sale de ${D.n.toLowerCase()} con ${run.gold} de oro.`;
+    : `${run.cls} ha vencido al ${EN[FLOORS[FLOORS.length - 1].boss].n} y sale de ${D.n.toLowerCase()} con ${run.gold} de oro.`;
   app.innerHTML = `<div class="center c" style="align-items:center"><h1>¡HAS GANADO!</h1>${fig(sp3(heroSkin(), 10, '', .4))}${sp('corona', 6)}
     <p class="t">${msg}</p>
     ${fresh ? `<div class="panel" style="width:100%"><p class="t" style="color:var(--gold)">¡Desbloqueado!<br><span style="color:var(--txt)">La Torre del Hechicero y La Mazmorra en Dificultad 2</span></p></div>` : ''}
@@ -3012,9 +3042,9 @@ function victory() {
 // y vuelves a tirar el resto (2 veces)  3) usas cada dado sobre un objetivo
 // 4) los enemigos que siguen vivos hacen lo que sacaron.
 function parseFace(s) {
-  const o = { a: 0, b: 0, p: 0, h: 0, r: 0, c: 0, o: 0, k: 0, g: 0, l: 0, s: null };
+  const o = { a: 0, b: 0, p: 0, h: 0, r: 0, c: 0, o: 0, k: 0, g: 0, l: 0, q: 0, s: null };
   const m = s.match(/s:(\w+)/); if (m) o.s = m[1];
-  s.replace(/s:\w+/, '').replace(/([abphrcokgl])(\d+)/g, (_, k, n) => { o[k] += +n; });
+  s.replace(/s:\w+/, '').replace(/([abphrcokglq])(\d+)/g, (_, k, n) => { o[k] += +n; });
   return o;
 }
 function makeEnemy(key) {
@@ -3024,7 +3054,7 @@ function makeEnemy(key) {
     f = f.slice(); const sb = DIFF2_SUB[key]; if (sb) f[sb[0]] = sb[1];
     f = f.map(bumpF); hp = Math.ceil(hp * 1.25); boom = boom || DIFF2_BOOM[key] || 0;
   }
-  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp, max: hp, block: 0, guard: 0, thorn: 0, poison: 0, rage: 0, intent: null, die: -1, f, boom, stolen: 0, spines: d.spines || 0, grow: d.grow || 0, regrow: d.regrow || 0, fig: d.fig };
+  return { key, n: d.n, spr: d.spr || key, swap: d.swap, px: d.px || 5, hp, max: hp, block: 0, guard: 0, thorn: 0, poison: 0, rage: 0, intent: null, die: -1, f, boom, stolen: 0, spines: d.spines || 0, grow: d.grow || 0, regrow: d.regrow || 0, fig: d.fig, multi: d.multi || 1, phase: d.phase };
 }
 // maldición: una cara de tus dados queda vacía hasta el final del combate
 function curseFace() {
@@ -3243,6 +3273,14 @@ function hitEnemy(e, amt, pierce, col) {
     if (has('avaro')) run.gold += 3;
   }
   fl(e, amt > 0 ? '-' + amt : '0', col || '#ff6a6a', amt > 0);
+  if (e.phase && e.hp > 0 && e.hp <= e.max / 2) {
+    const nx = EN[e.phase]; e.phase = null;
+    Object.assign(e, { key: Object.keys(EN).find(k => EN[k] === nx), n: nx.n, fig: nx.fig, f: D2() ? nx.f.map(bumpF) : nx.f, rage: 0, poison: 0 });
+    e.hp = Math.min(e.max, e.hp + 8);
+    if (e.intent && !e.acted && e.die >= 0) { e.intent = parseFace(e.f[e.die]); e.block += e.intent.b; }
+    fl(e, '¡SE TRANSFORMA!', '#d090ff', true); if (!FAST) { (e._fx || (e._fx = {})).hit = performance.now(); Sfx.hit(1); }
+    Tips.show('phase', '¡El Hechicero se ha convertido en el Liche! Recupera algo de vida y su dado es más fuerte.', null);
+  }
   if (e.hp <= 0 && !FAST) { (e._fx || (e._fx = {})).die = performance.now(); }
   return amt;
 }
@@ -3253,7 +3291,7 @@ async function deaths() {
     for (const e of fresh) {
       e._dead = true;
       if (!FAST) { const sd = Scene.edie(e); if (sd) sd.fade = performance.now(); }
-      if (e.intent && !e.acted && (e.intent.a || e.intent.p || e.intent.h || e.intent.s || e.intent.c || e.intent.o || e.intent.k || e.intent.l)) { fl(e, '¡Dado cancelado!', '#f8d84a'); Tips.show('cancel', 'Lo has matado antes de que actuara: su dado ya no hace nada.', null); }
+      if (e.intent && !e.acted && (e.intent.a || e.intent.p || e.intent.h || e.intent.s || e.intent.c || e.intent.o || e.intent.k || e.intent.l || e.intent.q)) { fl(e, '¡Dado cancelado!', '#f8d84a'); Tips.show('cancel', 'Lo has matado antes de que actuara: su dado ya no hace nada.', null); }
     }
     if (has('calavera')) for (const _ of fresh) for (const e of alive()) hitEnemy(e, 2, true, '#e0e0f0');
     for (const e of fresh) if (e.boom) {
@@ -3298,7 +3336,7 @@ async function endTurn() {
     if (e.hp <= 0 || !e.intent) continue;
     const it = e.intent, sd = !FAST && Scene.edie(e);
     if (sd) sd.sel = true;
-    if (it.a) {
+    if (it.a) for (let m = 0; m < (e.multi || 1) && e.hp > 0; m++) {
       let dmg = it.a + e.rage;
       const ab = Math.min(C.block, dmg); C.block -= ab; dmg -= ab;
       if (dmg > 0 && has('capa') && !C.capa) { C.capa = true; dmg = 0; fl('hero', 'CAPA DE SOMBRAS', '#b070e0'); }
@@ -3306,6 +3344,12 @@ async function endTurn() {
       run.hp -= dmg;
       fl('hero', dmg > 0 ? '-' + dmg : '¡BLOQUEADO!', dmg > 0 ? '#ff6a6a' : '#8ab8ff', dmg > 0);
       if (C.thorns) hitEnemy(e, C.thorns, true, '#c0d0ff');
+      if (e.multi > 1) { Tips.show('multi', 'Tiene tres cabezas: su ataque golpea ' + e.multi + ' veces (cada golpe gasta protección).', null); if (m < e.multi - 1) { cRender(); await sleep(260); } }
+    }
+    if (it.q) {
+      if (!FAST) Scene.lunge(e, 'hero');
+      run.hp -= it.q; fl('hero', '-' + it.q + ' fuego', '#ffb040', true);
+      Tips.show('breath', 'Su fuego atraviesa tu protección.', null);
     }
     if (it.p) { C.ppoison += it.p; fl('hero', '+' + it.p + ' veneno', '#7aea7a'); }
     if (it.l) { const al = alive().filter(o => o.hp < o.max).sort((a, b) => a.hp / a.max - b.hp / b.max)[0]; if (al) { const hh = Math.min(it.l, al.max - al.hp); al.hp += hh; fl(al, '+' + hh, '#7aea7a'); Tips.show('healally', 'Cura al enemigo más herido. Mátalo primero si puedes.', null); } }
@@ -3330,7 +3374,7 @@ async function endTurn() {
 function intentHTML(e) {
   const it = e.intent; if (!it || C.phase === 'enemy') return '<span style="color:var(--dim)">…</span>';
   const p = [];
-  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a}${e.rage ? `<span class="rg">+${e.rage}${sp('furia', 1)}</span>` : ''}</span>`);
+  if (it.a) p.push(`<span style="color:#ff8a8a">${sp('golpe', 2)}${it.a}${e.multi > 1 ? '×' + e.multi : ''}${e.rage ? `<span class="rg">+${e.rage}${sp('furia', 1)}</span>` : ''}</span>`);
   if (it.b) p.push(`<span style="color:#8ab8ff">${sp('escudo', 2)}${it.b}</span>`);
   if (it.p) p.push(`<span style="color:#7aea7a">${sp('veneno', 2)}${it.p}</span>`);
   if (it.h) p.push(`<span style="color:#ff8a8a">${sp('corazon', 2)}+${it.h}</span>`);
@@ -3341,14 +3385,15 @@ function intentHTML(e) {
   if (it.k) p.push(`<span style="color:#9ae0ff">${sp('hielo', 2)}${it.k > 1 ? it.k : ''}</span>`);
   if (it.g) p.push(`<span style="color:#8ab8ff">${sp('escolta', 2)}${it.g}</span>`);
   if (it.l) p.push(`<span style="color:#7aea7a">${sp('corazon', 2)}+${it.l}</span>`);
+  if (it.q) p.push(`<span style="color:#ffb040">${sp('fuego', 2)}${it.q}</span>`);
   return p.join('') || '<span style="color:var(--dim)">nada</span>';
 }
 function intentText(it, e) {
   const p = [];
-  if (it.a) p.push(`ataca ${it.a + (e ? e.rage : 0)}`); if (it.b) p.push(`se protege ${it.b}`); if (it.p) p.push(`envenena ${it.p}`);
+  if (it.a) p.push(`ataca ${it.a + (e ? e.rage : 0)}${e && e.multi > 1 ? ' ' + e.multi + ' veces' : ''}`); if (it.b) p.push(`se protege ${it.b}`); if (it.p) p.push(`envenena ${it.p}`);
   if (it.h) p.push(`cura ${it.h} a todos`); if (it.r) p.push(`se enfurece +${it.r}`); if (it.s) p.push(`invoca: ${EN[it.s].n}`);
   if (it.c) p.push('te maldice: una cara de tus dados queda vacía hasta el final del combate'); if (it.o) p.push(`te roba ${it.o} de oro`);
-  if (it.k) p.push(`congela ${it.k > 1 ? it.k + ' de tus dados' : 'uno de tus dados'} el próximo turno`); if (it.g) p.push(`protege ${it.g} a ${e && e.gTo ? e.gTo : 'un aliado'}`); if (it.l) p.push(`cura ${it.l} al aliado más herido`);
+  if (it.k) p.push(`congela ${it.k > 1 ? it.k + ' de tus dados' : 'uno de tus dados'} el próximo turno`); if (it.g) p.push(`protege ${it.g} a ${e && e.gTo ? e.gTo : 'un aliado'}`); if (it.l) p.push(`cura ${it.l} al aliado más herido`); if (it.q) p.push(`lanza fuego ${it.q} (atraviesa tu protección)`);
   return p.join(', ') || 'nada';
 }
 function badge(ico, v, col) { return `<span style="color:${col}">${sp(ico, 2)}${v}</span>`; }
@@ -3516,7 +3561,7 @@ const G = {
     }
     if (C.phase === 'roll') return G.roll();
     if (Tuto.on) return;
-    modal(`<h3>${e.n}</h3>${pips(e.hp, e.max, { blk: e.block, cls: 'mid' })}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>${e.boom ? `<p class="t" style="color:#f08a2a">Al morir explota: ${e.boom} de daño a todos.</p>` : ''}${e.spines ? `<p class="t" style="color:#c0d0ff">Pinchos: cada vez que le pegas te hace ${e.spines} de daño.</p>` : ''}${e.grow ? `<p class="t" style="color:#ff7050">Crece: cada turno pega ${e.grow} más.</p>` : ''}${e.regrow ? `<p class="t" style="color:#7aea7a">Si queda otra cabeza viva, vuelve a crecer (${e.regrow} vez).</p>` : ''}${e.stolen ? `<p class="t" style="color:var(--gold)">Te ha robado ${e.stolen} de oro: mátalo y lo recuperas.</p>` : ''}`);
+    modal(`<h3>${e.n}</h3>${pips(e.hp, e.max, { blk: e.block, cls: 'mid' })}<p class="t">Ahora: <span style="color:var(--txt)">${e.intent ? intentText(e.intent, e) : 'todavía no ha tirado'}</span></p><p class="t">Caras de su dado:</p><div class="col">${e.f.map((s, k) => `<p class="t" style="color:${k === e.die ? 'var(--gold)' : 'var(--txt)'}">${k === e.die ? '▶' : '·'} ${intentText(parseFace(s), e)}</p>`).join('')}</div>${e.boom ? `<p class="t" style="color:#f08a2a">Al morir explota: ${e.boom} de daño a todos.</p>` : ''}${e.spines ? `<p class="t" style="color:#c0d0ff">Pinchos: cada vez que le pegas te hace ${e.spines} de daño.</p>` : ''}${e.grow ? `<p class="t" style="color:#ff7050">Crece: cada turno pega ${e.grow} más.</p>` : ''}${e.multi > 1 ? `<p class="t" style="color:#ff8a8a">Tres cabezas: su ataque golpea ${e.multi} veces.</p>` : ''}${e.phase ? `<p class="t" style="color:#d090ff">A media vida se transforma en ${EN[e.phase].n}.</p>` : ''}${e.regrow ? `<p class="t" style="color:#7aea7a">Si queda otra cabeza viva, vuelve a crecer (${e.regrow} vez).</p>` : ''}${e.stolen ? `<p class="t" style="color:var(--gold)">Te ha robado ${e.stolen} de oro: mátalo y lo recuperas.</p>` : ''}`);
   },
   tapHero: () => {
     if (!C) return;
