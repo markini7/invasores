@@ -346,7 +346,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.24'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.25'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -933,7 +933,7 @@ const TS = 18; // lado de la textura de cada cara
 // estilo de las caras: A = icono y número, B = número grande, E = placa de color (se prueban en el laboratorio)
 let DSTYLE = { p: 'A', e: 'A' };
 // palos (prueba del laboratorio): si SUITS tiene valor, las parejas y tríos van por color y no por número
-let SUITS = null;   // null | 'borde' | 'fondo' | 'gema' | 'metal'
+let SUITS = null;   // null | 'borde' | 'fondo' | 'ambos' | 'gema' | 'metal'
 const SUIT_COL = ['#3ac060', '#a060e8', '#e8c030'], SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
 const suitOf = f => SUITS && f && f.s !== undefined && !blankF(f) ? f.s : null;
 const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
@@ -948,8 +948,8 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p', suit = null) {
     else if (x === 1 || y === 1) px[y * N + x] = body.map(v => Math.min(255, v * 1.5 + 12));
     else if (x === N - 2 || y === N - 2) px[y * N + x] = body.map(v => v * .6);
   }
-  if (SV === 'borde') { const c = hexRGB(SUIT_COL[suit]); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (x <= 1 || y <= 1 || x >= N - 2 || y >= N - 2) px[y * N + x] = (x === 0 || y === 0 || x === N - 1 || y === N - 1) ? c.map(v => v * .75) : c.slice(); }
-  if (SV === 'fondo') { const c = hexRGB(SUIT_COL[suit]); for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) px[y * N + x] = c.map(v => v * (x === 1 || y === 1 ? .75 : x === N - 2 || y === N - 2 ? .35 : .5)); }
+  if (SV === 'borde' || SV === 'ambos') { const c = hexRGB(SUIT_COL[suit]); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (x <= 1 || y <= 1 || x >= N - 2 || y >= N - 2) px[y * N + x] = (x === 0 || y === 0 || x === N - 1 || y === N - 1) ? c.map(v => v * .75) : c.slice(); }
+  if (SV === 'fondo' || SV === 'ambos') { const c = hexRGB(SUIT_COL[suit]); for (let y = SV === 'ambos' ? 2 : 1; y < N - (SV === 'ambos' ? 2 : 1); y++) for (let x = SV === 'ambos' ? 2 : 1; x < N - (SV === 'ambos' ? 2 : 1); x++) px[y * N + x] = c.map(v => v * (x === 1 || y === 1 ? .75 : x === N - 2 || y === N - 2 ? .35 : .5)); }
   const put = (x, y, c) => { if (x >= 1 && x < N - 1 && y >= 1 && y < N - 1) px[y * N + x] = c; };
   const icon = (n, ox, oy) => ICO[n].forEach((row, y) => { for (let x = 0; x < row.length; x++) if (PAL[row[x]]) put(ox + x, oy + y, hexRGB(PAL[row[x]])); });
   // número grande (5x7 por cifra) con contorno oscuro para que se lea bien
@@ -990,11 +990,11 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p', suit = null) {
   }
   return texCache[key] = [.5, .74, 1.02].map(k => Uint32Array.from(px, c => pack(Math.min(255, c[0] * k) | 0, Math.min(255, c[1] * k) | 0, Math.min(255, c[2] * k) | 0)));
 }
-function faceTex(d, f, gold) {
+function faceTex(d, f, gold, plain) {
   const [b, r] = dieCols(d), key = d + '|' + (d === 'esp' ? run.hero : '') + '|' + f.k + '|' + f.v + '|' + (gold ? 1 : 0);
   if (blankF(f)) return dieTexture(key, b, r, []);
   const kw = KW[f.k];
-  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold, 'p', suitOf(f));
+  return dieTexture(key, b, r, [[kw.ico, f.k === 'doble' && !f.v ? '' : f.v, kw.col]], gold, 'p', plain ? null : suitOf(f));
 }
 // dado de enemigo: hueso oscuro con borde rojo, y lo que hace pintado (hasta dos cosas)
 function enemyFaceTex(str) {
@@ -1918,7 +1918,7 @@ function drawMorphDie(s, idb, cam, d, texFn, id, pc, c0, t) {
     const byY = [...P].sort((a, b) => a.p[1] - b.p[1]), topRow = byY.slice(0, 2).sort((a, b) => a.p[0] - b.p[0]), botRow = byY.slice(2).sort((a, b) => a.p[0] - b.p[0]);
     const tgt = [[rect[0], rect[1]], [rect[2], rect[1]], [rect[0], rect[3]], [rect[2], rect[3]]];
     [topRow[0], topRow[1], botRow[0], botRow[1]].forEach((c, k) => { c.q = [c.p[0] + (tgt[k][0] - c.p[0]) * t, c.p[1] + (tgt[k][1] - c.p[1]) * t, c0.z]; });
-    const tex = texFn(fi)[lvl];
+    const tex = texFn(fi, fi !== d.top)[lvl];
     rasterTri(s, idb, P[0].q, P[1].q, P[2].q, P[0].uv, P[1].uv, P[2].uv, tex, id);
     rasterTri(s, idb, P[0].q, P[2].q, P[3].q, P[0].uv, P[2].uv, P[3].uv, tex, id);
   };
@@ -1930,7 +1930,7 @@ function drawFlatDie(s, idb, cam, d, texFn, id, pc) {
   const { W, H, buf } = s, side = 6;
   let front = 4, bz = -2;
   for (let fi = 0; fi < 6; fi++) { if (fi === d.top) continue; const n = Q4.rot(d.q, CUBE_F[fi].n); if (n[2] > bz) { bz = n[2]; front = fi; } }
-  const top = texFn(d.top)[2], fr = texFn(front)[0];
+  const top = texFn(d.top)[2], fr = texFn(front, true)[0];
   const x0 = Math.round(pc[0] - TS / 2), y0 = Math.round(pc[1] - TS / 2 - side / 2);
   const put = (x, y, c) => { if (x < 0 || y < 0 || x >= W || y >= H) return; buf[y * W + x] = c; idb[y * W + x] = id; };
   for (let r = 0; r < side; r++) { const sr = Math.round(r * (TS - 1) / (side - 1)); for (let x = 0; x < TS; x++) put(x0 + x, y0 + TS + r, fr[sr * TS + x]); }
@@ -2002,7 +2002,7 @@ const Scene = {
       if (it.f) { this.blitFig(it.f, now); continue; }
       const d = it.d; id++;
       outl[id] = d.sel ? pack(255, 255, 255) : d.boost ? pack(248, 216, 74) : d.locked ? pack(160, 210, 255) : d.kind === 'e' ? pack(40, 6, 10) : pack(8, 5, 7);
-      const texFn = d.kind === 'e' ? fi => enemyFaceTex(d.en.f[d.map[fi]]) : fi => faceTex(d.d, run.dice[d.d][d.map[fi]], false);
+      const texFn = d.kind === 'e' ? fi => enemyFaceTex(d.en.f[d.map[fi]]) : (fi, plain) => faceTex(d.d, run.dice[d.d][d.map[fi]], false, plain);
       if (d.fade) { const k = Math.min(1, (now - d.fade) / 450); if (k >= 1) { d.gone = true; continue; } d.fk = k; } else d.fk = 0;
       drawCube(s, idb, cam, d, texFn, id);
       if (d.fk) for (let i = 0; i < buf.length; i++) if (idb[i] === id && BAYER[((i / W | 0) & 3) * 4 + (i % W & 3)] < d.fk) { buf[i] = this.bg[i]; idb[i] = 0; }
@@ -2435,7 +2435,7 @@ function faceHTML(f, d, opts = {}) {
   const cls = `fc ${d} ${blankF(f) ? 'blank' : ''} ${opts.cls || ''}`;
   if (blankF(f)) return `<${tag} class="${cls}"${on}><b>·</b></${tag}>`;
   const kw = KW[f.k], px = opts.big ? 4 : 2, su = suitOf(f);
-  const st = su === null ? '' : SUITS === 'borde' ? ` style="border-color:${SUIT_COL[su]}"` : SUITS === 'fondo' ? ` style="background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : '';
+  const st = su === null ? '' : SUITS === 'borde' ? ` style="border-color:${SUIT_COL[su]}"` : SUITS === 'fondo' ? ` style="background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : SUITS === 'ambos' ? ` style="border-color:${SUIT_COL[su]};background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : '';
   const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : kw.col;
   return `<${tag} class="${cls}"${on}${st}>${sp(kw.ico, px)}<b style="color:${numCol}">${f.k === 'doble' && !f.v ? '' : f.v}</b>${su !== null && SUITS === 'gema' ? `<i class="gem" style="background:${SUIT_COL[su]}"></i>` : ''}</${tag}>`;
 }
@@ -3262,8 +3262,8 @@ title();
   document.head.appendChild(css);
   const panel = document.createElement('div'); panel.id = 'labp'; document.body.appendChild(panel);
   const b = (txt, on, fn) => `<button class="${on ? 'on' : ''}" onclick="${fn}">${txt}</button>`;
-  const VERS = [['borde', 'Borde'], ['fondo', 'Fondo'], ['gema', 'Gema'], ['metal', 'Metal']];
-  const INFO = { borde: 'el reborde es el palo; el fondo, el tipo de dado', fondo: 'el fondo es el palo; el reborde, el tipo de dado', gema: 'una gemita en la esquina es el palo', metal: 'el número en oro, plata o cobre es el palo' };
+  const VERS = [['borde', 'Borde'], ['fondo', 'Fondo'], ['ambos', 'Borde y fondo'], ['gema', 'Gema'], ['metal', 'Metal']];
+  const INFO = { borde: 'el reborde es el palo; el fondo, el tipo de dado', fondo: 'el fondo es el palo; el reborde, el tipo de dado', ambos: 'reborde y fondo son del color del palo (el tipo de dado se ve en el lateral)', gema: 'una gemita en la esquina es el palo', metal: 'el número en oro, plata o cobre es el palo' };
   function draw() {
     panel.innerHTML = `<div>LABORATORIO DE DADOS · PALOS: las parejas y tríos van por color, no por número</div>
       <div class="r">${VERS.map(([k, n]) => b(n, SUITS === k, `LAB.v('${k}')`)).join('')} ${b('Empezar de nuevo', false, 'LAB.again()')}</div>

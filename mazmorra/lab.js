@@ -18,8 +18,8 @@
   document.head.appendChild(css);
   const panel = document.createElement('div'); panel.id = 'labp'; document.body.appendChild(panel);
   const b = (txt, on, fn) => `<button class="${on ? 'on' : ''}" onclick="${fn}">${txt}</button>`;
-  const VERS = [['borde', 'Borde'], ['fondo', 'Fondo'], ['gema', 'Gema'], ['metal', 'Metal']];
-  const INFO = { borde: 'el reborde es el palo; el fondo, el tipo de dado', fondo: 'el fondo es el palo; el reborde, el tipo de dado', gema: 'una gemita en la esquina es el palo', metal: 'el número en oro, plata o cobre es el palo' };
+  const VERS = [['borde', 'Borde'], ['fondo', 'Fondo'], ['ambos', 'Borde y fondo'], ['gema', 'Gema'], ['metal', 'Metal']];
+  const INFO = { borde: 'el reborde es el palo; el fondo, el tipo de dado', fondo: 'el fondo es el palo; el reborde, el tipo de dado', ambos: 'reborde y fondo son del color del palo (el tipo de dado se ve en el lateral)', gema: 'una gemita en la esquina es el palo', metal: 'el número en oro, plata o cobre es el palo' };
   function draw() {
     panel.innerHTML = `<div>LABORATORIO DE DADOS · PALOS: las parejas y tríos van por color, no por número</div>
       <div class="r">${VERS.map(([k, n]) => b(n, SUITS === k, `LAB.v('${k}')`)).join('')} ${b('Empezar de nuevo', false, 'LAB.again()')}</div>
