@@ -346,7 +346,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.25'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.26'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -934,7 +934,7 @@ const TS = 18; // lado de la textura de cada cara
 let DSTYLE = { p: 'A', e: 'A' };
 // palos (prueba del laboratorio): si SUITS tiene valor, las parejas y tríos van por color y no por número
 let SUITS = null;   // null | 'borde' | 'fondo' | 'ambos' | 'gema' | 'metal'
-const SUIT_COL = ['#3ac060', '#a060e8', '#e8c030'], SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
+let SUIT_COL = ['#3ac060', '#a060e8', '#e8c030']; const SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
 const suitOf = f => SUITS && f && f.s !== undefined && !blankF(f) ? f.s : null;
 const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
 const DIG5 = ['01110100011001110101110011000101110', '00100011000010000100001000010001110', '01110100010000100010001000100011111', '11110000010000101110000010000111110', '00010001100101010010111110001000010', '11111100001111000001000011000101110', '00110010001000011110100011000101110', '11111000010001000100010000100001000', '01110100011000101110100011000101110', '01110100011000101111000010001001100'];
@@ -980,7 +980,7 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p', suit = null) {
   } else if (parts.length === 1) {
     const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
     icon(ic, Math.floor((N - 7) / 2), st ? 2 : Math.floor((N - 7) / 2));
-    if (st) num(st, cen(st), N - 8, SV === 'metal' ? SUIT_MET[suit] : gold ? '#f8d84a' : c);
+    if (st) num(st, cen(st), N - 8, SV === 'metal' ? SUIT_MET[suit] : SV === 'ambos' ? '#ffffff' : gold ? '#f8d84a' : c);
   } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 2, 1 + r * (N / 2)); if (n !== '') num(String(n), N - 8, 1 + r * (N / 2), c); });
   if (SV === 'gema' && parts.length) {   // gemita en la esquina de arriba a la derecha
     const c = hexRGB(SUIT_COL[suit]), gx = N - 5, gy = 1;
@@ -2436,7 +2436,7 @@ function faceHTML(f, d, opts = {}) {
   if (blankF(f)) return `<${tag} class="${cls}"${on}><b>·</b></${tag}>`;
   const kw = KW[f.k], px = opts.big ? 4 : 2, su = suitOf(f);
   const st = su === null ? '' : SUITS === 'borde' ? ` style="border-color:${SUIT_COL[su]}"` : SUITS === 'fondo' ? ` style="background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : SUITS === 'ambos' ? ` style="border-color:${SUIT_COL[su]};background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : '';
-  const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : kw.col;
+  const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : su !== null && SUITS === 'ambos' ? '#ffffff' : kw.col;
   return `<${tag} class="${cls}"${on}${st}>${sp(kw.ico, px)}<b style="color:${numCol}">${f.k === 'doble' && !f.v ? '' : f.v}</b>${su !== null && SUITS === 'gema' ? `<i class="gem" style="background:${SUIT_COL[su]}"></i>` : ''}</${tag}>`;
 }
 function diceRows(opts = {}) {
@@ -3252,22 +3252,31 @@ title();
   EN.lab1 = { n: 'Muñeco', spr: 'esqueleto', hp: 99, f: ['a2b2', 'a3b2', 'a2', 'a3', 'a2b3', 'a3b3'] };
   EN.lab2 = { n: 'Muñeco', spr: 'orco', hp: 99, f: ['a3', 'a2', 'a2b2', 'a3b3', 'p2', 'b3'] };
   window.LAB_EN = ['lab1', 'lab2'];
-  SUITS = 'borde';
+  SUITS = 'ambos';
   const css = document.createElement('style');
   css.textContent = `#labp{position:fixed;left:0;right:0;top:0;z-index:90;background:#2a1f10;box-shadow:0 3px 0 #000;padding:calc(env(safe-area-inset-top) + 6px) 10px 8px;font-size:7px;line-height:1.6;color:#f8d84a;display:flex;flex-direction:column;gap:5px}
   #labp .r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;color:#e8e0f0}
   #labp button{font:inherit;font-size:8px;padding:5px 8px;background:#3a2e4a;color:#f4f0e8;border:none;box-shadow:0 0 0 2px #000;cursor:pointer}
   #labp button.on{background:#f8d84a;color:#000}
-  #app{padding-top:calc(env(safe-area-inset-top) + 96px)!important}`;
+  #app{padding-top:calc(env(safe-area-inset-top) + 156px)!important}`;
   document.head.appendChild(css);
   const panel = document.createElement('div'); panel.id = 'labp'; document.body.appendChild(panel);
   const b = (txt, on, fn) => `<button class="${on ? 'on' : ''}" onclick="${fn}">${txt}</button>`;
-  const VERS = [['borde', 'Borde'], ['fondo', 'Fondo'], ['ambos', 'Borde y fondo'], ['gema', 'Gema'], ['metal', 'Metal']];
-  const INFO = { borde: 'el reborde es el palo; el fondo, el tipo de dado', fondo: 'el fondo es el palo; el reborde, el tipo de dado', ambos: 'reborde y fondo son del color del palo (el tipo de dado se ve en el lateral)', gema: 'una gemita en la esquina es el palo', metal: 'el número en oro, plata o cobre es el palo' };
+  // paletas para los tres palos (la versión es siempre borde y fondo del color del palo)
+  const PALS = [
+    ['Joyas', ['#3ac060', '#a060e8', '#e8c030']],
+    ['Joyas oscuras', ['#1f8a4a', '#6a2fb0', '#c08a10']],
+    ['Elementos', ['#e0602a', '#2a9ad8', '#4ab04a']],
+    ['Metales', ['#e0b830', '#a8b0c0', '#b0683a']],
+    ['Hueso, piedra y sangre', ['#d8ccb0', '#707888', '#a02838']],
+    ['Neón', ['#30e0c0', '#ff4fa8', '#ffe040']],
+  ];
+  let pal = 0;
+  const sw = cols => cols.map(c => `<i style="display:inline-block;width:9px;height:9px;background:${c};box-shadow:0 0 0 1px #000;margin-right:2px"></i>`).join('');
   function draw() {
-    panel.innerHTML = `<div>LABORATORIO DE DADOS · PALOS: las parejas y tríos van por color, no por número</div>
-      <div class="r">${VERS.map(([k, n]) => b(n, SUITS === k, `LAB.v('${k}')`)).join('')} ${b('Empezar de nuevo', false, 'LAB.again()')}</div>
-      <div class="r" style="color:#a597b8">${INFO[SUITS]}</div>`;
+    panel.innerHTML = `<div>LABORATORIO DE DADOS · PALOS (borde y fondo del color del palo): las parejas y tríos van por color</div>
+      <div class="r">${PALS.map(([n, c], i) => b(sw(c) + n, pal === i, `LAB.p(${i})`)).join('')}</div>
+      <div class="r">${b('Empezar de nuevo', false, 'LAB.again()')}</div>`;
   }
   function refresh() { for (const k in texCache) delete texCache[k]; draw(); if (C) cRender(); }
   function start() {
@@ -3277,7 +3286,7 @@ title();
     DKEYS.forEach(d => { const su = shuffle([0, 0, 1, 1, 2, 2]); run.dice[d].forEach((f, i) => { f.s = su[i]; }); });
     startCombat('combate');
   }
-  window.LAB = { v: k => { SUITS = k; refresh(); }, again: () => start() };
+  window.LAB = { p: i => { pal = i; SUIT_COL = PALS[i][1].slice(); refresh(); }, again: () => start() };
   draw(); start();
 })();
 </script>

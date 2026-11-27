@@ -930,7 +930,7 @@ const TS = 18; // lado de la textura de cada cara
 let DSTYLE = { p: 'A', e: 'A' };
 // palos (prueba del laboratorio): si SUITS tiene valor, las parejas y tríos van por color y no por número
 let SUITS = null;   // null | 'borde' | 'fondo' | 'ambos' | 'gema' | 'metal'
-const SUIT_COL = ['#3ac060', '#a060e8', '#e8c030'], SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
+let SUIT_COL = ['#3ac060', '#a060e8', '#e8c030']; const SUIT_MET = ['#f8d84a', '#dfe4f0', '#d27a3c'];
 const suitOf = f => SUITS && f && f.s !== undefined && !blankF(f) ? f.s : null;
 const PLATE = { golpe: '#a82c34', barrido: '#a8402a', perforar: '#6a6a80', vampiro: '#8a1830', escudo: '#2a58a8', espinas: '#3a5a9a', furia: '#b84a1c', doble: '#a8881c', luz: '#a8901c', veneno: '#2a8a34', nube: '#2a8a34', fuego: '#b8561c', explosion: '#b86a1c', corazon: '#a82c34', invoca: '#6a3a9a' };
 const DIG5 = ['01110100011001110101110011000101110', '00100011000010000100001000010001110', '01110100010000100010001000100011111', '11110000010000101110000010000111110', '00010001100101010010111110001000010', '11111100001111000001000011000101110', '00110010001000011110100011000101110', '11111000010001000100010000100001000', '01110100011000101110100011000101110', '01110100011000101111000010001001100'];
@@ -976,7 +976,7 @@ function dieTexture(key, bodyH, rimH, parts, gold, kind = 'p', suit = null) {
   } else if (parts.length === 1) {
     const [ic, n, c] = parts[0], st = n === '' ? '' : String(n);
     icon(ic, Math.floor((N - 7) / 2), st ? 2 : Math.floor((N - 7) / 2));
-    if (st) num(st, cen(st), N - 8, SV === 'metal' ? SUIT_MET[suit] : gold ? '#f8d84a' : c);
+    if (st) num(st, cen(st), N - 8, SV === 'metal' ? SUIT_MET[suit] : SV === 'ambos' ? '#ffffff' : gold ? '#f8d84a' : c);
   } else parts.slice(0, 2).forEach(([ic, n, c], r) => { icon(ic, 2, 1 + r * (N / 2)); if (n !== '') num(String(n), N - 8, 1 + r * (N / 2), c); });
   if (SV === 'gema' && parts.length) {   // gemita en la esquina de arriba a la derecha
     const c = hexRGB(SUIT_COL[suit]), gx = N - 5, gy = 1;
@@ -2432,7 +2432,7 @@ function faceHTML(f, d, opts = {}) {
   if (blankF(f)) return `<${tag} class="${cls}"${on}><b>·</b></${tag}>`;
   const kw = KW[f.k], px = opts.big ? 4 : 2, su = suitOf(f);
   const st = su === null ? '' : SUITS === 'borde' ? ` style="border-color:${SUIT_COL[su]}"` : SUITS === 'fondo' ? ` style="background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : SUITS === 'ambos' ? ` style="border-color:${SUIT_COL[su]};background:color-mix(in srgb,${SUIT_COL[su]} 50%,#000)"` : '';
-  const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : kw.col;
+  const numCol = su !== null && SUITS === 'metal' ? SUIT_MET[su] : su !== null && SUITS === 'ambos' ? '#ffffff' : kw.col;
   return `<${tag} class="${cls}"${on}${st}>${sp(kw.ico, px)}<b style="color:${numCol}">${f.k === 'doble' && !f.v ? '' : f.v}</b>${su !== null && SUITS === 'gema' ? `<i class="gem" style="background:${SUIT_COL[su]}"></i>` : ''}</${tag}>`;
 }
 function diceRows(opts = {}) {
