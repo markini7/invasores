@@ -335,9 +335,14 @@ canvas.px3d{display:block;image-rendering:pixelated;image-rendering:crisp-edges}
 .dg-card{display:flex;align-items:center;gap:10px;text-align:left;padding:10px}
 .dg-card .dg-fig{width:86px;display:flex;justify-content:center;flex:none}
 .dg-card .info{display:flex;flex-direction:column;gap:5px}
-.dg-card small{line-height:1.6}
+.dg-card small{line-height:1.6;font-size:7px;display:block}
+.dg-card h3{font-size:9px}
+.panel.dg-card{flex-direction:row}
 .dg-card.locked{opacity:.75}
 .dg-lock{color:#c0a0ff}
+.dg-diff{display:flex;gap:8px;margin:4px 0}
+.dg-diff .btn{flex:1;padding:8px 4px;font-size:8px}
+.dg-diff .btn.locked{opacity:.6}
 </style>
 </head>
 <body>
@@ -359,7 +364,7 @@ const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { c
 const clone = o => JSON.parse(JSON.stringify(o));
 const $ = s => document.querySelector(s);
 const SK = 'mazmorra_run', BK = 'mazmorra_best';
-const VERSION = 'v0.31'; // la pone scripts/sync-game.js al publicar
+const VERSION = 'v0.32'; // la pone scripts/sync-game.js al publicar
 
 // ---------------------------------------------------------- pixel art
 const PAL = { k: '#1a1020', w: '#f4f0e8', g: '#9a9aac', G: '#55556a', r: '#e04848', R: '#8a2030', o: '#f08a2a', y: '#f8d84a', Y: '#b8882a', b: '#4a8ae8', B: '#24407a', c: '#7ae0f4', e: '#5ad05a', E: '#24742e', p: '#b070e0', P: '#5e3090', s: '#f2b890', S: '#b87050', n: '#9a6430', N: '#4e2c18', m: '#ee90cc' };
@@ -2648,15 +2653,14 @@ function title() {
 }
 function dungeonScreen() {
   S = { scr: 'dungeon' };
-  const won = !!progGet().won1;
-  const lock = `<small class="dg-lock">${sp('llave', 2)} Gana La Mazmorra para desbloquearla</small>`;
-  const card = (dg, diff, title, desc, open, extra = '') => `<button class="btn dg-card ${open ? '' : 'locked'}" ${open ? `onclick="G.pickD(${dg}, ${diff})"` : 'disabled'}>
-    <div class="dg-fig">${fig(sp3(DUNGEONS[dg].spr, 3.4, diff === 2 ? 'oscuro' : '', -.4, { sil: !open }))}</div>
-    <div class="info"><h3>${title}</h3><small>${desc}</small>${extra}${open ? '' : lock}</div></button>`;
+  const won = !!progGet().won1, D0 = DUNGEONS[0], D1 = DUNGEONS[1];
+  const figOf = dg => `<div class="dg-fig">${fig(sp3(DUNGEONS[dg].spr, 3.4, '', -.4))}</div>`;
   app.innerHTML = `${topbar('Volver', 'G.title()')}<h2 class="c">Elige mazmorra</h2>
-    ${card(0, 1, DUNGEONS[0].n, DUNGEONS[0].d, true)}
-    ${card(0, 2, DUNGEONS[0].n + ' · Dificultad 2', 'Enemigos más fuertes y con habilidades nuevas, más combates de tres, menos oro y la hoguera cura menos.', won)}
-    ${card(1, 1, DUNGEONS[1].n, DUNGEONS[1].d, true, DUNGEONS[1].wip ? `<small style="color:var(--gold)">${DUNGEONS[1].wip}</small>` : '')}`;
+    <div class="panel dg-card">${figOf(0)}<div class="info"><h3>${D0.n}</h3><small>${D0.d}</small>
+      <div class="dg-diff"><button class="btn small pri" onclick="G.pickD(0, 1)">Dificultad 1</button>
+      <button class="btn small ${won ? '' : 'locked'}" ${won ? 'onclick="G.pickD(0, 2)"' : 'disabled'}>${won ? '' : sp('llave', 1) + ' '}Dificultad 2</button></div>
+      <small style="color:${won ? 'var(--dim)' : '#c0a0ff'}">${won ? 'Dificultad 2: enemigos más fuertes y con habilidades nuevas, menos oro y la hoguera cura menos.' : 'Gana La Mazmorra para desbloquear la Dificultad 2.'}</small></div></div>
+    <button class="btn dg-card" onclick="G.pickD(1, 1)">${figOf(1)}<div class="info"><h3>${D1.n}</h3><small>${D1.d}</small>${D1.wip ? `<small style="color:var(--gold)">${D1.wip}</small>` : ''}</div></button>`;
 }
 function chooseHero() {
   S = { scr: 'choose' };
