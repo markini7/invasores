@@ -1,6 +1,8 @@
 # Mazmorra de Dados: ideas pendientes
 
-## Dados con más variedad (por decidir juntos)
+## Dados con más variedad
+
+**Hecho en v0.37 solo para los dados especiales** (ver ESTADO.md). Ataque y Protección siguen iguales para todos; lo de abajo queda como idea para cuando se cambien también.
 
 Problema: si un dado solo puede sacar "1 de daño", volver a tirarlo no tiene gracia. La idea es que cada dado tenga caras de tipos distintos y una o dos vacías, para que siempre haya algo que arriesgar.
 
